@@ -1,0 +1,22 @@
+[tools]
+java = "24"
+
+[tasks.build]
+description = "Run build with gradle"
+run = './gradlew build'
+
+[tasks.dev]
+description = "Run app using gradle"
+run = './gradlew run'
+
+[tasks.test]
+description = "Run tests with gradle"
+run = './gradlew test'
+
+[tasks.lint]
+description = "Run check with gradle"
+run = './gradlew ktlintCheck'
+
+[tasks.format]
+description = "Run ktlintFormat with gradle"
+run = './gradlew ktlintFormat'
