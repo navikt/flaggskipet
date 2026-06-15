@@ -6,11 +6,11 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
-group = "no.nav.flaggskippet"
+group = "no.nav.flaggskipet"
 version = "0.1.0"
 
 application {
-    mainClass.set("no.nav.flaggskippet.ApplicationKt")
+    mainClass.set("no.nav.flaggskipet.ApplicationKt")
 }
 
 kotlin {

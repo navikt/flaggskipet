@@ -1,4 +1,4 @@
-package no.nav.flaggskippet.api
+package no.nav.flaggskipet.api
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -7,7 +7,7 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import no.nav.flaggskippet.ApplicationState
+import no.nav.flaggskipet.ApplicationState
 
 const val POD_METRICS_PATH = "/internal/metrics"
 val METRICS_REGISTRY = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)

@@ -11,4 +11,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "flaggskippet"
+rootProject.name = "flaggskipet"

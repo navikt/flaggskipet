@@ -1,4 +1,4 @@
-package no.nav.flaggskippet
+package no.nav.flaggskipet
 
 data class ApplicationState(
     @Volatile var alive: Boolean = true,

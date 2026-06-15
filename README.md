@@ -1,4 +1,4 @@
-# Flaggskippet
+# Flaggskipet
 Feature flag toggling for team-esyfo
 
 ## For Nav-ansatte

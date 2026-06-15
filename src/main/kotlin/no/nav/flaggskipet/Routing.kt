@@ -1,8 +1,8 @@
-package no.nav.flaggskippet
+package no.nav.flaggskipet
 
 import io.ktor.server.routing.routing
-import no.nav.flaggskippet.api.registerMetricApi
-import no.nav.flaggskippet.api.registerPodApi
+import no.nav.flaggskipet.api.registerMetricApi
+import no.nav.flaggskipet.api.registerPodApi
 
 fun io.ktor.server.application.Application.configureRouting(applicationState: ApplicationState) {
     routing {

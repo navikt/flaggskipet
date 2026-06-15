@@ -1,7 +1,7 @@
 apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: flaggskippet
+  name: flaggskipet
   namespace: team-esyfo
   labels:
     team: team-esyfo
@@ -43,7 +43,7 @@ spec:
       enabled: true
       runtime: java
   ingresses:
-    - "https://flaggskippet.intern.dev.nav.no"
+    - "https://flaggskipet.intern.dev.nav.no"
   tokenx:
     enabled: true
   leaderElection: true
