@@ -1,8 +1,9 @@
-import org.gradle.api.tasks.wrapper.Wrapper
+import org.gradle.api.file.DuplicatesStrategy
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
+    alias(libs.plugins.ktlint)
 }
 
 group = "no.nav.flaggskippet"
@@ -13,7 +14,11 @@ application {
 }
 
 kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
+    jvmToolchain(
+        libs.versions.java
+            .get()
+            .toInt(),
+    )
 }
 
 dependencies {
@@ -26,11 +31,28 @@ dependencies {
     testImplementation(libs.kotest.runner.junit5)
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
+tasks {
+    register("printVersion") {
+        doLast {
+            println(project.version)
+        }
+    }
 
-tasks.wrapper {
-    gradleVersion = "9.5.1"
-    distributionType = Wrapper.DistributionType.BIN
+    test {
+        useJUnitPlatform()
+    }
+
+    named("check") {
+        dependsOn("ktlintCheck")
+    }
+
+    shadowJar {
+        filesMatching("META-INF/services/**") {
+            duplicatesStrategy = DuplicatesStrategy.WARN
+        }
+        mergeServiceFiles()
+        archiveFileName.set("app.jar")
+        archiveClassifier.set("")
+        archiveVersion.set("")
+    }
 }
