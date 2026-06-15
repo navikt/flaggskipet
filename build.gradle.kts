@@ -27,6 +27,8 @@ dependencies {
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.logback.classic)
+    implementation(libs.logstash.logback.encoder)
+    implementation(libs.micrometer.registry.prometheus)
 
     testImplementation(libs.kotest.runner.junit5)
 }
