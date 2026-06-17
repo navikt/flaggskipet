@@ -1,4 +1,4 @@
-package no.nav.flaggskipet
+package no.nav.flaggskipet.bootstrap
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted

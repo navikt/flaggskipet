@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.db
+package no.nav.flaggskipet.infrastructure.db
 
 import org.flywaydb.core.Flyway
 import javax.sql.DataSource

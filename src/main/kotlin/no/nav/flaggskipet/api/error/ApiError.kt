@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.api.exception
+package no.nav.flaggskipet.api.error
 
 import kotlinx.serialization.Serializable
 import java.time.Instant

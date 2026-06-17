@@ -1,19 +1,21 @@
-package no.nav.flaggskipet.plugins
+package no.nav.flaggskipet.api.error
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.ktor.http.HttpStatusCode
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.NotFoundException
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import no.nav.flaggskipet.api.plugins.installCallId
+import no.nav.flaggskipet.api.plugins.installContentNegotiation
 
-class ApiPluginsTest :
+class StatusPagesTest :
     FunSpec({
         test("status pages responds with api error for not found exception") {
             testApplication {

@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.api.exception
+package no.nav.flaggskipet.api.error
 
 import io.ktor.http.HttpStatusCode
 

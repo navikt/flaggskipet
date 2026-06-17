@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.db
+package no.nav.flaggskipet.infrastructure.db
 
 import io.ktor.server.config.ApplicationConfig
 

@@ -2,6 +2,10 @@ package no.nav.flaggskipet
 
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
+import no.nav.flaggskipet.bootstrap.ApplicationState
+import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
+import no.nav.flaggskipet.bootstrap.configureRouting
+import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("no.nav.flaggskipet.ApplicationKt")

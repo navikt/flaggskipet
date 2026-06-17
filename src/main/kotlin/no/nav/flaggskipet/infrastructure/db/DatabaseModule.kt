@@ -1,9 +1,9 @@
-package no.nav.flaggskipet.db
+package no.nav.flaggskipet.infrastructure.db
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.config.ApplicationConfig
-import no.nav.flaggskipet.ApplicationState
+import no.nav.flaggskipet.bootstrap.ApplicationState
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import javax.sql.DataSource
