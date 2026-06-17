@@ -7,8 +7,9 @@ import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.configureRouting
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import org.slf4j.LoggerFactory
+import java.lang.invoke.MethodHandles
 
-private val logger = LoggerFactory.getLogger("no.nav.flaggskipet.ApplicationKt")
+private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
 fun main(args: Array<String>) {
     logger.debug("Flaggskipet is starting...")

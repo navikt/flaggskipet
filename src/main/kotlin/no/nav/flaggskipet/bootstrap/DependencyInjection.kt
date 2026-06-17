@@ -22,7 +22,7 @@ internal fun Application.installDependencyInjection(
         modules(databaseModule(applicationState, config))
     }
 
-    return ApplicationDependencies(koin()).also { dependencies ->
+    return ApplicationDependencies.create(koin()).also { dependencies ->
         closeDependenciesOnShutdown(dependencies)
     }
 }
@@ -40,7 +40,7 @@ internal class ApplicationDependencies private constructor(
     private val closed = AtomicBoolean(false)
 
     companion object {
-        operator fun invoke(koin: Koin): ApplicationDependencies = runCatching {
+        fun create(koin: Koin): ApplicationDependencies = runCatching {
             ApplicationDependencies(koin, koin.get())
         }.onFailure {
             koin.close()

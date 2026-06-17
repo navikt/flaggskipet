@@ -16,8 +16,7 @@ data class DatabaseConfig(
     companion object {
         fun fromConfig(config: ApplicationConfig): DatabaseConfig = DatabaseConfig(
             host = config.required("database.host"),
-            port =
-            config.required("database.port").toIntOrNull()
+            port = config.required("database.port").toIntOrNull()
                 ?: error("database.port must be an integer"),
             database = config.required("database.name"),
             username = config.required("database.username"),
@@ -26,4 +25,7 @@ data class DatabaseConfig(
     }
 }
 
-private fun ApplicationConfig.required(path: String): String = propertyOrNull(path)?.getString()?.takeIf { it.isNotBlank() } ?: error("$path must be set")
+private fun ApplicationConfig.required(path: String): String = propertyOrNull(path)
+    ?.getString()
+    ?.takeIf { it.isNotBlank() }
+    ?: error("$path must be set")
