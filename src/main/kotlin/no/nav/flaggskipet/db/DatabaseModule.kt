@@ -6,6 +6,7 @@ import io.ktor.server.config.ApplicationConfig
 import no.nav.flaggskipet.ApplicationState
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import javax.sql.DataSource
 
 fun databaseModule(
     applicationState: ApplicationState,
@@ -14,6 +15,7 @@ fun databaseModule(
     single { applicationState }
     single { DatabaseConfig.fromConfig(config) }
     single<HikariDataSource> { createDataSource(get()) }
+    single<DataSource> { get<HikariDataSource>() }
     single { DatabaseInitializer(get(), get()) }
 }
 
