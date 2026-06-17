@@ -22,5 +22,4 @@ fun Application.module() {
 
     dependencies.initializeDatabase()
     configureRouting(applicationState)
-    logger.info("Flaggskipet startup complete")
 }
