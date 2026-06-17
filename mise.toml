@@ -13,6 +13,7 @@ run = './gradlew build'
 
 [tasks.dev]
 description = "Run app using gradle"
+depends = ["infra"]
 run = './gradlew run'
 
 [tasks.test]
@@ -26,3 +27,15 @@ run = './gradlew ktlintCheck'
 [tasks.format]
 description = "Run ktlintFormat with gradle"
 run = './gradlew ktlintFormat'
+
+[tasks.infra]
+description = "Start local infrastructure"
+run = 'docker-compose -f docker-compose.yaml up -d'
+
+[tasks."infra:down"]
+description = "Stop local infrastructure"
+run = 'docker-compose -f docker-compose.yaml down'
+
+[tasks."infra:clean"]
+description = "Remove local infrastructure including volumes"
+run = 'docker-compose -f docker-compose.yaml down --volumes'
