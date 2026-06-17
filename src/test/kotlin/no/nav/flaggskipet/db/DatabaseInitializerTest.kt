@@ -20,18 +20,19 @@ class DatabaseInitializerTest :
                 postgres.waitingFor(HostPortWaitStrategy())
                 postgres.start()
 
-                val config =
-                    MapApplicationConfig(
-                        "database.host" to postgres.host,
-                        "database.port" to postgres.getMappedPort(5432).toString(),
-                        "database.name" to postgres.databaseName,
-                        "database.username" to postgres.username,
-                        "database.password" to postgres.password,
-                    )
-
                 val applicationState = ApplicationState()
 
-                createDataSource(DatabaseConfig.fromConfig(config)).use { dataSource ->
+                createDataSource(
+                    DatabaseConfig.fromConfig(
+                        MapApplicationConfig(
+                            "database.host" to postgres.host,
+                            "database.port" to postgres.getMappedPort(5432).toString(),
+                            "database.name" to postgres.databaseName,
+                            "database.username" to postgres.username,
+                            "database.password" to postgres.password,
+                        ),
+                    ),
+                ).use { dataSource ->
                     val initializer = DatabaseInitializer(dataSource, applicationState)
 
                     initializer.initialize()

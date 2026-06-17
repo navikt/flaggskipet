@@ -10,7 +10,7 @@ import io.ktor.server.config.MapApplicationConfig
 class DatabaseConfigTest :
     FunSpec({
         test("fromConfig reads database properties") {
-            val config =
+            with(
                 DatabaseConfig.fromConfig(
                     MapApplicationConfig(
                         "database.host" to "localhost",
@@ -19,18 +19,19 @@ class DatabaseConfigTest :
                         "database.username" to "flaggskipet",
                         "database.password" to "supersecret",
                     ),
-                )
-
-            config.host shouldBe "localhost"
-            config.port shouldBe 5432
-            config.database shouldBe "flaggskipet"
-            config.username shouldBe "flaggskipet"
-            config.toString().shouldContain("password=***")
-            config.toString().shouldNotContain("supersecret")
+                ),
+            ) {
+                host shouldBe "localhost"
+                port shouldBe 5432
+                database shouldBe "flaggskipet"
+                username shouldBe "flaggskipet"
+                toString().shouldContain("password=***")
+                toString().shouldNotContain("supersecret")
+            }
         }
 
         test("fromConfig requires database properties") {
-            val error =
+            with(
                 shouldThrow<IllegalStateException> {
                     DatabaseConfig.fromConfig(
                         MapApplicationConfig(
@@ -40,13 +41,14 @@ class DatabaseConfigTest :
                             "database.username" to "flaggskipet",
                         ),
                     )
-                }
-
-            error.message shouldBe "database.password must be set"
+                },
+            ) {
+                message shouldBe "database.password must be set"
+            }
         }
 
         test("fromConfig validates database port") {
-            val error =
+            with(
                 shouldThrow<IllegalStateException> {
                     DatabaseConfig.fromConfig(
                         MapApplicationConfig(
@@ -57,22 +59,24 @@ class DatabaseConfigTest :
                             "database.password" to "supersecret",
                         ),
                     )
-                }
-
-            error.message shouldBe "database.port must be an integer"
+                },
+            ) {
+                message shouldBe "database.port must be an integer"
+            }
         }
 
         test("toString masks password") {
-            val config =
+            with(
                 DatabaseConfig(
                     host = "localhost",
                     port = 5432,
                     database = "flaggskipet",
                     username = "flaggskipet",
                     password = "supersecret",
-                )
-
-            config.toString().shouldContain("password=***")
-            config.toString().shouldNotContain("supersecret")
+                ),
+            ) {
+                toString().shouldContain("password=***")
+                toString().shouldNotContain("supersecret")
+            }
         }
     })
