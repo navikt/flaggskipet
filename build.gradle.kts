@@ -2,6 +2,7 @@ import org.gradle.api.file.DuplicatesStrategy
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktor)
     alias(libs.plugins.ktlint)
 }
@@ -24,8 +25,11 @@ kotlin {
 dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.call.id)
     implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.hikari)
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
@@ -38,6 +42,7 @@ dependencies {
 
     testImplementation(libs.kotest.assertions.core)
     testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.testcontainers.postgresql)
 
     constraints {
