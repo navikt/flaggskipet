@@ -1,6 +1,12 @@
 [tools]
 java = "25"
 
+[env]
+FLAGGSKIPET_DB_HOST = "localhost"
+FLAGGSKIPET_DB_PORT = "5432"
+FLAGGSKIPET_DB_DATABASE = "flaggskipet"
+FLAGGSKIPET_DB_USERNAME = "flaggskipet"
+
 [tasks.build]
 description = "Run build with gradle"
 run = './gradlew build'

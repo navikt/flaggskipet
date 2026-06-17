@@ -11,6 +11,9 @@ build/
 .gradle/
 .kotlin/
 
+# Local mise config with developer-specific environment values
+mise.local.toml
+
 # Compiled class file
 *.class
 
