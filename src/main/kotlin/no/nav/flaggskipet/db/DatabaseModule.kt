@@ -16,7 +16,7 @@ fun databaseModule(
     single { DatabaseConfig.fromConfig(config) }
     single<HikariDataSource> { createDataSource(get()) }
     single<DataSource> { get<HikariDataSource>() }
-    single { DatabaseInitializer(get(), get()) }
+    single { DatabaseInitializer(get()) }
 }
 
 fun createDataSource(config: DatabaseConfig): HikariDataSource = HikariDataSource(

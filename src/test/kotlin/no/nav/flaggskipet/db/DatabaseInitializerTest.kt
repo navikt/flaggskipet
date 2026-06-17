@@ -1,10 +1,9 @@
 package no.nav.flaggskipet.db
 
-import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.ktor.server.config.MapApplicationConfig
-import no.nav.flaggskipet.ApplicationState
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
@@ -20,8 +19,6 @@ class DatabaseInitializerTest :
                 postgres.waitingFor(HostPortWaitStrategy())
                 postgres.start()
 
-                val applicationState = ApplicationState()
-
                 createDataSource(
                     DatabaseConfig.fromConfig(
                         MapApplicationConfig(
@@ -33,10 +30,9 @@ class DatabaseInitializerTest :
                         ),
                     ),
                 ).use { dataSource ->
-                    val initializer = DatabaseInitializer(dataSource, applicationState)
+                    val initializer = DatabaseInitializer(dataSource)
 
                     initializer.initialize()
-                    applicationState.ready.shouldBeTrue()
 
                     dataSource.connection.use { connection ->
                         connection.isValid(2).shouldBeTrue()

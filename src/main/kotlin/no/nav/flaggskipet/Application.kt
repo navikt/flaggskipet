@@ -18,8 +18,8 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val applicationState = ApplicationState()
+    configureLifecycleHooks(applicationState)
     val dependencies = installDependencyInjection(applicationState, environment.config)
-
     dependencies.initializeDatabase()
     configureRouting(applicationState)
 }
