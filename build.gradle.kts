@@ -26,15 +26,30 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.status.pages)
+    implementation(libs.hikari)
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger.slf4j)
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
+    implementation(libs.postgresql)
     implementation(libs.logback.classic)
     implementation(libs.logstash.logback.encoder)
     implementation(libs.micrometer.registry.prometheus)
 
+    testImplementation(libs.kotest.assertions.core)
     testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.testcontainers.postgresql)
+
+    constraints {
+        testImplementation(libs.commons.compress) {
+            because("Testcontainers 1.21.4 pulls commons-compress 1.24.0 transitively")
+        }
+    }
 }
 
 tasks {
     register("printVersion") {
+        description = "Print the version of the app"
         doLast {
             println(project.version)
         }

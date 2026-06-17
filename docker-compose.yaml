@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${FLAGGSKIPET_DB_DATABASE:-flaggskipet}
+      POSTGRES_USER: ${FLAGGSKIPET_DB_USERNAME:-flaggskipet}
+      POSTGRES_PASSWORD: ${FLAGGSKIPET_DB_PASSWORD:?Set FLAGGSKIPET_DB_PASSWORD locally before starting Postgres}
+    ports:
+      - "${FLAGGSKIPET_DB_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${FLAGGSKIPET_DB_USERNAME:-flaggskipet} -d ${FLAGGSKIPET_DB_DATABASE:-flaggskipet}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

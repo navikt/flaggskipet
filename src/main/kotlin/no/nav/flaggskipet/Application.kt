@@ -1,17 +1,14 @@
 package no.nav.flaggskipet
 
 import io.ktor.server.application.Application
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
+import io.ktor.server.netty.EngineMain
 
-fun main() {
-    embeddedServer(
-        factory = Netty,
-        port = 8080,
-        module = Application::module,
-    ).start(wait = true)
-}
+fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
-    configureRouting(ApplicationState())
+    val applicationState = ApplicationState()
+    val dependencies = installDependencyInjection(applicationState, environment.config)
+
+    dependencies.initializeDatabase()
+    configureRouting(applicationState)
 }
