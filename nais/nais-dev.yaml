@@ -50,6 +50,7 @@ spec:
   gcp:
     sqlInstances:
       - name: flaggskipet-instance
+        collation: nb_NO
         type: POSTGRES_18
         tier: db-f1-micro
         diskAutoresize: true
