@@ -4,6 +4,8 @@ import org.slf4j.LoggerFactory
 import java.sql.SQLException
 import javax.sql.DataSource
 
+private val logger = LoggerFactory.getLogger(DatabaseHealthIndicator::class.java)
+
 class DatabaseHealthIndicator(
     private val dataSource: DataSource,
 ) {
@@ -14,9 +16,5 @@ class DatabaseHealthIndicator(
     } catch (ex: SQLException) {
         logger.warn("Database health check failed", ex)
         false
-    }
-
-    private companion object {
-        private val logger = LoggerFactory.getLogger(DatabaseHealthIndicator::class.java)
     }
 }
