@@ -7,8 +7,8 @@ Bruk tabellen som fasit når du er i tvil om mappe.
 | Route/endepunkt | `api/...` | HTTP-adapter |
 | StatusPages / ApiError | `api/error` | API-feilkontrakt |
 | CallId / ContentNegotiation | `api/plugins` | Felles Ktor-pluginer |
-| Routing-komposisjon | `bootstrap` | Wiring-lag |
-| Koin-moduler | `bootstrap` | Composition root |
+| Routing-komposisjon | `api/Routing.kt` | HTTP-adapter |
+| Koin-moduler | `bootstrap` (composition root) + `xxxModule` hos området | Composition root samler, modulene eier egne avhengigheter |
 | Lifecycle hooks | `bootstrap` | Runtime-oppsett |
 | DB config, health, migrering | `infrastructure/db` | Teknologiadapter |
 | Kafka consumer/producer | `infrastructure/kafka` | Teknologiadapter |

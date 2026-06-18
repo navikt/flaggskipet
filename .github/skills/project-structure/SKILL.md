@@ -33,7 +33,36 @@ no.nav.flaggskipet
 
 - Lag feature-komposisjon i `api/<feature>/` eller `api/internal/`.
 - Injiser avhengigheter i feature-komposisjon, ikke i global `Application.kt`.
-- Hold `bootstrap/Routing.kt` tynn: installer felles plugins, kall feature-oppsett.
+- Hold `api/Routing.kt` tynn: kall feature-oppsett. Felles plugins installeres i `api/plugins`.
+
+## Koin-moduler og DI-registrering
+
+DI er komponert i `bootstrap/DependencyInjection.kt`. Hver modul samler avhengigheter for ett område.
+
+Slik registrerer du en ny modul:
+
+1. Lag en `xxxModule(...)`-funksjon som returnerer `Module`, plassert hos området den hører til
+   (for eksempel `infrastructure/db/DatabaseModule.kt`, senere `infrastructure/kafka/KafkaModule.kt`).
+2. Send inn avhengigheter som parametre og fang dem i closure — ikke registrer dem som `single` bare for å hente dem med `get()` igjen.
+3. App-brede singletons uten teknologitilknytning hører hjemme i `bootstrap/CoreModule.kt` (`coreModule`).
+4. Legg modulen til i `modules(...)`-listen i `installDependencyInjection`.
+
+Eksempel:
+
+```kotlin
+modules(
+    coreModule(applicationState),
+    databaseModule(appConfig.database),
+    // texasModule(appConfig.texas),
+)
+```
+
+## Konfigurasjon
+
+- Hver konfigurasjonsgruppe har en `XConfig.fromConfig(ApplicationConfig)` som leser og validerer (fail-fast med samlede feil).
+- Les verdier med den delte `ApplicationConfig.stringOrEmpty(path)` i `infrastructure/config`.
+- Samle alle gruppene i `AppConfig` (`infrastructure/config/AppConfig.kt`), bygget én gang i `Application.module()`.
+- Map miljøvariabler til config-nøkler i `application.conf` (én `xxx { }`-blokk per gruppe).
 
 ## Kafka
 
