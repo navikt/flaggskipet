@@ -24,7 +24,7 @@ internal fun determineApiError(cause: Throwable, path: String): ApiError = when 
     else -> ApiError(
         status = HttpStatusCode.InternalServerError.value,
         type = ErrorType.INTERNAL_SERVER_ERROR,
-        message = cause.message ?: "Internal server error",
+        message = "Internal server error",
         path = path,
     )
 }
