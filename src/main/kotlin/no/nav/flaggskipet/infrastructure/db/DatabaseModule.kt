@@ -2,18 +2,12 @@ package no.nav.flaggskipet.infrastructure.db
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import no.nav.flaggskipet.bootstrap.ApplicationState
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import javax.sql.DataSource
 
-fun databaseModule(
-    applicationState: ApplicationState,
-    databaseConfig: DatabaseConfig,
-): Module = module {
-    single { applicationState }
-    single { databaseConfig }
-    single<HikariDataSource> { createDataSource(get()) }
+fun databaseModule(databaseConfig: DatabaseConfig): Module = module {
+    single<HikariDataSource> { createDataSource(databaseConfig) }
     single<DataSource> { get<HikariDataSource>() }
     single { DatabaseHealthIndicator(get()) }
     single { DatabaseInitializer(get()) }

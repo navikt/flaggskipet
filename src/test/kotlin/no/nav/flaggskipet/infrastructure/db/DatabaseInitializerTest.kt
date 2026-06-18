@@ -30,7 +30,7 @@ class DatabaseInitializerTest :
                 ).use { dataSource ->
                     val initializer = DatabaseInitializer(dataSource)
 
-                    initializer.initialize()
+                    initializer.migrate()
 
                     dataSource.connection.use { connection ->
                         connection.isValid(2).shouldBeTrue()
@@ -52,7 +52,7 @@ class DatabaseInitializerTest :
                             }
                     }
 
-                    initializer.initialize()
+                    initializer.migrate()
 
                     dataSource.connection.use { connection ->
                         connection

@@ -16,7 +16,10 @@ internal fun Application.installDependencyInjection(
 ) {
     install(KoinPlugin) {
         slf4jLogger()
-        modules(databaseModule(applicationState, appConfig.database))
+        modules(
+            coreModule(applicationState),
+            databaseModule(appConfig.database),
+        )
     }
 
     monitor.subscribe(ApplicationStopped) {

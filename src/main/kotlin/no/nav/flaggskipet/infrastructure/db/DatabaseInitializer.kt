@@ -6,7 +6,7 @@ import javax.sql.DataSource
 class DatabaseInitializer(
     private val dataSource: DataSource,
 ) {
-    fun initialize() {
+    fun migrate() {
         Flyway.configure()
             .dataSource(dataSource)
             .locations("classpath:db/migration")

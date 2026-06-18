@@ -32,6 +32,6 @@ fun Application.module() {
     val appConfig = AppConfig.fromConfig(environment.config)
     installDependencyInjection(applicationState, appConfig)
     val databaseInitializer by inject<DatabaseInitializer>()
-    databaseInitializer.initialize()
+    databaseInitializer.migrate()
     configureRouting()
 }
