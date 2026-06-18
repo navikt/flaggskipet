@@ -13,7 +13,7 @@ Dette er den lokale databasekontrakten:
 
 `mise.toml` setter ikke-sensitive defaults for host, port, databasenavn og brukernavn. Sett `FLAGGSKIPET_DB_PASSWORD` i `mise.local.toml`. Filen er git-ignorert og skal ikke committes.
 
-Applikasjonen bruker `FLAGGSKIPET_DB_URL` fra NAIS når den finnes, og prefikser den med `jdbc:` for Hikari. Hvis ikke, bygges lokal URL fra `FLAGGSKIPET_DB_HOST`, `FLAGGSKIPET_DB_PORT` og `FLAGGSKIPET_DB_DATABASE` som settes av `mise.toml`.
+Applikasjonen bruker `FLAGGSKIPET_DB_URL` fra NAIS når den finnes, og konverterer den til en JDBC-URL for Hikari uten credentials i selve URL-en. Hvis ikke, bygges lokal URL fra `FLAGGSKIPET_DB_HOST`, `FLAGGSKIPET_DB_PORT` og `FLAGGSKIPET_DB_DATABASE` som settes av `mise.toml`.
 
 Eksempel:
 

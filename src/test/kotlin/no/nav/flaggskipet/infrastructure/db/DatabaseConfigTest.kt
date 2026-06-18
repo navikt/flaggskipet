@@ -21,13 +21,13 @@ class DatabaseConfigTest :
             }
         }
 
-        test("fromConfig prefixes configured database url for jdbc") {
+        test("fromConfig converts configured database url to jdbc url") {
             with(
                 DatabaseConfig.fromConfig(
-                    config(url = "postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret"),
+                    config(url = "postgresql://flaggskipet:supersecret@dbhost:5432/flaggskipet?sslmode=verify-ca"),
                 ),
             ) {
-                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret"
+                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet?sslmode=verify-ca"
             }
         }
 

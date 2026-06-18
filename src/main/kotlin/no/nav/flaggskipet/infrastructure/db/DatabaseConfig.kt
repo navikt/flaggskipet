@@ -45,8 +45,13 @@ data class DatabaseConfig(
                 database = name,
                 username = username,
                 password = password,
-                jdbcUrl = "jdbc:$url",
+                jdbcUrl = "jdbc:${url.withoutCredentials()}",
             )
         }
     }
 }
+
+// NAIS provides the database url with credentials embedded (postgresql://user:password@host...).
+// https://doc.nais.io/persistence/cloudsql/reference/
+// Hikari takes username/password separately, so we strip the credentials before prefixing jdbc:.
+private fun String.withoutCredentials(): String = replaceFirst(Regex("://[^@/]+@"), "://")
