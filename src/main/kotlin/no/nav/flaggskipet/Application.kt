@@ -12,6 +12,7 @@ import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
 import org.koin.ktor.ext.inject
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
+import kotlin.system.exitProcess
 
 private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
@@ -21,7 +22,7 @@ fun main(args: Array<String>) {
         EngineMain.main(args)
     } catch (error: Throwable) {
         logger.error("Flaggskipet failed to start or stopped due to a fatal error", error)
-        throw error
+        exitProcess(1)
     }
 }
 
