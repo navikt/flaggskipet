@@ -22,6 +22,7 @@ data class DatabaseConfig(
             val username = value("username")
             val password = value("password")
             val url = value("url")
+            val sslKey = value("sslkey")
 
             val errors = buildList {
                 if (host.isBlank()) add("database.host must be set")
@@ -45,7 +46,7 @@ data class DatabaseConfig(
                 database = name,
                 username = username,
                 password = password,
-                jdbcUrl = "jdbc:${url.withoutCredentials()}",
+                jdbcUrl = "jdbc:${url.withoutCredentials().withSslKey(sslKey)}",
             )
         }
     }
@@ -55,3 +56,8 @@ data class DatabaseConfig(
 // https://doc.nais.io/persistence/cloudsql/reference/
 // Hikari takes username/password separately, so we strip the credentials before prefixing jdbc:.
 private fun String.withoutCredentials(): String = replaceFirst(Regex("://[^@/]+@"), "://")
+
+// The NAIS url points sslkey at the PEM key, but the JDBC driver needs the PKCS#8 (DER) key
+// from FLAGGSKIPET_DB_SSLKEY_PK8. Locally there is no sslkey, so this is a no-op.
+private fun String.withSslKey(sslKey: String): String =
+    if (sslKey.isBlank()) this else replace(Regex("sslkey=[^&]*")) { "sslkey=$sslKey" }

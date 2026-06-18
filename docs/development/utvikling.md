@@ -10,10 +10,11 @@ Dette er den lokale databasekontrakten:
 | `FLAGGSKIPET_DB_USERNAME` | `flaggskipet` | Databasebruker |
 | `FLAGGSKIPET_DB_PASSWORD` | Sett i `mise.local.toml` | DB-passord skal ikke committes |
 | `FLAGGSKIPET_DB_URL` | Ikke satt lokalt | Settes av NAIS i cluster (full database-URL med credentials) |
+| `FLAGGSKIPET_DB_SSLKEY_PK8` | Ikke satt lokalt | Settes av NAIS i cluster (sti til klientnøkkel i PKCS#8/DER-format) |
 
 `mise.toml` setter ikke-sensitive defaults for host, port, databasenavn og brukernavn. Sett `FLAGGSKIPET_DB_PASSWORD` i `mise.local.toml`. Filen er git-ignorert og skal ikke committes.
 
-Applikasjonen bruker `FLAGGSKIPET_DB_URL` fra NAIS når den finnes, og konverterer den til en JDBC-URL for Hikari uten credentials i selve URL-en. Hvis ikke, bygges lokal URL fra `FLAGGSKIPET_DB_HOST`, `FLAGGSKIPET_DB_PORT` og `FLAGGSKIPET_DB_DATABASE` som settes av `mise.toml`.
+Applikasjonen bruker `FLAGGSKIPET_DB_URL` fra NAIS når den finnes, og konverterer den til en JDBC-URL for Hikari uten credentials i selve URL-en. NAIS-URL-en peker `sslkey` på PEM-nøkkelen, men JDBC-driveren trenger PKCS#8/DER-nøkkelen, så `sslkey` overstyres med `FLAGGSKIPET_DB_SSLKEY_PK8`. Hvis URL-en ikke er satt, bygges lokal URL fra `FLAGGSKIPET_DB_HOST`, `FLAGGSKIPET_DB_PORT` og `FLAGGSKIPET_DB_DATABASE` som settes av `mise.toml`.
 
 Eksempel:
 

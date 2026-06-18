@@ -31,6 +31,21 @@ class DatabaseConfigTest :
             }
         }
 
+        test("fromConfig overrides sslkey with the pk8 key path") {
+            with(
+                DatabaseConfig.fromConfig(
+                    config(
+                        url = "postgresql://flaggskipet:supersecret@dbhost:5432/flaggskipet" +
+                            "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pem&sslmode=verify-ca",
+                        sslkey = "/secrets/key.pk8",
+                    ),
+                ),
+            ) {
+                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet" +
+                    "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pk8&sslmode=verify-ca"
+            }
+        }
+
         test("fromConfig reports all missing required database properties") {
             with(
                 shouldThrow<IllegalStateException> {
@@ -83,6 +98,7 @@ private fun config(
     username: String = "flaggskipet",
     password: String = "supersecret",
     url: String = "postgresql://localhost:5432/flaggskipet",
+    sslkey: String = "",
 ): MapApplicationConfig = MapApplicationConfig(
     "database.host" to host,
     "database.port" to port,
@@ -90,4 +106,5 @@ private fun config(
     "database.username" to username,
     "database.password" to password,
     "database.url" to url,
+    "database.sslkey" to sslkey,
 )
