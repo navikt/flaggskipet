@@ -6,8 +6,10 @@ import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.configureRouting
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
+import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
+import org.koin.ktor.ext.inject
 
 private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
@@ -24,7 +26,8 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val applicationState = ApplicationState()
     configureLifecycleHooks(applicationState)
-    val dependencies = installDependencyInjection(applicationState, environment.config)
-    dependencies.initializeDatabase()
-    configureRouting(applicationState, dependencies.databaseHealthIndicator())
+    installDependencyInjection(applicationState, environment.config)
+    val databaseInitializer by inject<DatabaseInitializer>()
+    databaseInitializer.initialize()
+    configureRouting()
 }
