@@ -16,7 +16,7 @@ Eksempel:
 
 ```toml
 [env]
-FLAGGSKIPET_DB_PASSWORD = "<sett passord her>"
+FLAGGSKIPET_DB_PASSWORD = "<sett ditt passord her>"
 ```
 
 Lokal oppstart:
