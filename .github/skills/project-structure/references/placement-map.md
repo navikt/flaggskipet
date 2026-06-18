@@ -11,6 +11,9 @@ Bruk tabellen som fasit når du er i tvil om mappe.
 | Koin-moduler | `bootstrap` (composition root) + `xxxModule` hos området | Composition root samler, modulene eier egne avhengigheter |
 | Lifecycle hooks | `bootstrap` | Runtime-oppsett |
 | DB config, health, migrering | `infrastructure/db` | Teknologiadapter |
+| Exposed-tabell (DSL `object FooTable : Table()`) | `infrastructure/db` | DB-skjema, ikke domene |
+| Repository (`transaction(database) { ... }`, `ResultRow → domene`) | `infrastructure/db` | Persistensadapter |
+| API-DTO + `Foo.toResponse()` (kun når wire avviker fra domene) | `api/<feature>` | HTTP-kontrakt |
 | Kafka consumer/producer | `infrastructure/kafka` | Teknologiadapter |
 | Ereg-klient | `infrastructure/clients/ereg` | Ekstern integrasjon |
 | Jobb-definisjon (batch) | `application/jobs` | Use case-orkestrering |
