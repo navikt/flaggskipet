@@ -102,7 +102,7 @@ class DatabaseConfigTest :
                     )
                 },
             ) {
-                message shouldBe "Invalid database configuration: database.port must be an integer"
+                message shouldBe "Invalid database configuration: database.port must be a positive integer"
             }
         }
 

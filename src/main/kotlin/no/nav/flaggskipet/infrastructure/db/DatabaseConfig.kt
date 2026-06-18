@@ -14,15 +14,25 @@ data class DatabaseConfig(
 
     companion object {
         fun fromConfig(config: ApplicationConfig): DatabaseConfig {
-            val values = REQUIRED_PATHS.associateWith(config::value)
-            val port = values.getValue(PORT_PATH).toIntOrNull()
-            val errors = REQUIRED_PATHS.mapNotNull { path ->
-                path.takeIf { values.getValue(it).isBlank() }?.let { "$it must be set" }
-            } + when {
-                values.getValue(PORT_PATH).isBlank() -> emptyList()
-                port == null -> listOf("$PORT_PATH must be an integer")
-                port <= 0 -> listOf("$PORT_PATH must be greater than zero")
-                else -> emptyList()
+            fun value(key: String): String = config.propertyOrNull("database.$key")?.getString().orEmpty()
+
+            val host = value("host")
+            val port = value("port")
+            val name = value("name")
+            val username = value("username")
+            val password = value("password")
+            val url = value("url")
+
+            val errors = buildList {
+                if (host.isBlank()) add("database.host must be set")
+                when {
+                    port.isBlank() -> add("database.port must be set")
+                    (port.toIntOrNull() ?: 0) <= 0 -> add("database.port must be a positive integer")
+                }
+                if (name.isBlank()) add("database.name must be set")
+                if (username.isBlank()) add("database.username must be set")
+                if (password.isBlank()) add("database.password must be set")
+                if (url.isBlank()) add("database.url must be set")
             }
 
             check(errors.isEmpty()) {
@@ -30,33 +40,13 @@ data class DatabaseConfig(
             }
 
             return DatabaseConfig(
-                host = values.getValue(HOST_PATH),
-                port = port!!,
-                database = values.getValue(DATABASE_PATH),
-                username = values.getValue(USERNAME_PATH),
-                password = values.getValue(PASSWORD_PATH),
-                jdbcUrl = "jdbc:${values.getValue(URL_PATH)}",
+                host = host,
+                port = port.toInt(),
+                database = name,
+                username = username,
+                password = password,
+                jdbcUrl = "jdbc:$url",
             )
         }
-
-        private val REQUIRED_PATHS = listOf(
-            HOST_PATH,
-            PORT_PATH,
-            DATABASE_PATH,
-            USERNAME_PATH,
-            PASSWORD_PATH,
-            URL_PATH,
-        )
-
-        private const val HOST_PATH = "database.host"
-        private const val PORT_PATH = "database.port"
-        private const val DATABASE_PATH = "database.name"
-        private const val USERNAME_PATH = "database.username"
-        private const val PASSWORD_PATH = "database.password"
-        private const val URL_PATH = "database.url"
     }
 }
-
-private fun ApplicationConfig.value(path: String): String = propertyOrNull(path)
-    ?.getString()
-    ?: ""
