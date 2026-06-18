@@ -23,7 +23,14 @@ Lokal oppstart:
 
 1. Kjør `mise install`.
 2. Opprett `mise.local.toml`.
-3. Start PostgreSQL med `docker compose up postgres`.
-4. Bruk `mise tasks` for tilgjengelige kommandoer.
+3. Start lokal infrastruktur med `mise run infra`.
+4. Start appen med `mise run dev`.
+
+Mise-kommandoer for infrastruktur:
+
+- `mise run infra` — starter Docker Compose i bakgrunnen.
+- `mise run infra:down` — stopper infrastruktur.
+- `mise run infra:clean` — stopper og sletter volumer (ren lokal database).
+- `mise tasks` — viser tilgjengelige kommandoer.
 
 Flyway kjører ved appoppstart, og appen blir ready når migreringene er ferdige.
