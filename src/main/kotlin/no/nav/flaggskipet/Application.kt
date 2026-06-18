@@ -2,15 +2,16 @@ package no.nav.flaggskipet
 
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
+import no.nav.flaggskipet.api.configureRouting
+import no.nav.flaggskipet.api.plugins.installPlugins
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
-import no.nav.flaggskipet.bootstrap.configureRouting
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.infrastructure.db.DatabaseConfig
 import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
+import org.koin.ktor.ext.inject
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
-import org.koin.ktor.ext.inject
 
 private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
@@ -27,6 +28,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val applicationState = ApplicationState()
     configureLifecycleHooks(applicationState)
+    installPlugins()
     val databaseConfig = DatabaseConfig.fromConfig(environment.config)
     installDependencyInjection(applicationState, databaseConfig)
     val databaseInitializer by inject<DatabaseInitializer>()
