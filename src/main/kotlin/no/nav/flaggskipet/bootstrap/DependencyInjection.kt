@@ -5,6 +5,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
+import no.nav.flaggskipet.infrastructure.db.DatabaseHealthIndicator
 import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
 import no.nav.flaggskipet.infrastructure.db.databaseModule
 import org.koin.core.Koin
@@ -50,6 +51,8 @@ internal class ApplicationDependencies private constructor(
     fun initializeDatabase() = closeOnFailure {
         koin.get<DatabaseInitializer>().initialize()
     }
+
+    fun databaseHealthIndicator(): DatabaseHealthIndicator = koin.get()
 
     fun close() {
         if (!closed.compareAndSet(false, true)) {

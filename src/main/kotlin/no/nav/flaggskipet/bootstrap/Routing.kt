@@ -7,14 +7,18 @@ import no.nav.flaggskipet.api.internal.registerMetricApi
 import no.nav.flaggskipet.api.internal.registerPodApi
 import no.nav.flaggskipet.api.plugins.installCallId
 import no.nav.flaggskipet.api.plugins.installContentNegotiation
+import no.nav.flaggskipet.infrastructure.db.DatabaseHealthIndicator
 
-fun Application.configureRouting(applicationState: ApplicationState) {
+fun Application.configureRouting(
+    applicationState: ApplicationState,
+    databaseHealthIndicator: DatabaseHealthIndicator,
+) {
     installCallId()
     installContentNegotiation()
     installStatusPages()
 
     routing {
-        registerPodApi(applicationState)
+        registerPodApi(applicationState, databaseHealthIndicator)
         registerMetricApi()
     }
 }

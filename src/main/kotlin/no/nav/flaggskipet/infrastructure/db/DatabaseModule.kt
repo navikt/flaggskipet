@@ -16,6 +16,7 @@ fun databaseModule(
     single { DatabaseConfig.fromConfig(config) }
     single<HikariDataSource> { createDataSource(get()) }
     single<DataSource> { get<HikariDataSource>() }
+    single { DatabaseHealthIndicator(get()) }
     single { DatabaseInitializer(get()) }
 }
 

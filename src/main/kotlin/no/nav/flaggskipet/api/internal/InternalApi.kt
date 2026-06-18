@@ -7,12 +7,16 @@ import io.ktor.server.routing.get
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.flaggskipet.bootstrap.ApplicationState
+import no.nav.flaggskipet.infrastructure.db.DatabaseHealthIndicator
 
 private const val POD_HEALTH_PATH = "/internal/health"
 const val POD_METRICS_PATH = "/internal/metrics"
 val METRICS_REGISTRY = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
-fun Routing.registerPodApi(applicationState: ApplicationState) {
+fun Routing.registerPodApi(
+    applicationState: ApplicationState,
+    databaseHealthIndicator: DatabaseHealthIndicator,
+) {
     get("$POD_HEALTH_PATH/is_alive") {
         if (applicationState.alive) {
             call.respondText("I'm alive! :)")
@@ -21,7 +25,7 @@ fun Routing.registerPodApi(applicationState: ApplicationState) {
         }
     }
     get("$POD_HEALTH_PATH/is_ready") {
-        if (isReady(applicationState)) {
+        if (isReady(applicationState, databaseHealthIndicator)) {
             call.respondText("I'm ready! :)")
         } else {
             call.respondText("Please wait! I'm not ready :(", status = HttpStatusCode.InternalServerError)
@@ -29,7 +33,10 @@ fun Routing.registerPodApi(applicationState: ApplicationState) {
     }
 }
 
-private fun isReady(applicationState: ApplicationState): Boolean = applicationState.ready
+private fun isReady(
+    applicationState: ApplicationState,
+    databaseHealthIndicator: DatabaseHealthIndicator,
+): Boolean = applicationState.ready && databaseHealthIndicator.isHealthy()
 
 fun Routing.registerMetricApi() {
     get(POD_METRICS_PATH) {

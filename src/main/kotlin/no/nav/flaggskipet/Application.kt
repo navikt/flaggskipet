@@ -26,5 +26,5 @@ fun Application.module() {
     configureLifecycleHooks(applicationState)
     val dependencies = installDependencyInjection(applicationState, environment.config)
     dependencies.initializeDatabase()
-    configureRouting(applicationState)
+    configureRouting(applicationState, dependencies.databaseHealthIndicator())
 }
