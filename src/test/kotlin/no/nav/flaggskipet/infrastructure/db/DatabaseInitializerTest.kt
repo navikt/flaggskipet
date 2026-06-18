@@ -1,7 +1,7 @@
 package no.nav.flaggskipet.infrastructure.db
 
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.ints.shouldBeExactly
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy

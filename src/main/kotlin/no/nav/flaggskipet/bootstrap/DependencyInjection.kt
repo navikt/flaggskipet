@@ -13,7 +13,7 @@ import org.koin.ktor.plugin.Koin as KoinPlugin
 internal fun Application.installDependencyInjection(
     applicationState: ApplicationState,
     databaseConfig: DatabaseConfig,
-){
+) {
     install(KoinPlugin) {
         slf4jLogger()
         modules(databaseModule(applicationState, databaseConfig))
