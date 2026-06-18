@@ -64,6 +64,27 @@ modules(
 - Samle alle gruppene i `AppConfig` (`infrastructure/config/AppConfig.kt`), bygget én gang i `Application.module()`.
 - Map miljøvariabler til config-nøkler i `application.conf` (én `xxx { }`-blokk per gruppe).
 
+## Persistens og mapping (Exposed)
+
+Databasetilgang bruker Exposed DSL oppå Hikari. Hikari eier connection pool, Flyway eier migreringer, Exposed eier spørringer.
+
+- `Database.connect(dataSource)` er registrert som `single` i `infrastructure/db/DatabaseModule.kt`.
+- Tabeller er DSL-skjema: `object FooTable : Table()` i `infrastructure/db/`. En tabell bærer ikke raddata — spørringer gir `ResultRow`.
+- Repository i `infrastructure/db/` injiserer `Database` og kjører `transaction(database) { ... }`. Bruk eksplisitt `database`, ikke Exposeds globale standard.
+- Bruk Exposed DSL, ikke DAO `Entity`. DAO kobler domenet til Exposed og gir en ekstra datatype å mappe.
+
+### Mapping — én obligatorisk hopp
+
+Det er bare én nødvendig mapping: `ResultRow → domeneobjekt`. Hold den som én utvidelsesfunksjon (`fun ResultRow.toFoo()`) ett sted i repositoryet.
+
+API-DTO (`Foo → FooResponse`) er valgfri. Start uten egen DTO og serialiser domene-`data class` direkte. Legg til DTO først når API-formen faktisk avviker:
+
+- API eksponerer beregnede/omdøpte felter, eller skjuler interne felter.
+- API trenger versjonering uavhengig av domenet.
+- Domenet skal være fritt for `@Serializable`.
+
+Når den dagen kommer: legg DTO-en i `api/<feature>/` med en `fun Foo.toResponse()`. Unngå refleksjonsbaserte mappere — fem linjers funksjoner er nok.
+
 ## Kafka
 
 - Legg producer/consumer, serializer og topic-adaptere i `infrastructure/kafka/`.
