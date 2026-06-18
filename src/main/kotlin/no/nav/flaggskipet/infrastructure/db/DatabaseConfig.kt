@@ -1,6 +1,7 @@
 package no.nav.flaggskipet.infrastructure.db
 
 import io.ktor.server.config.ApplicationConfig
+import no.nav.flaggskipet.infrastructure.config.stringOrEmpty
 
 data class DatabaseConfig(
     val host: String,
@@ -14,7 +15,7 @@ data class DatabaseConfig(
 
     companion object {
         fun fromConfig(config: ApplicationConfig): DatabaseConfig {
-            fun value(key: String): String = config.propertyOrNull("database.$key")?.getString().orEmpty()
+            fun value(key: String): String = config.stringOrEmpty("database.$key")
 
             val host = value("host")
             val port = value("port")
@@ -59,5 +60,4 @@ private fun String.withoutCredentials(): String = replaceFirst(Regex("://[^@/]+@
 
 // The NAIS url points sslkey at the PEM key, but the JDBC driver needs the PKCS#8 (DER) key
 // from FLAGGSKIPET_DB_SSLKEY_PK8. Locally there is no sslkey, so this is a no-op.
-private fun String.withSslKey(sslKey: String): String =
-    if (sslKey.isBlank()) this else replace(Regex("sslkey=[^&]*")) { "sslkey=$sslKey" }
+private fun String.withSslKey(sslKey: String): String = if (sslKey.isBlank()) this else replace(Regex("sslkey=[^&]*")) { "sslkey=$sslKey" }
