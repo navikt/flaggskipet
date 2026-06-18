@@ -11,6 +11,12 @@ build/
 .gradle/
 .kotlin/
 
+# Local mise config with developer-specific environment values
+mise.local.toml
+
+# Bruno local secrets
+bruno/.env
+
 # Compiled class file
 *.class
 
