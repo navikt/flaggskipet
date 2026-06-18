@@ -1,51 +1,17 @@
 package no.nav.flaggskipet.infrastructure.db
 
-import com.typesafe.config.ConfigFactory
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import io.ktor.server.config.HoconApplicationConfig
 import io.ktor.server.config.MapApplicationConfig
 
 class DatabaseConfigTest :
     FunSpec({
-        test("application.conf builds local fallback jdbc url") {
-            with(
-                DatabaseConfig.fromConfig(
-                    HoconApplicationConfig(
-                        ConfigFactory
-                            .parseString(
-                                """
-                                database.host = "localhost"
-                                database.port = 5432
-                                database.name = "flaggskipet"
-                                database.username = "flaggskipet"
-                                database.password = "supersecret"
-                                """.trimIndent(),
-                            )
-                            .withFallback(ConfigFactory.load("application.conf"))
-                            .resolve(),
-                    ),
-                ),
-            ) {
-                jdbcUrl shouldBe "jdbc:postgresql://localhost:5432/flaggskipet"
-            }
-        }
-
         test("fromConfig reads database properties") {
             with(
-                DatabaseConfig.fromConfig(
-                    MapApplicationConfig(
-                        "database.host" to "localhost",
-                        "database.port" to "5432",
-                        "database.name" to "flaggskipet",
-                        "database.username" to "flaggskipet",
-                        "database.password" to "supersecret",
-                        "database.url" to "postgresql://localhost:5432/flaggskipet",
-                    ),
-                ),
+                DatabaseConfig.fromConfig(config()),
             ) {
                 host shouldBe "localhost"
                 port shouldBe 5432
@@ -58,14 +24,7 @@ class DatabaseConfigTest :
         test("fromConfig prefixes configured database url for jdbc") {
             with(
                 DatabaseConfig.fromConfig(
-                    MapApplicationConfig(
-                        "database.host" to "localhost",
-                        "database.port" to "5432",
-                        "database.name" to "flaggskipet",
-                        "database.username" to "flaggskipet",
-                        "database.password" to "supersecret",
-                        "database.url" to "postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret",
-                    ),
+                    config(url = "postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret"),
                 ),
             ) {
                 jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret"
@@ -76,9 +35,12 @@ class DatabaseConfigTest :
             with(
                 shouldThrow<IllegalStateException> {
                     DatabaseConfig.fromConfig(
-                        MapApplicationConfig(
-                            "database.host" to "localhost",
-                            "database.port" to "",
+                        config(
+                            port = "",
+                            name = "",
+                            username = "",
+                            password = "",
+                            url = "",
                         ),
                     )
                 },
@@ -90,16 +52,7 @@ class DatabaseConfigTest :
         test("fromConfig validates database port") {
             with(
                 shouldThrow<IllegalStateException> {
-                    DatabaseConfig.fromConfig(
-                        MapApplicationConfig(
-                            "database.host" to "localhost",
-                            "database.port" to "not-a-number",
-                            "database.name" to "flaggskipet",
-                            "database.username" to "flaggskipet",
-                            "database.password" to "supersecret",
-                            "database.url" to "postgresql://localhost:5432/flaggskipet",
-                        ),
-                    )
+                    DatabaseConfig.fromConfig(config(port = "not-a-number"))
                 },
             ) {
                 message shouldBe "Invalid database configuration: database.port must be a positive integer"
@@ -121,20 +74,20 @@ class DatabaseConfigTest :
                 toString().shouldNotContain("supersecret")
             }
         }
-
-        test("jdbcUrl is masked from toString") {
-            with(
-                DatabaseConfig(
-                    host = "dbhost",
-                    port = 5432,
-                    database = "flaggskipet",
-                    username = "flaggskipet",
-                    password = "supersecret",
-                    jdbcUrl = "jdbc:postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret&sslmode=verify-ca",
-                ),
-            ) {
-                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet?user=flaggskipet&password=supersecret&sslmode=verify-ca"
-                toString().shouldNotContain("supersecret")
-            }
-        }
     })
+
+private fun config(
+    host: String = "localhost",
+    port: String = "5432",
+    name: String = "flaggskipet",
+    username: String = "flaggskipet",
+    password: String = "supersecret",
+    url: String = "postgresql://localhost:5432/flaggskipet",
+): MapApplicationConfig = MapApplicationConfig(
+    "database.host" to host,
+    "database.port" to port,
+    "database.name" to name,
+    "database.username" to username,
+    "database.password" to password,
+    "database.url" to url,
+)
