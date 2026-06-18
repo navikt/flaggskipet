@@ -6,6 +6,7 @@ import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.configureRouting
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
+import no.nav.flaggskipet.infrastructure.db.DatabaseConfig
 import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
@@ -26,7 +27,8 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val applicationState = ApplicationState()
     configureLifecycleHooks(applicationState)
-    installDependencyInjection(applicationState, environment.config)
+    val databaseConfig = DatabaseConfig.fromConfig(environment.config)
+    installDependencyInjection(applicationState, databaseConfig)
     val databaseInitializer by inject<DatabaseInitializer>()
     databaseInitializer.initialize()
     configureRouting()

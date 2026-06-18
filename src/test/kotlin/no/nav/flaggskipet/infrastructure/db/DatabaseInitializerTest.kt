@@ -3,7 +3,6 @@ package no.nav.flaggskipet.infrastructure.db
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
-import io.ktor.server.config.MapApplicationConfig
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
@@ -20,14 +19,13 @@ class DatabaseInitializerTest :
                 postgres.start()
 
                 createDataSource(
-                    DatabaseConfig.fromConfig(
-                        MapApplicationConfig(
-                            "database.host" to postgres.host,
-                            "database.port" to postgres.getMappedPort(5432).toString(),
-                            "database.name" to postgres.databaseName,
-                            "database.username" to postgres.username,
-                            "database.password" to postgres.password,
-                        ),
+                    DatabaseConfig(
+                        host = postgres.host,
+                        port = postgres.getMappedPort(5432),
+                        database = postgres.databaseName,
+                        username = postgres.username,
+                        password = postgres.password,
+                        jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}",
                     ),
                 ).use { dataSource ->
                     val initializer = DatabaseInitializer(dataSource)

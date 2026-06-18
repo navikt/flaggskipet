@@ -2,7 +2,6 @@ package no.nav.flaggskipet.infrastructure.db
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.server.config.ApplicationConfig
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -10,10 +9,10 @@ import javax.sql.DataSource
 
 fun databaseModule(
     applicationState: ApplicationState,
-    config: ApplicationConfig,
+    databaseConfig: DatabaseConfig,
 ): Module = module {
     single { applicationState }
-    single { DatabaseConfig.fromConfig(config) }
+    single { databaseConfig }
     single<HikariDataSource> { createDataSource(get()) }
     single<DataSource> { get<HikariDataSource>() }
     single { DatabaseHealthIndicator(get()) }
@@ -23,7 +22,7 @@ fun databaseModule(
 fun createDataSource(config: DatabaseConfig): HikariDataSource = HikariDataSource(
     HikariConfig().apply {
         driverClassName = "org.postgresql.Driver"
-        jdbcUrl = config.jdbcUrl()
+        jdbcUrl = config.jdbcUrl
         username = config.username
         password = config.password
         maximumPoolSize = 3
