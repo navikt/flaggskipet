@@ -6,7 +6,6 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.infrastructure.db.DatabaseHealthIndicator
@@ -14,15 +13,15 @@ import org.koin.ktor.ext.inject
 
 private const val POD_HEALTH_PATH = "/internal/health"
 const val POD_METRICS_PATH = "/internal/metrics"
-val METRICS_REGISTRY = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
 fun Application.configureInternalApi() {
     val applicationState by inject<ApplicationState>()
     val databaseHealthIndicator by inject<DatabaseHealthIndicator>()
+    val meterRegistry by inject<PrometheusMeterRegistry>()
 
     routing {
         registerPodApi(applicationState, databaseHealthIndicator)
-        registerMetricApi()
+        registerMetricApi(meterRegistry)
     }
 }
 
@@ -51,8 +50,8 @@ private fun isReady(
     databaseHealthIndicator: DatabaseHealthIndicator,
 ): Boolean = applicationState.ready && databaseHealthIndicator.isHealthy()
 
-fun Routing.registerMetricApi() {
+fun Routing.registerMetricApi(meterRegistry: PrometheusMeterRegistry) {
     get(POD_METRICS_PATH) {
-        call.respondText(METRICS_REGISTRY.scrape())
+        call.respondText(meterRegistry.scrape())
     }
 }
