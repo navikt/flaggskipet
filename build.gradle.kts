@@ -1,10 +1,17 @@
 import org.gradle.api.file.DuplicatesStrategy
 
+buildscript {
+    dependencies {
+        classpath(libs.flyway.database.postgresql)
+    }
+}
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktor)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.flyway)
 }
 
 group = "no.nav.flaggskipet"
