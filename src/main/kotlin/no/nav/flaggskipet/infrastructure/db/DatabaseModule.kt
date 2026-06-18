@@ -2,6 +2,7 @@ package no.nav.flaggskipet.infrastructure.db
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import org.jetbrains.exposed.v1.jdbc.Database
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import javax.sql.DataSource
@@ -9,6 +10,7 @@ import javax.sql.DataSource
 fun databaseModule(databaseConfig: DatabaseConfig): Module = module {
     single<HikariDataSource> { createDataSource(databaseConfig) }
     single<DataSource> { get<HikariDataSource>() }
+    single { Database.connect(get<DataSource>()) }
     single { DatabaseHealthIndicator(get()) }
     single { DatabaseInitializer(get()) }
 }
