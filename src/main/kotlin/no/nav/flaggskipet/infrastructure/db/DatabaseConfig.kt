@@ -4,14 +4,11 @@ import io.ktor.server.config.ApplicationConfig
 import no.nav.flaggskipet.infrastructure.config.stringOrEmpty
 
 data class DatabaseConfig(
-    val host: String,
-    val port: Int,
-    val database: String,
     val username: String,
     val password: String,
     val jdbcUrl: String,
 ) {
-    override fun toString(): String = "DatabaseConfig(host=$host, port=$port, database=$database, username=$username, password=***)"
+    override fun toString(): String = "DatabaseConfig(username=$username, password=***, jdbcUrl=$jdbcUrl)"
 
     companion object {
         fun fromConfig(config: ApplicationConfig): DatabaseConfig {
@@ -42,9 +39,6 @@ data class DatabaseConfig(
             }
 
             return DatabaseConfig(
-                host = host,
-                port = port.toInt(),
-                database = name,
                 username = username,
                 password = password,
                 jdbcUrl = "jdbc:${url.withoutCredentials().withSslKey(sslKey)}",

@@ -13,9 +13,6 @@ class DatabaseConfigTest :
             with(
                 DatabaseConfig.fromConfig(config()),
             ) {
-                host shouldBe "localhost"
-                port shouldBe 5432
-                database shouldBe "flaggskipet"
                 username shouldBe "flaggskipet"
                 jdbcUrl shouldBe "jdbc:postgresql://localhost:5432/flaggskipet"
             }
@@ -77,9 +74,6 @@ class DatabaseConfigTest :
         test("toString masks password") {
             with(
                 DatabaseConfig(
-                    host = "localhost",
-                    port = 5432,
-                    database = "flaggskipet",
                     username = "flaggskipet",
                     password = "supersecret",
                     jdbcUrl = "jdbc:postgresql://localhost:5432/flaggskipet",

@@ -20,9 +20,6 @@ class DatabaseInitializerTest :
 
                 createDataSource(
                     DatabaseConfig(
-                        host = postgres.host,
-                        port = postgres.getMappedPort(5432),
-                        database = postgres.databaseName,
                         username = postgres.username,
                         password = postgres.password,
                         jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}",
