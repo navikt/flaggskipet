@@ -109,11 +109,10 @@ sealed interface KafkaSecurityConfig {
     ) : KafkaSecurityConfig {
         fun password(): String = credentialStorePassword
 
-        override fun toString(): String =
-            "Ssl(" +
-                "truststorePath=$truststorePath, " +
-                "keystorePath=$keystorePath, " +
-                "credentialStorePassword=***)"
+        override fun toString(): String = "Ssl(" +
+            "truststorePath=$truststorePath, " +
+            "keystorePath=$keystorePath, " +
+            "credentialStorePassword=***)"
     }
 
     companion object {
@@ -121,15 +120,14 @@ sealed interface KafkaSecurityConfig {
             truststorePath: String,
             keystorePath: String,
             credentialStorePassword: String,
-        ): KafkaSecurityConfig =
-            if (truststorePath.isBlank() && keystorePath.isBlank() && credentialStorePassword.isBlank()) {
-                Plaintext
-            } else {
-                Ssl(
-                    truststorePath = truststorePath,
-                    keystorePath = keystorePath,
-                    credentialStorePassword = credentialStorePassword,
-                )
-            }
+        ): KafkaSecurityConfig = if (truststorePath.isBlank() && keystorePath.isBlank() && credentialStorePassword.isBlank()) {
+            Plaintext
+        } else {
+            Ssl(
+                truststorePath = truststorePath,
+                keystorePath = keystorePath,
+                credentialStorePassword = credentialStorePassword,
+            )
+        }
     }
 }

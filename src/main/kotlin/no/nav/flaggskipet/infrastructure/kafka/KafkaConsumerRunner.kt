@@ -66,23 +66,22 @@ class KafkaConsumerRunner<K, V>(
         }
     }
 
-    private fun handle(record: ConsumerRecord<K, V>): Pair<TopicPartition, OffsetAndMetadata> =
-        try {
-            when (handler.handle(record)) {
-                KafkaHandleResult.COMMIT ->
-                    TopicPartition(record.topic(), record.partition()) to OffsetAndMetadata(record.offset() + 1)
-            }
-        } catch (error: Exception) {
-            val metadata = record.metadata()
-            logger.error(
-                "Kafka message handling failed for topic={}, partition={}, offset={}",
-                metadata.topic,
-                metadata.partition,
-                metadata.offset,
-                error,
-            )
-            throw error
+    private fun handle(record: ConsumerRecord<K, V>): Pair<TopicPartition, OffsetAndMetadata> = try {
+        when (handler.handle(record)) {
+            KafkaHandleResult.COMMIT ->
+                TopicPartition(record.topic(), record.partition()) to OffsetAndMetadata(record.offset() + 1)
         }
+    } catch (error: Exception) {
+        val metadata = record.metadata()
+        logger.error(
+            "Kafka message handling failed for topic={}, partition={}, offset={}",
+            metadata.topic,
+            metadata.partition,
+            metadata.offset,
+            error,
+        )
+        throw error
+    }
 
     fun stop() {
         if (running.compareAndSet(true, false)) {
