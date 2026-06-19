@@ -46,35 +46,7 @@ class KafkaConsumerRunner<K, V>(
 
         try {
             consumer.subscribe(topics)
-
-            while (running.get()) {
-                val records = consumer.poll(pollTimeout)
-                val offsetsToCommit = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-
-                for (record in records) {
-                    try {
-                        when (handler.handle(record)) {
-                            KafkaHandleResult.COMMIT ->
-                                offsetsToCommit[TopicPartition(record.topic(), record.partition())] =
-                                    OffsetAndMetadata(record.offset() + 1)
-                        }
-                    } catch (error: Exception) {
-                        val metadata = record.metadata()
-                        logger.error(
-                            "Kafka message handling failed for topic={}, partition={}, offset={}",
-                            metadata.topic,
-                            metadata.partition,
-                            metadata.offset,
-                            error,
-                        )
-                        throw error
-                    }
-                }
-
-                if (offsetsToCommit.isNotEmpty()) {
-                    consumer.commitSync(offsetsToCommit)
-                }
-            }
+            pollLoop()
         } catch (error: WakeupException) {
             if (running.get()) {
                 throw error
@@ -84,6 +56,33 @@ class KafkaConsumerRunner<K, V>(
             closeConsumer()
         }
     }
+
+    private fun pollLoop() {
+        while (running.get()) {
+            val offsetsToCommit = consumer.poll(pollTimeout).associate(::handle)
+            if (offsetsToCommit.isNotEmpty()) {
+                consumer.commitSync(offsetsToCommit)
+            }
+        }
+    }
+
+    private fun handle(record: ConsumerRecord<K, V>): Pair<TopicPartition, OffsetAndMetadata> =
+        try {
+            when (handler.handle(record)) {
+                KafkaHandleResult.COMMIT ->
+                    TopicPartition(record.topic(), record.partition()) to OffsetAndMetadata(record.offset() + 1)
+            }
+        } catch (error: Exception) {
+            val metadata = record.metadata()
+            logger.error(
+                "Kafka message handling failed for topic={}, partition={}, offset={}",
+                metadata.topic,
+                metadata.partition,
+                metadata.offset,
+                error,
+            )
+            throw error
+        }
 
     fun stop() {
         if (running.compareAndSet(true, false)) {
