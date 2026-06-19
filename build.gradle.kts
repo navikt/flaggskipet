@@ -30,6 +30,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.kafka.clients)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.call.id)
@@ -52,6 +53,7 @@ dependencies {
     testImplementation(libs.kotest.assertions.core)
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.testcontainers.postgresql)
 
     constraints {

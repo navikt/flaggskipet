@@ -46,6 +46,8 @@ spec:
     - "https://flaggskipet.intern.dev.nav.no"
   tokenx:
     enabled: true
+  kafka:
+    pool: nav-dev
   leaderElection: true
   gcp:
     sqlInstances:

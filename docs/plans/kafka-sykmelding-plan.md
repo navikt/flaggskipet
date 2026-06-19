@@ -48,10 +48,10 @@ Filer/områder:
 
 - `gradle/libs.versions.toml`: legg til Kafka client og Testcontainers Kafka.
 - `build.gradle.kts`: legg til runtime/test dependencies.
-- `docker-compose.yaml`: legg til lokal Kafka som passer eksisterende `mise infra`.
+- `docker-compose.kafka.yaml`: legg lokal Kafka i egen Compose-fil som passer eksisterende `mise infra`.
 - `mise.toml`: legg til enkle tasker for Kafka/dev-meldinger ved behov.
 - `nais/nais-dev.yaml`: legg til `spec.kafka.pool: nav-dev` og dokumenter topic/ACL-forutsetning.
-- `src/main/resources/application.conf`: legg til `kafka { ... }` med env-mapping.
+- `src/main/resources/application.conf`: legg til `kafka.consumers.sykmelding { ... }` med env-mapping.
 - `src/main/kotlin/no/nav/flaggskipet/infrastructure/kafka/KafkaConfig.kt`: fail-fast config.
 - `src/main/kotlin/no/nav/flaggskipet/infrastructure/kafka/KafkaConsumerRunner.kt` eller tilsvarende felles consumer-runner: gjenbrukbar poll/commit/shutdown-struktur for senere konsumenter.
 - `src/main/kotlin/no/nav/flaggskipet/infrastructure/kafka/KafkaPropertiesFactory.kt` eller tilsvarende: gjenbrukbar bygging av Kafka properties.
@@ -59,7 +59,7 @@ Filer/områder:
 
 Akseptanse:
 
-- Lokal Kafka starter med eksisterende infra-kommando.
+- Lokal Kafka starter med eksisterende infra-kommando sammen med resten av lokal infrastruktur.
 - Appen har config for bootstrap servers, topic `teamsykmelding.syfo-sendt-sykmelding`, group-id og auto offset reset.
 - Planen dokumenterer at Kafkarator read-ACL må gis til `team-esyfo/flaggskipet` utenfor denne repo-PR-en.
 - `enable.auto.commit=false` brukes for consumer.
