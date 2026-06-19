@@ -38,3 +38,14 @@ Mise-kommandoer for infrastruktur:
 - `mise tasks` — viser tilgjengelige kommandoer.
 
 Flyway kjører ved appoppstart, og appen blir ready når migreringene er ferdige.
+
+Lokal Kafka-kontrakt settes også av `mise.toml`:
+
+| Variabel | Verdi | Kommentar |
+| --- | --- | --- |
+| `FLAGGSKIPET_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Lokal Kafka via Docker Compose |
+| `FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC` | `teamsykmelding.syfo-sendt-sykmelding` | Topic for sykmelding-consumer |
+| `FLAGGSKIPET_KAFKA_SYKMELDING_GROUP_ID` | `flaggskipet-sykmelding-v1` | Stabil consumer group-id for sykmelding-consumer |
+| `FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET` | `earliest` | Lokal standard for sykmelding-consumer |
+
+I NAIS settes `KAFKA_BROKERS`, `KAFKA_TRUSTSTORE_PATH`, `KAFKA_KEYSTORE_PATH` og `KAFKA_CREDSTORE_PASSWORD` automatisk når `kafka.pool` er aktivert. `mise run infra` starter alltid PostgreSQL fra `docker-compose.yaml` og Kafka fra `docker-compose.kafka.yaml`.

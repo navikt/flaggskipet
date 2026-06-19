@@ -7,6 +7,10 @@ FLAGGSKIPET_DB_PORT = "5432"
 FLAGGSKIPET_DB_DATABASE = "flaggskipet"
 FLAGGSKIPET_DB_USERNAME = "flaggskipet"
 FLAGGSKIPET_DB_PASSWORD = "dummy-password"
+FLAGGSKIPET_KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC = "teamsykmelding.syfo-sendt-sykmelding"
+FLAGGSKIPET_KAFKA_SYKMELDING_GROUP_ID = "flaggskipet-sykmelding-v1"
+FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET = "earliest"
 
 # App lifecycle
 [tasks.go]
@@ -40,15 +44,27 @@ run = './gradlew ktlintFormat'
 # Local infrastructure
 [tasks.infra]
 description = "Start local infrastructure"
-run = 'docker-compose -f docker-compose.yaml up -d'
+run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml up -d'
 
 [tasks."infra:down"]
 description = "Stop local infrastructure"
-run = 'docker-compose -f docker-compose.yaml down'
+run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml down'
 
 [tasks."infra:clean"]
 description = "Remove local infrastructure including volumes"
-run = 'docker-compose -f docker-compose.yaml down --volumes'
+run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml down --volumes'
+
+# Local kafka dev tools
+[tasks."kafka:hello-world"]
+description = "Send a hello-world message to local Kafka"
+usage = 'arg "[count]"'
+run = '''
+if [ -z "${usage_count:-}" ]; then
+  ./gradlew :devtools:runKafkaHelloWorld
+else
+  ./gradlew :devtools:runKafkaHelloWorld --args="${usage_count}"
+fi
+'''
 
 # Database migrations
 [tasks."migration:info"]
