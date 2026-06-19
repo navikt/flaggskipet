@@ -20,28 +20,36 @@ private object KafkaHelloWorldSettings {
         defaultValue = "localhost:9092",
     )
     val topic = EnvSetting(
-        name = "FLAGGSKIPET_KAFKA_HELLO_WORLD_TOPIC",
-        defaultValue = "flaggskipet.dev.hello-world",
+        name = "FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC",
+        defaultValue = "teamsykmelding.syfo-sendt-sykmelding",
     )
 }
 
 private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
-fun main() {
+fun main(args: Array<String>) {
+    val messageCount = messageCount(args)
     val bootstrapServers = envOrDefault(KafkaHelloWorldSettings.bootstrapServers)
     val topic = envOrDefault(KafkaHelloWorldSettings.topic)
-    val key = "hello-world"
-    val value = """{"message":"hello world","createdAt":"${Instant.now()}"}"""
 
     val producer = KafkaProducer<String, String>(producerProperties(bootstrapServers))
-    try {
-        val metadata = producer.send(ProducerRecord<String, String>(topic, key, value)).get()
-        logger.info(
-            "Sent message to topic=${metadata.topic()}, partition=${metadata.partition()}, offset=${metadata.offset()}, key=$key, value=$value",
-        )
-    } finally {
-        producer.close()
+    producer.use { producer ->
+        repeat(messageCount) { index ->
+            val messageNumber = index + 1
+            val key = "hello-world-$messageNumber"
+            val value = """{"message":"hello world","messageNumber":$messageNumber,"createdAt":"${Instant.now()}"}"""
+            val metadata = producer.send(ProducerRecord<String, String>(topic, key, value)).get()
+            logger.info(
+                "Sent message to topic=${metadata.topic()}, partition=${metadata.partition()}, offset=${metadata.offset()}, key=$key, value=$value",
+            )
+        }
     }
+}
+
+private fun messageCount(args: Array<String>): Int {
+    val count = args.firstOrNull()?.toIntOrNull() ?: 1
+    require(count > 0) { "First argument must be a positive integer" }
+    return count
 }
 
 private fun envOrDefault(setting: EnvSetting): String =
