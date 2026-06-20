@@ -49,3 +49,10 @@ Lokal Kafka-kontrakt settes også av `mise.toml`:
 | `FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET` | `earliest` | Lokal standard for sykmelding-consumer |
 
 I NAIS settes `KAFKA_BROKERS`, `KAFKA_TRUSTSTORE_PATH`, `KAFKA_KEYSTORE_PATH` og `KAFKA_CREDSTORE_PASSWORD` automatisk når `kafka.pool` er aktivert. `mise run infra` starter alltid PostgreSQL fra `docker-compose.yaml` og Kafka fra `docker-compose.kafka.yaml`.
+
+For å sende syntetiske sykmelding-meldinger lokalt:
+
+- `mise run kafka:sykmelding` — sender en gyldig melding
+- `mise run kafka:sykmelding valid` — sender en gyldig melding
+- `mise run kafka:sykmelding invalid` — sender en permanent ugyldig melding
+- `mise run kafka:sykmelding tombstone` — sender tombstone/null-payload

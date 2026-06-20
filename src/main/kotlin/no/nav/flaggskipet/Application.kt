@@ -7,6 +7,7 @@ import no.nav.flaggskipet.api.plugins.installPlugins
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
+import no.nav.flaggskipet.bootstrap.startKafkaConsumers
 import no.nav.flaggskipet.infrastructure.config.AppConfig
 import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
 import org.koin.ktor.ext.inject
@@ -34,5 +35,6 @@ fun Application.module() {
     installDependencyInjection(applicationState, appConfig)
     val databaseInitializer by inject<DatabaseInitializer>()
     databaseInitializer.migrate()
+    startKafkaConsumers()
     configureRouting()
 }

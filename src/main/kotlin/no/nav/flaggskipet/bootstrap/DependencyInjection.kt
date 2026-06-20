@@ -6,7 +6,8 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import no.nav.flaggskipet.infrastructure.config.AppConfig
 import no.nav.flaggskipet.infrastructure.db.databaseModule
-import org.koin.ktor.plugin.koin
+import no.nav.flaggskipet.infrastructure.kafka.kafkaModule
+import org.koin.ktor.ext.get
 import org.koin.logger.slf4jLogger
 import org.koin.ktor.plugin.Koin as KoinPlugin
 
@@ -19,10 +20,11 @@ internal fun Application.installDependencyInjection(
         modules(
             coreModule(applicationState),
             databaseModule(appConfig.database),
+            kafkaModule(appConfig.kafka),
         )
     }
 
     monitor.subscribe(ApplicationStopped) {
-        koin().get<HikariDataSource>().close()
+        get<HikariDataSource>().close()
     }
 }

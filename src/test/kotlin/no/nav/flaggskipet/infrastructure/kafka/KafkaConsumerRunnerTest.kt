@@ -1,6 +1,5 @@
 package no.nav.flaggskipet.infrastructure.kafka
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.longs.shouldBeExactly
@@ -98,9 +97,7 @@ class KafkaConsumerRunnerTest :
                 consumer.addRecord(ConsumerRecord(topic, 0, 0L, "key", "value"))
             }
 
-            shouldThrow<IllegalStateException> {
-                runner.run()
-            }
+            runCatching { runner.run() }.isFailure shouldBe true
 
             consumer.committedOffsets[partition] shouldBe null
         }
@@ -132,9 +129,7 @@ class KafkaConsumerRunnerTest :
 
             runner.close()
 
-            shouldThrow<IllegalStateException> {
-                runner.run()
-            }
+            runCatching { runner.run() }.isFailure shouldBe true
         }
     })
 

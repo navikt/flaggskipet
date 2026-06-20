@@ -9,7 +9,7 @@ group = "no.nav.flaggskipet"
 version = "0.1.0"
 
 application {
-    mainClass.set("no.nav.flaggskipet.devtools.kafka.KafkaHelloWorldMainKt")
+    mainClass.set("no.nav.flaggskipet.devtools.kafka.KafkaSykmeldingProducerKt")
 }
 
 kotlin {
@@ -25,9 +25,9 @@ dependencies {
     implementation(libs.logback.classic)
 }
 
-tasks.register<JavaExec>("runKafkaHelloWorld") {
-    description = "Send a hello-world message to local Kafka"
+tasks.register<JavaExec>("runKafkaSykmeldingProducer") {
+    description = "Send a sykmelding message to local Kafka"
     group = "devtools"
     classpath = sourceSets.main.get().runtimeClasspath
-    mainClass.set("no.nav.flaggskipet.devtools.kafka.KafkaHelloWorldMainKt")
+    mainClass.set("no.nav.flaggskipet.devtools.kafka.KafkaSykmeldingProducerKt")
 }

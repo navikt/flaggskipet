@@ -20,9 +20,9 @@ class DatabaseInitializerTest :
 
                 createDataSource(
                     DatabaseConfig(
-                        username = postgres.username,
-                        password = postgres.password,
-                        jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}",
+                        username = postgres.getUsername(),
+                        password = postgres.getPassword(),
+                        jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.getDatabaseName()}",
                     ),
                 ).use { dataSource ->
                     val initializer = DatabaseInitializer(dataSource)

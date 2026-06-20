@@ -81,15 +81,15 @@ Skills: `/flyway-migration`, `/postgresql-review`, `/security-review`, `/project
 
 Filer/områder:
 
-- `src/main/resources/db/migration/V2__sykmelding_kafka_trigger.sql`: nye smale tabeller for gyldige triggerdata og sanitert invalid-håndtering.
-- `src/main/kotlin/no/nav/flaggskipet/infrastructure/db/SykmeldingKafkaTriggerTable.kt`
-- `src/main/kotlin/no/nav/flaggskipet/infrastructure/db/SykmeldingKafkaTriggerRepository.kt`
+- `src/main/resources/db/migration/V2__sykmelding_hendelse.sql`: nye smale tabeller for gyldige triggerdata og sanitert invalid-håndtering.
+- `src/main/kotlin/no/nav/flaggskipet/infrastructure/db/SykmeldingHendelseTable.kt`
+- `src/main/kotlin/no/nav/flaggskipet/infrastructure/db/SykmeldingHendelseRepository.kt`
 - `src/main/kotlin/no/nav/flaggskipet/infrastructure/db/DatabaseModule.kt`: DI-registrering.
 - Tester for migrering og repository-idempotens.
 
 Tabellavgrensning:
 
-- `event_id TEXT NOT NULL UNIQUE` som idempotensnøkkel basert på `kafkaMetadata.sykmeldingId`.
+- `sykmelding_id TEXT NOT NULL UNIQUE` som idempotensnøkkel basert på `kafkaMetadata.sykmeldingId`.
 - `fnr TEXT NOT NULL` hvis kontrakten garanterer feltet, ellers nullable med eksplisitt håndtering.
 - `organisasjonsnummer TEXT` nullable.
 - `periode_fom DATE` nullable, beregnet som tidligste `fom` fra `sykmeldingsperioder`.
@@ -121,7 +121,7 @@ Teknisk invalid-tabell:
 
 Akseptanse:
 
-- Duplikat `event_id` gir ikke ny rad, men oppdaterer eksisterende rad med siste minimumsverdier.
+- Duplikat `sykmelding_id` gir ikke ny rad, men oppdaterer eksisterende rad med siste minimumsverdier.
 - Repository kan upserte minimumsdata atomisk.
 - FNR/full payload logges ikke.
 - Flyway og Exposed matcher.

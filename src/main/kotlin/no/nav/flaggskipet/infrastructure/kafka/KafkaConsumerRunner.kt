@@ -21,7 +21,7 @@ enum class KafkaHandleResult {
 }
 
 fun interface KafkaMessageHandler<K, V> {
-    fun handle(record: ConsumerRecord<K, V>): KafkaHandleResult
+    suspend fun handle(record: ConsumerRecord<K, V>): KafkaHandleResult
 }
 
 class KafkaConsumerRunner<K, V>(
@@ -39,7 +39,7 @@ class KafkaConsumerRunner<K, V>(
         require(topics.isNotEmpty()) { "topics must not be empty" }
     }
 
-    fun run() {
+    suspend fun run() {
         check(!closed.get()) { "Kafka consumer runner is already closed" }
         check(running.compareAndSet(false, true)) { "Kafka consumer runner is already running" }
         started.set(true)
@@ -57,16 +57,18 @@ class KafkaConsumerRunner<K, V>(
         }
     }
 
-    private fun pollLoop() {
+    private suspend fun pollLoop() {
         while (running.get()) {
-            val offsetsToCommit = consumer.poll(pollTimeout).associate(::handle)
+            val offsetsToCommit = consumer.poll(pollTimeout).associate { record ->
+                handle(record)
+            }
             if (offsetsToCommit.isNotEmpty()) {
                 consumer.commitSync(offsetsToCommit)
             }
         }
     }
 
-    private fun handle(record: ConsumerRecord<K, V>): Pair<TopicPartition, OffsetAndMetadata> = try {
+    private suspend fun handle(record: ConsumerRecord<K, V>): Pair<TopicPartition, OffsetAndMetadata> = try {
         when (handler.handle(record)) {
             KafkaHandleResult.COMMIT ->
                 TopicPartition(record.topic(), record.partition()) to OffsetAndMetadata(record.offset() + 1)
@@ -74,11 +76,11 @@ class KafkaConsumerRunner<K, V>(
     } catch (error: Exception) {
         val metadata = record.metadata()
         logger.error(
-            "Kafka message handling failed for topic={}, partition={}, offset={}",
+            "Kafka message handling failed for topic={}, partition={}, offset={}, exceptionType={}",
             metadata.topic,
             metadata.partition,
             metadata.offset,
-            error,
+            error.javaClass.name,
         )
         throw error
     }

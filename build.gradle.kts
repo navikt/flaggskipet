@@ -31,6 +31,7 @@ kotlin {
 
 dependencies {
     implementation(libs.kafka.clients)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.call.id)
@@ -43,6 +44,7 @@ dependencies {
     implementation(libs.koin.logger.slf4j)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.java.time)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)

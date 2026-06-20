@@ -55,14 +55,14 @@ description = "Remove local infrastructure including volumes"
 run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml down --volumes'
 
 # Local kafka dev tools
-[tasks."kafka:hello-world"]
-description = "Send a hello-world message to local Kafka"
-usage = 'arg "[count]"'
+[tasks."kafka:sykmelding"]
+description = "Send a sykmelding message to local Kafka"
+usage = 'arg "[variant]"'
 run = '''
-if [ -z "${usage_count:-}" ]; then
-  ./gradlew :devtools:runKafkaHelloWorld
+if [ -z "${usage_variant:-}" ]; then
+  ./gradlew :devtools:runKafkaSykmeldingProducer
 else
-  ./gradlew :devtools:runKafkaHelloWorld --args="${usage_count}"
+  ./gradlew :devtools:runKafkaSykmeldingProducer --args="${usage_variant}"
 fi
 '''
 

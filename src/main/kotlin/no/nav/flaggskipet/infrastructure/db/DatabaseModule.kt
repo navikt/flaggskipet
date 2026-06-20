@@ -11,8 +11,11 @@ fun databaseModule(databaseConfig: DatabaseConfig): Module = module {
     single<HikariDataSource> { createDataSource(databaseConfig) }
     single<DataSource> { get<HikariDataSource>() }
     single { Database.connect(get<DataSource>()) }
+    single { DatabaseTransaction(get()) }
     single { DatabaseHealthIndicator(get()) }
     single { DatabaseInitializer(get()) }
+    single { SykmeldingHendelseRepository(get()) }
+    single { SykmeldingKafkaInvalidMessageRepository(get()) }
 }
 
 fun createDataSource(config: DatabaseConfig): HikariDataSource = HikariDataSource(
