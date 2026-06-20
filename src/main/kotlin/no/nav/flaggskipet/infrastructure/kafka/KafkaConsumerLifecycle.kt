@@ -9,42 +9,38 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.withTimeoutOrNull
-import no.nav.flaggskipet.bootstrap.ApplicationState
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicReference
 
 class KafkaConsumerLifecycle<K, V>(
-    private val consumerName: String,
+    private val consumerName: KafkaConsumerName,
     private val runner: KafkaConsumerRunner<K, V>,
-    private val applicationState: ApplicationState,
     private val coroutineScope: CoroutineScope = CoroutineScope(
-        SupervisorJob() + Dispatchers.IO + CoroutineName("$consumerName-kafka-consumer"),
+        SupervisorJob() + Dispatchers.IO + CoroutineName("${consumerName.configKey}-kafka-consumer"),
     ),
 ) {
     private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
     private val consumerJob = AtomicReference<Job?>()
 
     fun start() {
-        check(consumerJob.get() == null) { "$consumerName Kafka consumer is already started" }
+        check(consumerJob.get() == null) { "${consumerName.configKey} Kafka consumer is already started" }
 
         val job = coroutineScope.launch {
             try {
                 runner.run()
             } catch (error: Throwable) {
-                applicationState.alive = false
-                applicationState.ready = false
                 logger.error(
                     "{} Kafka consumer stopped unexpectedly with exceptionType={}",
-                    consumerName,
+                    consumerName.configKey,
                     error.technicalType(),
                 )
             }
         }
 
         check(consumerJob.compareAndSet(null, job)) {
-            "$consumerName Kafka consumer is already started"
+            "${consumerName.configKey} Kafka consumer is already started"
         }
     }
 
@@ -58,7 +54,7 @@ class KafkaConsumerLifecycle<K, V>(
         }
 
         if (!stoppedWithinTimeout) {
-            logger.warn("{} Kafka consumer did not stop within {} ms", consumerName, timeout.toMillis())
+            logger.warn("{} Kafka consumer did not stop within {} ms", consumerName.configKey, timeout.toMillis())
         }
         coroutineScope.cancel()
     }

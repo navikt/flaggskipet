@@ -72,7 +72,7 @@ class SykmeldingKafkaMessageDecoderTest :
 
             result shouldBe SykmeldingKafkaMessageDecodeResult.Invalid(
                 reason = SykmeldingKafkaMessageInvalidReason.INVALID_PERIOD,
-                sykmeldingId = null,
+                sykmeldingId = "event-4",
             )
         }
 

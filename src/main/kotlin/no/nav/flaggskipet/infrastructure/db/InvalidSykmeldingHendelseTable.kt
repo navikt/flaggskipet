@@ -4,7 +4,7 @@ import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-object SykmeldingKafkaInvalidMessageTable : Table("sykmelding_kafka_invalid_message") {
+object InvalidSykmeldingHendelseTable : Table("invalid_sykmelding_hendelse") {
     val topic = text("topic")
     val partition = integer("partition")
     val recordOffset = long("record_offset")

@@ -22,6 +22,7 @@ kotlin {
 
 dependencies {
     implementation(libs.kafka.clients)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.logback.classic)
 }
 

@@ -108,7 +108,7 @@ Tabellavgrensning:
 
 Teknisk invalid-tabell:
 
-- Egen tabell, for eksempel `sykmelding_kafka_invalid_message`.
+- Egen tabell, for eksempel `invalid_sykmelding_hendelse`.
 - Lagre Kafka topic/partition/offset, teknisk feilkode og `created_at`.
 - Ikke lagre payload eller exception-/feilmeldingstekst i invalid-tabellen.
 - Replay/feilsøking gjøres ved å lese meldingen fra Kafka via topic/partition/offset så lenge den finnes innen retention.

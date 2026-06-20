@@ -1,14 +1,19 @@
 package no.nav.flaggskipet.devtools.kafka
 
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 import java.time.Instant
 import java.util.Properties
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 private data class EnvSetting(
     val name: String,
@@ -27,15 +32,18 @@ private object KafkaSykmeldingSettings {
 }
 
 private enum class Variant {
-    valid,
-    invalid,
-    tombstone,
+    VALID,
+    INVALID,
+    TOMBSTONE,
 }
 
 private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
-fun main(args: Array<String>) {
-    val variant = args.firstOrNull()?.let(Variant::valueOf) ?: Variant.valid
+fun main(args: Array<String>) = runBlocking {
+    val variant = args.firstOrNull()
+        ?.uppercase()
+        ?.let(Variant::valueOf)
+        ?: Variant.VALID
     val bootstrapServers = envOrDefault(KafkaSykmeldingSettings.bootstrapServers)
     val topic = envOrDefault(KafkaSykmeldingSettings.topic)
     val eventId = UUID.randomUUID().toString()
@@ -43,12 +51,12 @@ fun main(args: Array<String>) {
 
     KafkaProducer<String, String?>(producerProperties(bootstrapServers)).use { producer ->
         val value = when (variant) {
-            Variant.valid -> validMessage(eventId)
-            Variant.invalid -> invalidMessage(eventId)
-            Variant.tombstone -> null
+            Variant.VALID -> validMessage(eventId)
+            Variant.INVALID -> invalidMessage(eventId)
+            Variant.TOMBSTONE -> null
         }
 
-        val metadata = producer.send(ProducerRecord(topic, key, value)).get()
+        val metadata = producer.sendAndAwait(ProducerRecord(topic, key, value))
         logger.info(
             "Sent sykmelding {} message to topic={}, partition={}, offset={}, key={}",
             variant,
@@ -59,6 +67,23 @@ fun main(args: Array<String>) {
         )
     }
 }
+
+private suspend fun <K, V> KafkaProducer<K, V>.sendAndAwait(record: ProducerRecord<K, V>): RecordMetadata =
+    suspendCancellableCoroutine { continuation ->
+        val future = send(record) { metadata, exception ->
+            when {
+                exception != null -> continuation.resumeWithException(exception)
+                metadata != null -> continuation.resume(metadata)
+                else -> continuation.resumeWithException(
+                    IllegalStateException("Kafka send completed without metadata"),
+                )
+            }
+        }
+
+        continuation.invokeOnCancellation {
+            future.cancel(true)
+        }
+    }
 
 private fun validMessage(eventId: String): String = """
 {

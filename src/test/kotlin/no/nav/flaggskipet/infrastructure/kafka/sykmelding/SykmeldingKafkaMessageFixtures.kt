@@ -46,7 +46,8 @@ internal object SykmeldingKafkaMessageFixtures {
         periods = """
         [
           {
-            "fom": "2026-01-01"
+            "fom": "2026-01-01",
+            "tom": "not-a-date"
           }
         ]
         """.trimIndent(),

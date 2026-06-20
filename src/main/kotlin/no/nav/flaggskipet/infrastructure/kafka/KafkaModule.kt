@@ -1,6 +1,5 @@
 package no.nav.flaggskipet.infrastructure.kafka
 
-import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.infrastructure.kafka.sykmelding.NullableByteArrayDeserializer
 import no.nav.flaggskipet.infrastructure.kafka.sykmelding.SykmeldingKafkaMessageDecoder
 import no.nav.flaggskipet.infrastructure.kafka.sykmelding.SykmeldingKafkaMessageHandler
@@ -10,8 +9,9 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 fun kafkaModule(kafkaConfig: KafkaConfig): Module {
-    val consumerConfig = kafkaConfig.consumers["sykmelding"]
-        ?: error("Kafka consumer configuration 'sykmelding' is missing")
+    val consumerName = KafkaConsumerName.SYKMELDING
+    val consumerConfig = kafkaConfig.consumers[consumerName.configKey]
+        ?: error("Kafka consumer configuration '${consumerName.configKey}' is missing")
     val propertiesFactory = KafkaPropertiesFactory(kafkaConfig)
 
     return module {
@@ -35,9 +35,8 @@ fun kafkaModule(kafkaConfig: KafkaConfig): Module {
         }
         single<KafkaConsumerLifecycle<String, ByteArray?>> {
             KafkaConsumerLifecycle(
-                consumerName = "sykmelding",
+                consumerName = consumerName,
                 runner = get<KafkaConsumerRunner<String, ByteArray?>>(),
-                applicationState = get<ApplicationState>(),
             )
         }
     }

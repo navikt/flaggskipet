@@ -7,7 +7,6 @@ import io.kotest.matchers.shouldBe
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
 import java.time.Duration
 
@@ -133,7 +132,7 @@ class KafkaConsumerRunnerTest :
         }
     })
 
-private class RecordingMockConsumer : MockConsumer<String, String>(OffsetResetStrategy.EARLIEST) {
+private class RecordingMockConsumer : MockConsumer<String, String>("earliest") {
     val committedOffsets: MutableMap<TopicPartition, OffsetAndMetadata> = mutableMapOf()
     var commitCount: Long = 0L
         private set

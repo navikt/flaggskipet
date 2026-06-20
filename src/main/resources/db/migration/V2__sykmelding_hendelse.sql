@@ -9,12 +9,12 @@ CREATE TABLE sykmelding_hendelse (
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE sykmelding_kafka_invalid_message (
+CREATE TABLE invalid_sykmelding_hendelse (
     topic TEXT NOT NULL,
     partition INTEGER NOT NULL,
     record_offset BIGINT NOT NULL,
     error_code TEXT NOT NULL,
     sykmelding_id TEXT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    CONSTRAINT sykmelding_kafka_invalid_message_pk PRIMARY KEY (topic, partition, record_offset)
+    CONSTRAINT invalid_sykmelding_hendelse_pk PRIMARY KEY (topic, partition, record_offset)
 );

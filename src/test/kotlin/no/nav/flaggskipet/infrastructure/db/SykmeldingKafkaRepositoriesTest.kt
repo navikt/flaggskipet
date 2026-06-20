@@ -78,14 +78,14 @@ class SykmeldingKafkaRepositoriesTest :
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
-                    FROM sykmelding_kafka_invalid_message
+                    FROM invalid_sykmelding_hendelse
                     """.trimIndent(),
                 ) shouldBeExactly 1
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
                     FROM information_schema.columns
-                    WHERE table_name = 'sykmelding_kafka_invalid_message'
+                    WHERE table_name = 'invalid_sykmelding_hendelse'
                       AND column_name = 'key'
                     """.trimIndent(),
                 ) shouldBeExactly 0
@@ -143,7 +143,7 @@ private fun com.zaxxer.hikari.HikariDataSource.querySingleInvalidMessage(): Inva
     connection.prepareStatement(
         """
         SELECT topic, partition, record_offset, error_code, sykmelding_id
-        FROM sykmelding_kafka_invalid_message
+        FROM invalid_sykmelding_hendelse
         """.trimIndent(),
     ).use { statement ->
         statement.executeQuery().use { resultSet ->

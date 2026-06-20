@@ -15,10 +15,10 @@ class SykmeldingKafkaInvalidMessageRepository(
 ) {
     suspend fun upsert(message: SykmeldingKafkaInvalidMessage) {
         databaseTransaction.run {
-            SykmeldingKafkaInvalidMessageTable.upsert(
-                SykmeldingKafkaInvalidMessageTable.topic,
-                SykmeldingKafkaInvalidMessageTable.partition,
-                SykmeldingKafkaInvalidMessageTable.recordOffset,
+            InvalidSykmeldingHendelseTable.upsert(
+                InvalidSykmeldingHendelseTable.topic,
+                InvalidSykmeldingHendelseTable.partition,
+                InvalidSykmeldingHendelseTable.recordOffset,
             ) {
                 it[topic] = message.topic
                 it[partition] = message.partition
