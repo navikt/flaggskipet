@@ -6,10 +6,12 @@ import no.nav.flaggskipet.infrastructure.kafka.sykmelding.SykmeldingKafkaMessage
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.koin.core.module.Module
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 fun kafkaModule(kafkaConfig: KafkaConfig): Module {
     val consumerName = KafkaConsumerName.SYKMELDING
+    val consumerQualifier = named(consumerName.configKey)
     val consumerConfig = kafkaConfig.consumers[consumerName.configKey]
         ?: error("Kafka consumer configuration '${consumerName.configKey}' is missing")
     val propertiesFactory = KafkaPropertiesFactory(kafkaConfig)
@@ -18,7 +20,7 @@ fun kafkaModule(kafkaConfig: KafkaConfig): Module {
         single { propertiesFactory }
         single { SykmeldingKafkaMessageDecoder() }
         single { SykmeldingKafkaMessageHandler(get(), get(), get()) }
-        single<KafkaConsumerRunner<String, ByteArray?>> {
+        single<KafkaConsumerRunner<String, ByteArray?>>(consumerQualifier) {
             KafkaConsumerRunner(
                 consumer = KafkaConsumer<String, ByteArray?>(
                     propertiesFactory.consumer(
@@ -33,11 +35,14 @@ fun kafkaModule(kafkaConfig: KafkaConfig): Module {
                 handler = get<SykmeldingKafkaMessageHandler>(),
             )
         }
-        single<KafkaConsumerLifecycle<String, ByteArray?>> {
+        single<KafkaConsumerLifecycle<String, ByteArray?>>(consumerQualifier) {
             KafkaConsumerLifecycle(
                 consumerName = consumerName,
-                runner = get<KafkaConsumerRunner<String, ByteArray?>>(),
+                runner = get<KafkaConsumerRunner<String, ByteArray?>>(consumerQualifier),
             )
+        }
+        single<List<KafkaConsumerLifecycle<*, *>>> {
+            listOf(get<KafkaConsumerLifecycle<String, ByteArray?>>(consumerQualifier))
         }
     }
 }

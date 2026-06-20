@@ -7,11 +7,15 @@ import org.koin.ktor.ext.inject
 import java.time.Duration
 
 internal fun Application.startKafkaConsumers() {
-    val sykmeldingConsumerLifecycle by inject<KafkaConsumerLifecycle<String, ByteArray?>>()
+    val consumerLifecycles by inject<List<KafkaConsumerLifecycle<*, *>>>()
 
-    sykmeldingConsumerLifecycle.start()
+    consumerLifecycles.forEach { lifecycle ->
+        lifecycle.start()
+    }
 
     monitor.subscribe(ApplicationStopped) {
-        sykmeldingConsumerLifecycle.stop(Duration.ofSeconds(5))
+        consumerLifecycles.forEach { lifecycle ->
+            lifecycle.stop(Duration.ofSeconds(5))
+        }
     }
 }
