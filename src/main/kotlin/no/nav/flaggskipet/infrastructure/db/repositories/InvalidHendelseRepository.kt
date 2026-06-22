@@ -1,8 +1,9 @@
 package no.nav.flaggskipet.infrastructure.db.repositories
 
 import no.nav.flaggskipet.infrastructure.db.core.InvalidHendelse
-import no.nav.flaggskipet.infrastructure.db.core.Transaction
+import no.nav.flaggskipet.infrastructure.db.core.transact
 import no.nav.flaggskipet.infrastructure.db.tables.InvalidHendelseTable
+import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.upsert
 
 interface InvalidHendelseRepository {
@@ -10,10 +11,10 @@ interface InvalidHendelseRepository {
 }
 
 class InvalidHendelseRepositoryImpl(
-    private val transaction: Transaction,
+    private val database: Database,
 ) : InvalidHendelseRepository {
     override suspend fun upsert(event: InvalidHendelse) {
-        transaction.run {
+        database.transact {
             InvalidHendelseTable.upsert(
                 InvalidHendelseTable.topic,
                 InvalidHendelseTable.partition,

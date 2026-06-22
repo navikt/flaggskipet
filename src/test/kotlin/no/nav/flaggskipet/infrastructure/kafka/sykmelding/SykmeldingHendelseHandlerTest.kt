@@ -6,7 +6,6 @@ import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
-import no.nav.flaggskipet.infrastructure.db.core.Transaction
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepositoryImpl
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
@@ -111,5 +110,5 @@ class SykmeldingHendelseHandlerTest :
     })
 
 private fun createHandler(database: Database): SykmeldingHendelseHandler = SykmeldingHendelseHandler(
-    sykmeldingHendelseRepository = SykmeldingHendelseRepositoryImpl(Transaction(database)),
+    sykmeldingHendelseRepository = SykmeldingHendelseRepositoryImpl(database),
 )

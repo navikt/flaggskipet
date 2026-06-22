@@ -3,18 +3,17 @@ package no.nav.flaggskipet.infrastructure.db.repositories
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
-import no.nav.flaggskipet.infrastructure.db.core.Transaction
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
 import java.time.OffsetDateTime
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 
-class SykmeldingKafkaRepositoriesTest :
+class SykmeldingRepositoriesTest :
     FunSpec({
         test("hendelse repository upserts idempotently on sykmelding id") {
             withMigratedPostgres { dataSource, database ->
-                val repository = SykmeldingHendelseRepositoryImpl(Transaction(database))
+                val repository = SykmeldingHendelseRepositoryImpl(database)
 
                 repository.upsert(
                     SykmeldingHendelse(

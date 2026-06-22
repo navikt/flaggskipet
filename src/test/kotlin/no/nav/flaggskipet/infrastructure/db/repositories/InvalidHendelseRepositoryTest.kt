@@ -4,7 +4,6 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
 import no.nav.flaggskipet.infrastructure.db.core.InvalidHendelse
-import no.nav.flaggskipet.infrastructure.db.core.Transaction
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
 
@@ -12,7 +11,7 @@ class InvalidHendelseRepositoryTest :
     FunSpec({
         test("upserts idempotently on topic partition record offset") {
             withMigratedPostgres { dataSource, database ->
-                val repository = InvalidHendelseRepositoryImpl(Transaction(database))
+                val repository = InvalidHendelseRepositoryImpl(database)
 
                 repository.upsert(
                     InvalidHendelse(
