@@ -45,7 +45,25 @@ run = './gradlew ktlintFormat'
 # Local infrastructure
 [tasks.infra]
 description = "Start local infrastructure"
-run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml up -d'
+run = '''
+docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml up -d
+
+until docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml exec -T kafka \
+  /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:19092 \
+  --list >/dev/null 2>&1; do
+  sleep 1
+done
+
+docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml exec -T kafka \
+  /opt/kafka/bin/kafka-topics.sh \
+  --create \
+  --if-not-exists \
+  --topic "${FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC}" \
+  --partitions 1 \
+  --replication-factor 1 \
+  --bootstrap-server localhost:19092
+'''
 
 [tasks."infra:down"]
 description = "Stop local infrastructure"
