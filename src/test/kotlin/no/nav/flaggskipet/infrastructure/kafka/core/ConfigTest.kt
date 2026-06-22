@@ -7,22 +7,22 @@ import io.ktor.server.config.MapApplicationConfig
 
 class ConfigTest :
     FunSpec({
-        test("fromConfig defaults consumer enabled to true") {
-            val config = KafkaConfig.fromConfig(config())
+        test("toKafkaConfig defaults consumer enabled to true") {
+            val config = config().toKafkaConfig()
 
             config.bootstrapServers shouldBe "localhost:9092"
             config.consumers.getValue("sykmelding").enabled shouldBe true
         }
 
-        test("fromConfig reads consumer enabled override") {
-            val config = KafkaConfig.fromConfig(config(enabled = "false"))
+        test("toKafkaConfig reads consumer enabled override") {
+            val config = config(enabled = "false").toKafkaConfig()
 
             config.consumers.getValue("sykmelding").enabled shouldBe false
         }
 
-        test("fromConfig validates consumer enabled value") {
+        test("toKafkaConfig validates consumer enabled value") {
             shouldThrow<IllegalStateException> {
-                KafkaConfig.fromConfig(config(enabled = "maybe"))
+                config(enabled = "maybe").toKafkaConfig()
             }.message shouldBe "Invalid kafka configuration: kafka.consumers.sykmelding.enabled must be true or false"
         }
     })

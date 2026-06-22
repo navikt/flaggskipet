@@ -9,62 +9,56 @@ import io.ktor.server.config.MapApplicationConfig
 
 class ConfigTest :
     FunSpec({
-        test("fromConfig reads database properties") {
+        test("toDatabaseConfig reads database properties") {
             with(
-                DatabaseConfig.fromConfig(config()),
+                config().toDatabaseConfig(),
             ) {
                 username shouldBe "order"
                 jdbcUrl shouldBe "jdbc:postgresql://localhost:5432/order"
             }
         }
 
-        test("fromConfig converts configured database url to jdbc url") {
+        test("toDatabaseConfig converts configured database url to jdbc url") {
             with(
-                DatabaseConfig.fromConfig(
-                    config(url = "postgresql://order:supersecret@dbhost:5432/order?sslmode=verify-ca"),
-                ),
+                config(url = "postgresql://order:supersecret@dbhost:5432/order?sslmode=verify-ca").toDatabaseConfig(),
             ) {
                 jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/order?sslmode=verify-ca"
             }
         }
 
-        test("fromConfig overrides sslkey with the pk8 key path") {
+        test("toDatabaseConfig overrides sslkey with the pk8 key path") {
             with(
-                DatabaseConfig.fromConfig(
-                    config(
-                        url = "postgresql://order:supersecret@dbhost:5432/order" +
-                            "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pem&sslmode=verify-ca",
-                        sslkey = "/secrets/key.pk8",
-                    ),
-                ),
+                config(
+                    url = "postgresql://order:supersecret@dbhost:5432/order" +
+                        "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pem&sslmode=verify-ca",
+                    sslkey = "/secrets/key.pk8",
+                ).toDatabaseConfig(),
             ) {
                 jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/order" +
                     "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pk8&sslmode=verify-ca"
             }
         }
 
-        test("fromConfig reports all missing required database properties") {
+        test("toDatabaseConfig reports all missing required database properties") {
             with(
                 shouldThrow<IllegalStateException> {
-                    DatabaseConfig.fromConfig(
-                        config(
-                            port = "",
-                            name = "",
-                            username = "",
-                            password = "",
-                            url = "",
-                        ),
-                    )
+                    config(
+                        port = "",
+                        name = "",
+                        username = "",
+                        password = "",
+                        url = "",
+                    ).toDatabaseConfig()
                 },
             ) {
                 message shouldBe "Invalid database configuration: database.port must be set, database.name must be set, database.username must be set, database.password must be set, database.url must be set"
             }
         }
 
-        test("fromConfig validates database port") {
+        test("toDatabaseConfig validates database port") {
             with(
                 shouldThrow<IllegalStateException> {
-                    DatabaseConfig.fromConfig(config(port = "not-a-number"))
+                    config(port = "not-a-number").toDatabaseConfig()
                 },
             ) {
                 message shouldBe "Invalid database configuration: database.port must be a positive integer"
