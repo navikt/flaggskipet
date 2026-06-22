@@ -36,14 +36,14 @@ class InvalidHendelseRepositoryTest :
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
-                    FROM invalid_event
+                    FROM invalid_hendelse
                     """.trimIndent(),
                 ) shouldBeExactly 1
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
                     FROM information_schema.columns
-                    WHERE table_name = 'invalid_event'
+                    WHERE table_name = 'invalid_hendelse'
                       AND column_name = 'key'
                     """.trimIndent(),
                 ) shouldBeExactly 0

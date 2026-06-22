@@ -36,7 +36,7 @@ class SykmeldingKafkaMessageHandlerTest :
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
-                    FROM invalid_sykmelding_hendelse
+                    FROM invalid_hendelse
                     """.trimIndent(),
                 ) shouldBeExactly 0
             }
@@ -66,7 +66,7 @@ class SykmeldingKafkaMessageHandlerTest :
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
-                    FROM invalid_sykmelding_hendelse
+                    FROM invalid_hendelse
                     """.trimIndent(),
                 ) shouldBeExactly 0
             }
