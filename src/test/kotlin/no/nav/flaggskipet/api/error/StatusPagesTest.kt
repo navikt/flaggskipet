@@ -12,8 +12,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
-import no.nav.flaggskipet.api.plugins.installCallId
-import no.nav.flaggskipet.api.plugins.installContentNegotiation
+import no.nav.flaggskipet.api.installPlugins
 
 class StatusPagesTest :
     FunSpec({
@@ -39,9 +38,7 @@ class StatusPagesTest :
     })
 
 private fun Application.installPluginTestRoutes() {
-    installCallId()
-    installContentNegotiation()
-    installStatusPages()
+    installPlugins()
 
     routing {
         get("/not-found") {

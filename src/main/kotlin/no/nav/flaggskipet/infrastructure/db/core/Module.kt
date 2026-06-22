@@ -47,7 +47,6 @@ fun createDataSource(consumerConfig: DatabaseConfig): HikariDataSource = HikariD
     },
 )
 
-
 private val logger = LoggerFactory.getLogger(HealthIndicator::class.java)
 
 class HealthIndicator(
@@ -74,4 +73,3 @@ class Initializer(
             .migrate()
     }
 }
-

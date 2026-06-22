@@ -2,8 +2,8 @@ package no.nav.flaggskipet
 
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
-import no.nav.flaggskipet.api.configureRouting
-import no.nav.flaggskipet.api.plugins.installPlugins
+import no.nav.flaggskipet.api.installPlugins
+import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
@@ -36,5 +36,5 @@ fun Application.module() {
     val databaseInitializer by inject<Initializer>()
     databaseInitializer.migrate()
     startKafkaConsumers()
-    configureRouting()
+    configureInternalApi()
 }
