@@ -1,6 +1,6 @@
 package no.nav.flaggskipet.infrastructure.kafka.sykmelding
 
-internal object SykmeldingKafkaMessageFixtures {
+internal object SykmeldingHendelseFixtures {
     fun validMessage(): String = """
     {
   "sykmelding": {
@@ -76,6 +76,4 @@ internal object SykmeldingKafkaMessageFixtures {
           }
         }
     """.trimIndent()
-
-
 }
