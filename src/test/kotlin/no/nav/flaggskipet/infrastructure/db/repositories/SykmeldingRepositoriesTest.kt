@@ -6,9 +6,9 @@ import io.kotest.matchers.shouldBe
 import no.nav.flaggskipet.infrastructure.db.core.Transaction
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
-import java.time.Instant
-import java.time.LocalDate
 import java.time.OffsetDateTime
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 
 class SykmeldingKafkaRepositoriesTest :
     FunSpec({
@@ -21,8 +21,6 @@ class SykmeldingKafkaRepositoriesTest :
                         sykmeldingId = "event-1",
                         fnr = "00000000000",
                         organisasjonsnummer = "999888777",
-                        periodeFom = LocalDate.parse("2026-01-01"),
-                        periodeTom = LocalDate.parse("2026-01-10"),
                         eventTimestamp = Instant.parse("2026-01-15T10:15:30Z"),
                     ),
                 )
@@ -31,8 +29,6 @@ class SykmeldingKafkaRepositoriesTest :
                         sykmeldingId = "event-1",
                         fnr = "00000000000",
                         organisasjonsnummer = "111222333",
-                        periodeFom = LocalDate.parse("2026-02-01"),
-                        periodeTom = LocalDate.parse("2026-02-10"),
                         eventTimestamp = Instant.parse("2026-02-15T10:15:30Z"),
                     ),
                 )
@@ -48,8 +44,6 @@ class SykmeldingKafkaRepositoriesTest :
                     sykmeldingId = "event-1",
                     fnr = "00000000000",
                     organisasjonsnummer = "111222333",
-                    periodeFom = "2026-02-01",
-                    periodeTom = "2026-02-10",
                     eventTimestamp = Instant.parse("2026-02-15T10:15:30Z"),
                 )
             }
@@ -60,17 +54,7 @@ private data class HendelseRow(
     val sykmeldingId: String,
     val fnr: String,
     val organisasjonsnummer: String?,
-    val periodeFom: String?,
-    val periodeTom: String?,
     val eventTimestamp: Instant?,
-)
-
-private data class InvalidRow(
-    val topic: String,
-    val partition: Int,
-    val recordOffset: Long,
-    val errorCode: String,
-    val sykmeldingId: String?,
 )
 
 private fun com.zaxxer.hikari.HikariDataSource.querySingleHendelse(): HendelseRow = connection.use { connection ->
@@ -86,9 +70,9 @@ private fun com.zaxxer.hikari.HikariDataSource.querySingleHendelse(): HendelseRo
                 sykmeldingId = resultSet.getString("sykmelding_id"),
                 fnr = resultSet.getString("fnr"),
                 organisasjonsnummer = resultSet.getString("organisasjonsnummer"),
-                periodeFom = resultSet.getString("periode_fom"),
-                periodeTom = resultSet.getString("periode_tom"),
-                eventTimestamp = resultSet.getObject("event_timestamp", OffsetDateTime::class.java)?.toInstant(),
+                eventTimestamp = resultSet.getObject("event_timestamp", OffsetDateTime::class.java)
+                    ?.toInstant()
+                    ?.toKotlinInstant(),
             )
         }
     }

@@ -19,26 +19,18 @@ class SykmeldingHendelseHandler(
         val dto = json.decodeFromString<SykmeldingHendelseDto>(payload)
         sykmeldingHendelseRepository.upsert(toSykmeldingHendelse(dto))
         logger.debug(
-            "Processed sykmelding hendelse for topic={}, partition={}, offset={}",
+            "Processed sykmelding hendelse for topic={}, partition={}, offset={} sykmeldingId={}",
             record.topic(),
             record.partition(),
             record.offset(),
-//            dto.sykmeldingId,
+            dto.kafkaMetadata.sykmeldingId,
         )
     }
 
     private fun toSykmeldingHendelse(dto: SykmeldingHendelseDto): SykmeldingHendelse = SykmeldingHendelse(
-        // Todo mapping
         sykmeldingId = dto.kafkaMetadata.sykmeldingId,
-        fnr = "Todo",
-        organisasjonsnummer = "Todo",
-        periodeFom = null,
-        periodeTom = null,
-        eventTimestamp = null,
-//        fnr = dto.fnr,
-//        organisasjonsnummer = dto.organisasjonsnummer,
-//        periodeFom = dto.periodeFom,
-//        periodeTom = dto.periodeTom,
-//        eventTimestamp = dto.eventTimestamp,
+        fnr = dto.kafkaMetadata.fnr,
+        organisasjonsnummer = dto.event.arbeidsgiver?.orgnummer,
+        eventTimestamp = dto.event.timestamp,
     )
 }
