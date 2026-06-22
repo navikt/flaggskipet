@@ -44,6 +44,7 @@ Lokal Kafka-kontrakt settes også av `mise.toml`:
 | Variabel | Verdi | Kommentar |
 | --- | --- | --- |
 | `FLAGGSKIPET_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Lokal Kafka via Docker Compose |
+| `FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED` | `true` | Setter om sykmelding-consumeren skal starte lokalt og i NAIS. |
 | `FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC` | `teamsykmelding.syfo-sendt-sykmelding` | Topic for sykmelding-consumer. Opprettes automatisk av `mise run infra` lokalt. |
 | `FLAGGSKIPET_KAFKA_SYKMELDING_GROUP_ID` | `flaggskipet-sykmelding-v1` | Stabil consumer group-id for sykmelding-consumer |
 | `FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET` | `earliest` | Lokal standard for sykmelding-consumer |

@@ -11,9 +11,11 @@ fun kafkaModule(kafkaConfig: KafkaConfig): Module = module {
     single<MessageHandler<String, String?>> { SykmeldingHendelseHandler(get()) }
     single<ConsumerErrorHandler<String, String?>> { InvalidHendelseHandler(get()) }
 
-// Register each consumer as a named singleton (one per configured consumer).
+    val enabledConsumers = kafkaConfig.consumers.filterValues { it.enabled }
+
+    // Register each consumer as a named singleton (one per configured consumer).
     // Each gets its own KafkaConsumer instance, topic subscription, etc.
-    kafkaConfig.consumers.forEach { (name, consumerConfig) ->
+    enabledConsumers.forEach { (name, consumerConfig) ->
         val qualifier = named(name)
 
         single<ConsumerRunner<String, String?>>(qualifier) {
@@ -40,7 +42,7 @@ fun kafkaModule(kafkaConfig: KafkaConfig): Module = module {
     // management (start/close all at once). Does NOT create duplicate instances —
     // it resolves the same named singletons registered above.
     single<List<ConsumerRunner<*, *>>> {
-        kafkaConfig.consumers.keys.map { name ->
+        enabledConsumers.keys.map { name ->
             get(named(name))
         }
     }

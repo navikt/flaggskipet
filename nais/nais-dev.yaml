@@ -48,6 +48,9 @@ spec:
     enabled: true
   kafka:
     pool: nav-dev
+  env:
+    - name: FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED
+      value: "true"
   leaderElection: true
   gcp:
     sqlInstances:
