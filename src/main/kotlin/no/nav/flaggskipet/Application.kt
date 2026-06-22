@@ -8,10 +8,11 @@ import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.bootstrap.startKafkaConsumers
-import no.nav.flaggskipet.infrastructure.db.core.Initializer
+import no.nav.flaggskipet.infrastructure.db.core.migrate
 import org.koin.ktor.ext.get
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
+import javax.sql.DataSource
 import kotlin.system.exitProcess
 
 private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
@@ -31,7 +32,7 @@ fun Application.module() {
     configureLifecycleHooks(applicationState)
     installPlugins()
     installDependencyInjection()
-    get<Initializer>().migrate()
+    get<DataSource>().migrate()
     startKafkaConsumers(applicationState)
     configureInternalApi(applicationState)
 }

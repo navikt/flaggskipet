@@ -22,7 +22,6 @@ fun databaseModule(consumerConfig: DatabaseConfig): Module = module {
     single<DataSource> { get<HikariDataSource>() }
     single { Database.connect(get<DataSource>()) }
     single { HealthIndicator(get()) }
-    single { Initializer(get()) }
     single<SykmeldingHendelseRepository> { SykmeldingHendelseRepositoryImpl(get()) }
     single<InvalidHendelseRepository> { InvalidHendelseRepositoryImpl(get()) }
 }
@@ -62,14 +61,10 @@ class HealthIndicator(
     }
 }
 
-class Initializer(
-    private val dataSource: DataSource,
-) {
-    fun migrate() {
-        Flyway.configure()
-            .dataSource(dataSource)
-            .locations("classpath:db/migration")
-            .load()
-            .migrate()
-    }
+fun DataSource.migrate() {
+    Flyway.configure()
+        .dataSource(this)
+        .locations("classpath:db/migration")
+        .load()
+        .migrate()
 }

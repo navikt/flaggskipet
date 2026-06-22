@@ -6,7 +6,7 @@ import io.kotest.matchers.ints.shouldBeExactly
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
-class InitializerTest :
+class MigrationTest :
     FunSpec({
         test("flyway migrates postgres 18 and keeps migration history idempotent") {
             PsqlContainer().use { postgres ->
@@ -25,9 +25,7 @@ class InitializerTest :
                         jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.getDatabaseName()}",
                     ),
                 ).use { dataSource ->
-                    val initializer = Initializer(dataSource)
-
-                    initializer.migrate()
+                    dataSource.migrate()
 
                     dataSource.connection.use { connection ->
                         connection.isValid(2).shouldBeTrue()
@@ -49,7 +47,7 @@ class InitializerTest :
                             }
                     }
 
-                    initializer.migrate()
+                    dataSource.migrate()
 
                     dataSource.connection.use { connection ->
                         connection

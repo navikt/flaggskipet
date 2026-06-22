@@ -2,8 +2,8 @@ package no.nav.flaggskipet.infrastructure.db
 
 import com.zaxxer.hikari.HikariDataSource
 import no.nav.flaggskipet.infrastructure.db.core.DatabaseConfig
-import no.nav.flaggskipet.infrastructure.db.core.Initializer
 import no.nav.flaggskipet.infrastructure.db.core.createDataSource
+import no.nav.flaggskipet.infrastructure.db.core.migrate
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
@@ -24,7 +24,7 @@ internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, 
             jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.getDatabaseName()}",
         ),
     ).use { dataSource ->
-        Initializer(dataSource).migrate()
+        dataSource.migrate()
         block(dataSource, Database.connect(dataSource))
     }
 }
