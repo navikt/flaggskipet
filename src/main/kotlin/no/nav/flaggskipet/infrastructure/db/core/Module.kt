@@ -21,7 +21,6 @@ fun databaseModule(consumerConfig: DatabaseConfig): Module = module {
     single<HikariDataSource> { createDataSource(consumerConfig) }
     single<DataSource> { get<HikariDataSource>() }
     single { Database.connect(get<DataSource>()) }
-    single { HealthIndicator(get()) }
     single<SykmeldingHendelseRepository> { SykmeldingHendelseRepositoryImpl(get()) }
     single<InvalidHendelseRepository> { InvalidHendelseRepositoryImpl(get()) }
 }
@@ -46,19 +45,15 @@ fun createDataSource(consumerConfig: DatabaseConfig): HikariDataSource = HikariD
     },
 )
 
-private val logger = LoggerFactory.getLogger(HealthIndicator::class.java)
+private val logger = LoggerFactory.getLogger("no.nav.flaggskipet.infrastructure.db.core.DatabaseHealth")
 
-class HealthIndicator(
-    private val dataSource: DataSource,
-) {
-    fun isHealthy(): Boolean = try {
-        dataSource.connection.use { connection ->
-            connection.isValid(1)
-        }
-    } catch (ex: SQLException) {
-        logger.warn("Database health check failed", ex)
-        false
+fun DataSource.isHealthy(): Boolean = try {
+    connection.use { dbConnection ->
+        dbConnection.isValid(1)
     }
+} catch (ex: SQLException) {
+    logger.error("Database health check failed", ex)
+    false
 }
 
 fun DataSource.migrate() {
