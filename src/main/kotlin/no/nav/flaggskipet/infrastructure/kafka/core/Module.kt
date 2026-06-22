@@ -33,7 +33,7 @@ fun kafkaModule(kafkaConfig: KafkaConfig): Module = module {
                 },
                 topics = listOf(consumerConfig.topic),
                 handler = get(),
-                onError = get(),
+                errorHandler = get(),
                 coroutineName = "$name-kafka-consumer",
             )
         }

@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -40,14 +39,15 @@ class ConsumerRunner<K, V>(
     private val consumerFactory: () -> Consumer<K, V>,
     private val topics: List<String>,
     private val handler: MessageHandler<K, V>,
-    private val onError: ConsumerErrorHandler<K, V>? = null,
+    private val errorHandler: ConsumerErrorHandler<K, V> = ConsumerErrorHandler { _, error -> throw error },
     private val pollTimeout: Duration = Duration.ofSeconds(1),
     private val coroutineName: String = "kafka-consumer",
-    private val closeTimeout: Duration = Duration.ofSeconds(5),
     private val initialBackoff: Duration = Duration.ofSeconds(1),
     private val maxBackoff: Duration = Duration.ofSeconds(30),
+    private val maxRetries: Int = 3,
+    private val retryBackoff: Duration = Duration.ofMillis(500),
     private val isFatal: (Throwable) -> Boolean = ::isFatalByDefault,
-) : AutoCloseable {
+) {
     private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
     private val running = AtomicBoolean(false)
     private var scope: CoroutineScope? = null
@@ -63,10 +63,30 @@ class ConsumerRunner<K, V>(
     fun start(onFatalError: (Throwable) -> Unit = {}) {
         check(job == null) { "$coroutineName is already started" }
         running.set(true)
-        val scope = CoroutineScope(Job() + Dispatchers.IO + CoroutineName(coroutineName))
-        this.scope = scope
-        job = scope.launch {
-            runWithRestart(onFatalError)
+        CoroutineScope(Job() + Dispatchers.IO + CoroutineName(coroutineName)).also { newScope ->
+            scope = newScope
+            job = newScope.launch { runWithRestart(onFatalError) }
+        }
+    }
+
+    fun stop() {
+        running.set(false)
+        activeConsumer?.wakeup()
+    }
+
+    /**
+     * Blocks until the polling coroutine finishes, or until [timeout] elapses if given.
+     * Returns true if the coroutine finished, false if the timeout elapsed first.
+     */
+    fun join(timeout: Duration? = null): Boolean {
+        val runnerJob = job ?: return true
+        return runBlocking {
+            if (timeout == null) {
+                runnerJob.join()
+                true
+            } else {
+                withTimeoutOrNull(timeout) { runnerJob.join() } != null
+            }
         }
     }
 
@@ -107,6 +127,16 @@ class ConsumerRunner<K, V>(
         }
     }
 
+    // Sleeps in small steps so a stop() requested mid-backoff is observed quickly.
+    private suspend fun backoffDelay(millis: Long) {
+        var remaining = millis
+        while (running.get() && remaining > 0) {
+            val step = minOf(remaining, BACKOFF_STEP_MILLIS)
+            delay(step.milliseconds)
+            remaining -= step
+        }
+    }
+
     private suspend fun pollLoop(consumer: Consumer<K, V>) {
         while (running.get()) {
             pollAndHandle(consumer)
@@ -119,78 +149,54 @@ class ConsumerRunner<K, V>(
         val maxOffsets = mutableMapOf<TopicPartition, Long>()
         for (record in records) {
             handleRecord(record)
-            val tp = TopicPartition(record.topic(), record.partition())
-            maxOffsets.merge(tp, record.offset() + 1) { current, new -> maxOf(current, new) }
+            maxOffsets.merge(
+                TopicPartition(record.topic(), record.partition()),
+                record.offset() + 1,
+            ) { current, new -> maxOf(current, new) }
         }
-        if (maxOffsets.isNotEmpty()) {
-            consumer.commitSync(maxOffsets.mapValues { OffsetAndMetadata(it.value) })
-        }
+        consumer.commitSync(maxOffsets.mapValues { OffsetAndMetadata(it.value) })
     }
 
     private suspend fun handleRecord(record: ConsumerRecord<K, V>) {
-        try {
-            handler.handle(record)
-        } catch (error: Exception) {
-            val errorHandler = onError
-            if (errorHandler != null) {
-                errorHandler.onError(record, error)
-            } else {
+        val maxAttempts = maxRetries + 1
+        repeat(maxAttempts) { attempt ->
+            try {
+                handler.handle(record)
+                return
+            } catch (error: Exception) {
+                onHandleError(record, error, attempt, maxAttempts)
+            }
+        }
+    }
+
+    private suspend fun onHandleError(record: ConsumerRecord<K, V>, error: Exception, attempt: Int, maxAttempts: Int) {
+        when (attempt) {
+            maxAttempts - 1 -> {
                 logger.error(
-                    "Message handling failed for topic={}, partition={}, offset={}, exceptionType={}",
+                    "Message handling failed after {} attempts for topic={}, partition={}, offset={}",
+                    maxAttempts,
                     record.topic(),
                     record.partition(),
                     record.offset(),
-                    error.javaClass.name,
+                    error,
                 )
-                throw error
+                errorHandler.onError(record, error)
+            }
+
+            else -> {
+                logger.warn(
+                    "Message handling failed (attempt {}/{}), retrying in {}ms for topic={}, partition={}, offset={}",
+                    attempt + 1,
+                    maxAttempts,
+                    retryBackoff.toMillis(),
+                    record.topic(),
+                    record.partition(),
+                    record.offset(),
+                    error,
+                )
+                delay(retryBackoff.toMillis().milliseconds)
             }
         }
-    }
-
-    // Sleeps in small steps so a stop() requested mid-backoff is observed quickly.
-    private suspend fun backoffDelay(millis: Long) {
-        var remaining = millis
-        while (running.get() && remaining > 0) {
-            val step = minOf(remaining, BACKOFF_STEP_MILLIS)
-            delay(step.milliseconds)
-            remaining -= step
-        }
-    }
-
-    fun stop() {
-        running.set(false)
-        activeConsumer?.wakeup()
-    }
-
-    /**
-     * Blocks until the polling coroutine finishes, or until [timeout] elapses if given.
-     * Returns true if the coroutine finished, false if the timeout elapsed first.
-     */
-    fun join(timeout: Duration? = null): Boolean {
-        val job = this.job ?: return true
-        return runBlocking {
-            if (timeout == null) {
-                job.join()
-                true
-            } else {
-                withTimeoutOrNull(timeout) { job.join() } != null
-            }
-        }
-    }
-
-    override fun close() {
-        // If it was never started there is no coroutine to close a consumer, so nothing to do.
-        if (job == null) {
-            return
-        }
-        // Signal the loop to stop and wait for the coroutine to close the consumer itself,
-        // avoiding concurrent access to the consumer from this thread.
-        stop()
-        if (!join(closeTimeout)) {
-            logger.warn("{} did not stop within {}, cancelling", coroutineName, closeTimeout)
-        }
-        // Hard-stop escape hatch: cancel the scope so a stuck coroutine cannot leak.
-        scope?.cancel()
     }
 
     private companion object {

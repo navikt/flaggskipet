@@ -88,6 +88,7 @@ class ConsumerRunnerTest :
                 consumerFactory = { consumer },
                 topics = listOf(TOPIC),
                 pollTimeout = Duration.ofMillis(1),
+                maxRetries = 0,
                 handler = MessageHandler { error("boom") },
             )
 
@@ -127,6 +128,7 @@ class ConsumerRunnerTest :
                 pollTimeout = Duration.ofMillis(1),
                 initialBackoff = Duration.ofMillis(1),
                 maxBackoff = Duration.ofMillis(1),
+                maxRetries = 0,
                 handler = MessageHandler { record ->
                     // Fail on the very first attempt (transient), then succeed on the restart.
                     if (attempts.getAndIncrement() == 0) {
@@ -203,7 +205,7 @@ class ConsumerRunnerTest :
                 handler = MessageHandler {},
             )
 
-            runner.close()
+            runner.stop()
 
             built.get() shouldBe 0
         }
@@ -218,12 +220,13 @@ class ConsumerRunnerTest :
                 handler = MessageHandler {},
             )
 
-            // Signal once the consumer is actually polling so close() cannot race the loop startup.
+            // Signal once the consumer is actually polling so stop() cannot race the loop startup.
             consumer.schedulePollTask { polling.countDown() }
 
             runner.start()
             polling.await(5, TimeUnit.SECONDS) shouldBe true
-            runner.close()
+            runner.stop()
+            runner.join()
 
             consumer.closed() shouldBe true
             consumer.closeCount.shouldBeExactly(1L)
@@ -243,7 +246,8 @@ class ConsumerRunnerTest :
 
             stoppedInTime shouldBe false
 
-            runner.close()
+            runner.stop()
+            runner.join()
             consumer.closed() shouldBe true
         }
 
@@ -279,6 +283,76 @@ class ConsumerRunnerTest :
             runner.start()
             runCatching { runner.start() }.isFailure shouldBe true
             runner.stop()
+        }
+
+        test("handler succeeds after retrying on transient failure") {
+            val partition = TopicPartition(TOPIC, 0)
+            val consumer = RecordingMockConsumer()
+            val handledOffsets = mutableListOf<Long>()
+            val attemptCount = AtomicInteger(0)
+
+            val runner = ConsumerRunner(
+                consumerFactory = { consumer },
+                topics = listOf(TOPIC),
+                pollTimeout = Duration.ofMillis(1),
+                maxRetries = 2,
+                retryBackoff = Duration.ofMillis(1),
+                handler = MessageHandler { record ->
+                    if (attemptCount.getAndIncrement() < 2) {
+                        error("transient boom")
+                    }
+                    handledOffsets += record.offset()
+                },
+            )
+
+            consumer.schedulePollTask {
+                consumer.rebalance(listOf(partition))
+                consumer.updateBeginningOffsets(mapOf(partition to 0L))
+                consumer.addRecord(ConsumerRecord(TOPIC, 0, 0L, "key", "value"))
+            }
+            consumer.schedulePollTask {
+                runner.stop()
+            }
+
+            runner.start()
+            runner.join()
+
+            handledOffsets.shouldContainExactly(0L)
+            consumer.committedOffsets[partition]?.offset()!!.shouldBeExactly(1L)
+        }
+
+        test("handler exhausts retries and invokes error handler") {
+            val partition = TopicPartition(TOPIC, 0)
+            val consumer = RecordingMockConsumer()
+            val captured = mutableListOf<Pair<ConsumerRecord<String, String>, Exception>>()
+
+            val runner = ConsumerRunner(
+                consumerFactory = { consumer },
+                topics = listOf(TOPIC),
+                pollTimeout = Duration.ofMillis(1),
+                maxRetries = 2,
+                retryBackoff = Duration.ofMillis(1),
+                handler = MessageHandler { error("boom") },
+                errorHandler = ConsumerErrorHandler { record, error ->
+                    captured += record to error
+                },
+            )
+
+            consumer.schedulePollTask {
+                consumer.rebalance(listOf(partition))
+                consumer.updateBeginningOffsets(mapOf(partition to 0L))
+                consumer.addRecord(ConsumerRecord(TOPIC, 0, 0L, "key", "value"))
+            }
+            consumer.schedulePollTask {
+                runner.stop()
+            }
+
+            runner.start()
+            runner.join()
+
+            captured.size shouldBe 1
+            captured[0].first.offset() shouldBe 0L
+            captured[0].second.message shouldBe "boom"
         }
     })
 
