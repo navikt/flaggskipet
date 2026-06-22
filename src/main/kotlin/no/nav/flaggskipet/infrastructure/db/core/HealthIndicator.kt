@@ -1,12 +1,12 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.core
 
 import org.slf4j.LoggerFactory
 import java.sql.SQLException
 import javax.sql.DataSource
 
-private val logger = LoggerFactory.getLogger(DatabaseHealthIndicator::class.java)
+private val logger = LoggerFactory.getLogger(HealthIndicator::class.java)
 
-class DatabaseHealthIndicator(
+class HealthIndicator(
     private val dataSource: DataSource,
 ) {
     fun isHealthy(): Boolean = try {

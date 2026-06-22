@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.tables
 
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone

@@ -1,8 +1,8 @@
 package no.nav.flaggskipet.infrastructure.config
 
 import io.ktor.server.config.ApplicationConfig
-import no.nav.flaggskipet.infrastructure.db.DatabaseConfig
-import no.nav.flaggskipet.infrastructure.kafka.KafkaConfig
+import no.nav.flaggskipet.infrastructure.db.core.DatabaseConfig
+import no.nav.flaggskipet.infrastructure.kafka.core.KafkaConfig
 
 // Aggregates every config group, built once at startup so each group's validation fails fast.
 // Add new groups here (e.g. texas) as TexasConfig.fromConfig(config).

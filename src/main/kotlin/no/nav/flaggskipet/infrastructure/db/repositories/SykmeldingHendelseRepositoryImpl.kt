@@ -1,5 +1,7 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.repositories
 
+import no.nav.flaggskipet.infrastructure.db.core.Transaction
+import no.nav.flaggskipet.infrastructure.db.tables.SykmeldingHendelseTable
 import org.jetbrains.exposed.v1.jdbc.upsert
 import java.time.Instant
 import java.time.LocalDate
@@ -15,11 +17,15 @@ data class SykmeldingHendelse(
     val eventTimestamp: Instant?,
 )
 
-class SykmeldingHendelseRepository(
-    private val databaseTransaction: DatabaseTransaction,
-) {
-    suspend fun upsert(hendelse: SykmeldingHendelse) {
-        databaseTransaction.run {
+interface SykmeldingHendelseRepository {
+    suspend fun upsert(hendelse: SykmeldingHendelse)
+}
+
+class SykmeldingHendelseRepositoryImpl(
+    private val transaction: Transaction,
+) : SykmeldingHendelseRepository {
+    override suspend fun upsert(hendelse: SykmeldingHendelse) {
+        transaction.run {
             SykmeldingHendelseTable.upsert(SykmeldingHendelseTable.sykmeldingId) {
                 it[sykmeldingId] = hendelse.sykmeldingId
                 it[fnr] = hendelse.fnr

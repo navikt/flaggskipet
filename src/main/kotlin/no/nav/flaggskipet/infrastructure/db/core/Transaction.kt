@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.core
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -6,7 +6,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
-class DatabaseTransaction(
+class Transaction(
     private val database: Database,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {

@@ -1,8 +1,11 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.repositories
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
+import no.nav.flaggskipet.infrastructure.db.core.Transaction
+import no.nav.flaggskipet.infrastructure.db.queryForInt
+import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -11,7 +14,7 @@ class SykmeldingKafkaRepositoriesTest :
     FunSpec({
         test("hendelse repository upserts idempotently on sykmelding id") {
             withMigratedPostgres { dataSource, database ->
-                val repository = SykmeldingHendelseRepository(DatabaseTransaction(database))
+                val repository = SykmeldingHendelseRepositoryImpl(Transaction(database))
 
                 repository.upsert(
                     SykmeldingHendelse(
@@ -51,54 +54,6 @@ class SykmeldingKafkaRepositoriesTest :
                 )
             }
         }
-
-        test("invalid repository upserts idempotently on topic partition record offset") {
-            withMigratedPostgres { dataSource, database ->
-                val repository = SykmeldingKafkaInvalidMessageRepository(DatabaseTransaction(database))
-
-                repository.upsert(
-                    SykmeldingKafkaInvalidMessage(
-                        topic = "teamsykmelding.syfo-sendt-sykmelding",
-                        partition = 1,
-                        recordOffset = 42L,
-                        errorCode = "INVALID_CONTRACT",
-                        sykmeldingId = null,
-                    ),
-                )
-                repository.upsert(
-                    SykmeldingKafkaInvalidMessage(
-                        topic = "teamsykmelding.syfo-sendt-sykmelding",
-                        partition = 1,
-                        recordOffset = 42L,
-                        errorCode = "INVALID_PERIOD",
-                        sykmeldingId = "event-1",
-                    ),
-                )
-
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM invalid_sykmelding_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 1
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM information_schema.columns
-                    WHERE table_name = 'invalid_sykmelding_hendelse'
-                      AND column_name = 'key'
-                    """.trimIndent(),
-                ) shouldBeExactly 0
-
-                dataSource.querySingleInvalidMessage() shouldBe InvalidRow(
-                    topic = "teamsykmelding.syfo-sendt-sykmelding",
-                    partition = 1,
-                    recordOffset = 42L,
-                    errorCode = "INVALID_PERIOD",
-                    sykmeldingId = "event-1",
-                )
-            }
-        }
     })
 
 private data class HendelseRow(
@@ -134,26 +89,6 @@ private fun com.zaxxer.hikari.HikariDataSource.querySingleHendelse(): HendelseRo
                 periodeFom = resultSet.getString("periode_fom"),
                 periodeTom = resultSet.getString("periode_tom"),
                 eventTimestamp = resultSet.getObject("event_timestamp", OffsetDateTime::class.java)?.toInstant(),
-            )
-        }
-    }
-}
-
-private fun com.zaxxer.hikari.HikariDataSource.querySingleInvalidMessage(): InvalidRow = connection.use { connection ->
-    connection.prepareStatement(
-        """
-        SELECT topic, partition, record_offset, error_code, sykmelding_id
-        FROM invalid_sykmelding_hendelse
-        """.trimIndent(),
-    ).use { statement ->
-        statement.executeQuery().use { resultSet ->
-            resultSet.next()
-            InvalidRow(
-                topic = resultSet.getString("topic"),
-                partition = resultSet.getInt("partition"),
-                recordOffset = resultSet.getLong("record_offset"),
-                errorCode = resultSet.getString("error_code"),
-                sykmeldingId = resultSet.getString("sykmelding_id"),
             )
         }
     }

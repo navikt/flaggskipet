@@ -1,55 +1,81 @@
 package no.nav.flaggskipet.infrastructure.kafka.sykmelding
 
 internal object SykmeldingKafkaMessageFixtures {
-    fun validMessage(
-        sykmeldingId: String,
-        eventSykmeldingId: String = sykmeldingId,
-        timestamp: String = "2026-01-15T10:15:30Z",
-        periods: String = """
-        [
-          {
-            "fom": "2026-01-01",
-            "tom": "2026-01-05"
-          },
-          {
-            "fom": "2026-01-06",
-            "tom": "2026-01-10"
-          }
-        ]
-        """.trimIndent(),
-    ): String = """
+    fun validMessage(): String = """
     {
-      "kafkaMetadata": {
-        "sykmeldingId": "$sykmeldingId",
-        "fnr": "00000000000",
-        "timestamp": "$timestamp"
+  "sykmelding": {
+    "sykmeldingsperioder": [
+      {
+        "fom": "2026-06-10",
+        "tom": "2026-06-20"
       },
-      "event": {
-        "sykmeldingId": "$eventSykmeldingId",
-        "arbeidsgiver": {
-          "orgnummer": "999888777"
-        }
-      },
-      "sykmelding": {
-        "sykmeldingsperioder": $periods
+      {
+        "fom": "2026-06-21",
+        "tom": "2026-06-30"
+      }
+    ],
+    "syketilfelleStartDato": "2026-06-08"
+  },
+  "kafkaMetadata": {
+    "sykmeldingId": "sm-123456789",
+    "timestamp": "2026-06-22T10:15:30Z",
+    "fnr": "12039456789",
+    "source": "syk-system"
+  },
+  "event": {
+    "sykmeldingId": "sm-123456789",
+    "timestamp": "2026-06-22T10:15:30Z",
+    "arbeidsgiver": {
+      "orgnummer": "987654321",
+      "juridiskOrgnummer": "123456789",
+      "orgNavn": "Acme AS"
+    },
+    "brukerSvar": {
+      "riktigNarmesteLeder": {
+        "sporsmaltekst": "Er dette riktig nærmeste leder?",
+        "svar": "ja"
       }
     }
+  }
+}
     """.trimIndent()
 
-    fun mismatchedSykmeldingIdMessage(sykmeldingId: String): String = validMessage(
-        sykmeldingId = sykmeldingId,
-        eventSykmeldingId = "different-$sykmeldingId",
-    )
-
-    fun invalidPeriodMessage(sykmeldingId: String): String = validMessage(
-        sykmeldingId = sykmeldingId,
-        periods = """
-        [
-          {
-            "fom": "2026-01-01",
-            "tom": "not-a-date"
+    fun mismatchedSykmeldingIdMessage(): String = """
+        {
+          "sykmelding": {
+            "sykmeldingsperioder": [
+              {
+                "fom": "2026-06-10",
+                "tom": "2026-06-20"
+              },
+              {
+                "fom": "2026-06-21",
+                "tom": "2026-06-30"
+              }
+            ],
+            "syketilfelleStartDato": "2026-06-08"
+          },
+          "kafkaMetadata": {
+            "sykmeldingId": "sm-123456789",
+                        "fnr": "12039456789",
+            "source": "syk-system"
+          },
+          "event": {
+            "sykmeldingId": "sm-123456789",
+            "arbeidsgiver": {
+              "orgnummer": "987654321",
+              "juridiskOrgnummer": "123456789",
+              "orgNavn": "Acme AS"
+            },
+            "brukerSvar": {
+              "riktigNarmesteLeder": {
+                "sporsmaltekst": "Er dette riktig nærmeste leder?",
+                "svar": "ja"
+              }
+            }
           }
-        ]
-        """.trimIndent(),
-    )
+        }
+    """.trimIndent()
+
+
 }

@@ -9,7 +9,7 @@ import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.bootstrap.startKafkaConsumers
 import no.nav.flaggskipet.infrastructure.config.AppConfig
-import no.nav.flaggskipet.infrastructure.db.DatabaseInitializer
+import no.nav.flaggskipet.infrastructure.db.core.Initializer
 import org.koin.ktor.ext.inject
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
@@ -33,7 +33,7 @@ fun Application.module() {
     installPlugins()
     val appConfig = AppConfig.fromConfig(environment.config)
     installDependencyInjection(applicationState, appConfig)
-    val databaseInitializer by inject<DatabaseInitializer>()
+    val databaseInitializer by inject<Initializer>()
     databaseInitializer.migrate()
     startKafkaConsumers()
     configureRouting()

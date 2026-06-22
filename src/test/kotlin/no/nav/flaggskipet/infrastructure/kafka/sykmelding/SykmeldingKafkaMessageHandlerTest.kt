@@ -3,12 +3,10 @@ package no.nav.flaggskipet.infrastructure.kafka.sykmelding
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
-import no.nav.flaggskipet.infrastructure.db.DatabaseTransaction
-import no.nav.flaggskipet.infrastructure.db.SykmeldingKafkaInvalidMessageRepository
-import no.nav.flaggskipet.infrastructure.db.SykmeldingHendelseRepository
+import no.nav.flaggskipet.infrastructure.db.core.Transaction
 import no.nav.flaggskipet.infrastructure.db.queryForInt
+import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepositoryImpl
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
-import no.nav.flaggskipet.infrastructure.kafka.KafkaHandleResult
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.jetbrains.exposed.v1.jdbc.Database
 
@@ -18,17 +16,17 @@ class SykmeldingKafkaMessageHandlerTest :
             withMigratedPostgres { dataSource, database ->
                 val handler = createHandler(database)
 
-                val result = handler.handle(
+                handler.handle(
                     ConsumerRecord(
                         "teamsykmelding.syfo-sendt-sykmelding",
                         0,
                         10L,
                         "sykmelding-key",
-                        SykmeldingKafkaMessageFixtures.validMessage("event-1").encodeToByteArray(),
+                        SykmeldingKafkaMessageFixtures.validMessage(),
                     ),
                 )
 
-                result shouldBe KafkaHandleResult.COMMIT
+
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
@@ -41,36 +39,6 @@ class SykmeldingKafkaMessageHandlerTest :
                     FROM invalid_sykmelding_hendelse
                     """.trimIndent(),
                 ) shouldBeExactly 0
-            }
-        }
-
-        test("handler stores invalid row and returns commit for permanent invalid message") {
-            withMigratedPostgres { dataSource, database ->
-                val handler = createHandler(database)
-
-                val result = handler.handle(
-                    ConsumerRecord(
-                        "teamsykmelding.syfo-sendt-sykmelding",
-                        1,
-                        20L,
-                        "sykmelding-key",
-                        SykmeldingKafkaMessageFixtures.mismatchedSykmeldingIdMessage("event-2").encodeToByteArray(),
-                    ),
-                )
-
-                result shouldBe KafkaHandleResult.COMMIT
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM sykmelding_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 0
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM invalid_sykmelding_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 1
             }
         }
 
@@ -78,8 +46,8 @@ class SykmeldingKafkaMessageHandlerTest :
             withMigratedPostgres { dataSource, database ->
                 val handler = createHandler(database)
 
-                val result = handler.handle(
-                    ConsumerRecord<String, ByteArray?>(
+                 handler.handle(
+                    ConsumerRecord(
                         "teamsykmelding.syfo-sendt-sykmelding",
                         2,
                         30L,
@@ -88,7 +56,7 @@ class SykmeldingKafkaMessageHandlerTest :
                     ),
                 )
 
-                result shouldBe KafkaHandleResult.COMMIT
+
                 dataSource.queryForInt(
                     """
                     SELECT COUNT(*)
@@ -116,7 +84,7 @@ class SykmeldingKafkaMessageHandlerTest :
                             0,
                             40L,
                             "sykmelding-key",
-                            SykmeldingKafkaMessageFixtures.validMessage("event-3").encodeToByteArray(),
+                            SykmeldingKafkaMessageFixtures.validMessage(),
                         ),
                     )
                 }.isFailure shouldBe true
@@ -124,8 +92,6 @@ class SykmeldingKafkaMessageHandlerTest :
         }
     })
 
-private fun createHandler(database: Database): SykmeldingKafkaMessageHandler = SykmeldingKafkaMessageHandler(
-    decoder = SykmeldingKafkaMessageDecoder(),
-    hendelseRepository = SykmeldingHendelseRepository(DatabaseTransaction(database)),
-    invalidMessageRepository = SykmeldingKafkaInvalidMessageRepository(DatabaseTransaction(database)),
+private fun createHandler(database: Database): SykmeldingHendelseHandler = SykmeldingHendelseHandler(
+    sykmeldingHendelseRepository = SykmeldingHendelseRepositoryImpl(Transaction(database)),
 )

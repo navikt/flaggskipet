@@ -1,9 +1,9 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.core
 
 import org.flywaydb.core.Flyway
 import javax.sql.DataSource
 
-class DatabaseInitializer(
+class Initializer(
     private val dataSource: DataSource,
 ) {
     fun migrate() {

@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.db.core
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -7,24 +7,24 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.ktor.server.config.MapApplicationConfig
 
-class DatabaseConfigTest :
+class ConfigTest :
     FunSpec({
         test("fromConfig reads database properties") {
             with(
                 DatabaseConfig.fromConfig(config()),
             ) {
-                username shouldBe "flaggskipet"
-                jdbcUrl shouldBe "jdbc:postgresql://localhost:5432/flaggskipet"
+                username shouldBe "order"
+                jdbcUrl shouldBe "jdbc:postgresql://localhost:5432/order"
             }
         }
 
         test("fromConfig converts configured database url to jdbc url") {
             with(
                 DatabaseConfig.fromConfig(
-                    config(url = "postgresql://flaggskipet:supersecret@dbhost:5432/flaggskipet?sslmode=verify-ca"),
+                    config(url = "postgresql://order:supersecret@dbhost:5432/order?sslmode=verify-ca"),
                 ),
             ) {
-                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet?sslmode=verify-ca"
+                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/order?sslmode=verify-ca"
             }
         }
 
@@ -32,13 +32,13 @@ class DatabaseConfigTest :
             with(
                 DatabaseConfig.fromConfig(
                     config(
-                        url = "postgresql://flaggskipet:supersecret@dbhost:5432/flaggskipet" +
+                        url = "postgresql://order:supersecret@dbhost:5432/order" +
                             "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pem&sslmode=verify-ca",
                         sslkey = "/secrets/key.pk8",
                     ),
                 ),
             ) {
-                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/flaggskipet" +
+                jdbcUrl shouldBe "jdbc:postgresql://dbhost:5432/order" +
                     "?sslcert=/secrets/cert.pem&sslkey=/secrets/key.pk8&sslmode=verify-ca"
             }
         }
@@ -74,9 +74,9 @@ class DatabaseConfigTest :
         test("toString masks password") {
             with(
                 DatabaseConfig(
-                    username = "flaggskipet",
+                    username = "order",
                     password = "supersecret",
-                    jdbcUrl = "jdbc:postgresql://localhost:5432/flaggskipet",
+                    jdbcUrl = "jdbc:postgresql://localhost:5432/order",
                 ),
             ) {
                 toString().shouldContain("password=***")
@@ -88,10 +88,10 @@ class DatabaseConfigTest :
 private fun config(
     host: String = "localhost",
     port: String = "5432",
-    name: String = "flaggskipet",
-    username: String = "flaggskipet",
+    name: String = "order",
+    username: String = "order",
     password: String = "supersecret",
-    url: String = "postgresql://localhost:5432/flaggskipet",
+    url: String = "postgresql://localhost:5432/order",
     sslkey: String = "",
 ): MapApplicationConfig = MapApplicationConfig(
     "database.host" to host,

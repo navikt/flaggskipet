@@ -1,9 +1,9 @@
-package no.nav.flaggskipet.infrastructure.kafka
+package no.nav.flaggskipet.infrastructure.kafka.core
 
 import io.ktor.server.config.ApplicationConfig
 import no.nav.flaggskipet.infrastructure.config.stringOrEmpty
 
-data class KafkaConsumerConfig(
+data class ConsumerConfig(
     val topic: String,
     val groupId: String,
     val autoOffsetReset: String,
@@ -16,8 +16,8 @@ data class KafkaConsumerConfig(
 
 data class KafkaConfig(
     val bootstrapServers: String,
-    val consumers: Map<String, KafkaConsumerConfig>,
-    val security: KafkaSecurityConfig,
+    val consumers: Map<String, ConsumerConfig>,
+    val security: SecurityConfig,
 ) {
     companion object {
         private val supportedAutoOffsetResets = setOf("earliest", "latest", "none")
@@ -31,12 +31,12 @@ data class KafkaConfig(
             val consumerNames = config.consumerNames()
             val consumers = consumerNames.associateWith { consumerName ->
                 val maxPollRecords = value("consumers.$consumerName.maxPollRecords").trim()
-                KafkaConsumerConfig(
+                ConsumerConfig(
                     topic = value("consumers.$consumerName.topic"),
                     groupId = value("consumers.$consumerName.groupId"),
                     autoOffsetReset = value("consumers.$consumerName.autoOffsetReset").trim().lowercase(),
                     maxPollRecords = maxPollRecords.toIntOrNull()?.takeIf { it > 0 }
-                        ?: KafkaConsumerConfig.DEFAULT_MAX_POLL_RECORDS,
+                        ?: ConsumerConfig.DEFAULT_MAX_POLL_RECORDS,
                 )
             }
             val truststorePath = value("truststorePath")
@@ -85,7 +85,7 @@ data class KafkaConfig(
             return KafkaConfig(
                 bootstrapServers = bootstrapServers,
                 consumers = consumers,
-                security = KafkaSecurityConfig.from(
+                security = SecurityConfig.from(
                     truststorePath = truststorePath,
                     keystorePath = keystorePath,
                     credentialStorePassword = credentialStorePassword,
@@ -99,14 +99,14 @@ data class KafkaConfig(
     }
 }
 
-sealed interface KafkaSecurityConfig {
-    data object Plaintext : KafkaSecurityConfig
+sealed interface SecurityConfig {
+    data object Plaintext : SecurityConfig
 
     data class Ssl(
         val truststorePath: String,
         val keystorePath: String,
         private val credentialStorePassword: String,
-    ) : KafkaSecurityConfig {
+    ) : SecurityConfig {
         fun password(): String = credentialStorePassword
 
         override fun toString(): String = "Ssl(" +
@@ -120,7 +120,7 @@ sealed interface KafkaSecurityConfig {
             truststorePath: String,
             keystorePath: String,
             credentialStorePassword: String,
-        ): KafkaSecurityConfig = if (truststorePath.isBlank() && keystorePath.isBlank() && credentialStorePassword.isBlank()) {
+        ): SecurityConfig = if (truststorePath.isBlank() && keystorePath.isBlank() && credentialStorePassword.isBlank()) {
             Plaintext
         } else {
             Ssl(
