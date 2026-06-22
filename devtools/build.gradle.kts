@@ -9,7 +9,7 @@ group = "no.nav.flaggskipet"
 version = "0.1.0"
 
 application {
-    mainClass.set("no.nav.flaggskipet.devtools.kafka.KafkaSykmeldingProducerKt")
+    mainClass.set("no.nav.flaggskipet.devtools.kafka.SykmeldingProducerKt")
 }
 
 kotlin {
@@ -30,5 +30,5 @@ tasks.register<JavaExec>("runKafkaSykmeldingProducer") {
     description = "Send a sykmelding message to local Kafka"
     group = "devtools"
     classpath = sourceSets.main.get().runtimeClasspath
-    mainClass.set("no.nav.flaggskipet.devtools.kafka.KafkaSykmeldingProducerKt")
+    mainClass.set("no.nav.flaggskipet.devtools.kafka.SykmeldingProducerKt")
 }
