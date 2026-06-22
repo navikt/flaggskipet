@@ -8,9 +8,8 @@ import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.bootstrap.startKafkaConsumers
-import no.nav.flaggskipet.infrastructure.config.AppConfig
 import no.nav.flaggskipet.infrastructure.db.core.Initializer
-import org.koin.ktor.ext.inject
+import org.koin.ktor.ext.get
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 import kotlin.system.exitProcess
@@ -31,10 +30,8 @@ fun Application.module() {
     val applicationState = ApplicationState()
     configureLifecycleHooks(applicationState)
     installPlugins()
-    val appConfig = AppConfig.fromConfig(environment.config)
-    installDependencyInjection(applicationState, appConfig)
-    val databaseInitializer by inject<Initializer>()
-    databaseInitializer.migrate()
-    startKafkaConsumers()
-    configureInternalApi()
+    installDependencyInjection()
+    get<Initializer>().migrate()
+    startKafkaConsumers(applicationState)
+    configureInternalApi(applicationState)
 }

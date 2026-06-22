@@ -14,13 +14,12 @@ import org.koin.ktor.ext.inject
 private const val POD_HEALTH_PATH = "/internal/health"
 const val POD_METRICS_PATH = "/internal/metrics"
 
-fun Application.configureInternalApi() {
-    val applicationState by inject<ApplicationState>()
+fun Application.configureInternalApi(state: ApplicationState) {
     val databaseHealthIndicator by inject<HealthIndicator>()
     val meterRegistry by inject<PrometheusMeterRegistry>()
 
     routing {
-        registerPodApi(applicationState, databaseHealthIndicator)
+        registerPodApi(state, databaseHealthIndicator)
         registerMetricApi(meterRegistry)
     }
 }

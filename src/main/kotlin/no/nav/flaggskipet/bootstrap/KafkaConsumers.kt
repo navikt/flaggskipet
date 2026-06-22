@@ -7,17 +7,17 @@ import no.nav.flaggskipet.infrastructure.kafka.core.ConsumerRunner
 import org.koin.ktor.ext.inject
 import java.time.Duration
 
-internal fun Application.startKafkaConsumers() {
+internal fun Application.startKafkaConsumers(state: ApplicationState) {
     val runners by inject<List<ConsumerRunner<*, *>>>()
-    val applicationState by inject<ApplicationState>()
 
     runners.forEach { runner ->
         runner.start { error ->
             // Transient failures are retried internally; this only fires on unrecoverable errors
             // (bad credentials/config). Fail the liveness probe so the platform restarts the pod,
             // since restarting the consumer in-process would just keep hitting the same fault.
+            if (!state.alive) return@start
             log.error("Kafka consumer hit a fatal error, marking application as not alive", error)
-            applicationState.alive = false
+            state.alive = false
         }
     }
 
