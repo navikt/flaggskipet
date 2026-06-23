@@ -12,6 +12,7 @@ FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED = "true"
 FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC = "teamsykmelding.syfo-sendt-sykmelding"
 FLAGGSKIPET_KAFKA_SYKMELDING_GROUP_ID = "flaggskipet-sykmelding-v1"
 FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET = "earliest"
+EREG_API_URL = "https://ereg-services.dev.intern.nav.no"
 
 # App lifecycle
 [tasks.go]

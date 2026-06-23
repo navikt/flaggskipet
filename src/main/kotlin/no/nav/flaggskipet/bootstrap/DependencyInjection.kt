@@ -1,11 +1,14 @@
 package no.nav.flaggskipet.bootstrap
 
 import com.zaxxer.hikari.HikariDataSource
+import io.ktor.client.HttpClient
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
+import no.nav.flaggskipet.infrastructure.clients.ereg.toEregConfig
 import no.nav.flaggskipet.infrastructure.db.core.databaseModule
 import no.nav.flaggskipet.infrastructure.db.core.toDatabaseConfig
 import no.nav.flaggskipet.infrastructure.kafka.core.kafkaModule
@@ -23,11 +26,13 @@ internal fun Application.installDependencyInjection() {
                 single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
             },
             databaseModule(environment.config.toDatabaseConfig()),
+            eregModule(environment.config.toEregConfig()),
             kafkaModule(environment.config.toKafkaConfig()),
         )
     }
 
     monitor.subscribe(ApplicationStopped) {
         get<HikariDataSource>().close()
+        get<HttpClient>().close()
     }
 }
