@@ -32,7 +32,7 @@ Lokal oppstart:
 
 Mise-kommandoer for infrastruktur:
 
-- `mise run infra` — starter Docker Compose i bakgrunnen.
+- `mise run infra` — starter Docker Compose i bakgrunnen og oppretter lokal Kafka-topic for sykmelding hvis den mangler.
 - `mise run infra:down` — stopper infrastruktur.
 - `mise run infra:clean` — stopper og sletter volumer (ren lokal database).
 - `mise tasks` — viser tilgjengelige kommandoer.
@@ -44,8 +44,16 @@ Lokal Kafka-kontrakt settes også av `mise.toml`:
 | Variabel | Verdi | Kommentar |
 | --- | --- | --- |
 | `FLAGGSKIPET_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Lokal Kafka via Docker Compose |
-| `FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC` | `teamsykmelding.syfo-sendt-sykmelding` | Topic for sykmelding-consumer |
+| `FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED` | `true` | Setter om sykmelding-consumeren skal starte lokalt og i NAIS. |
+| `FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC` | `teamsykmelding.syfo-sendt-sykmelding` | Topic for sykmelding-consumer. Opprettes automatisk av `mise run infra` lokalt. |
 | `FLAGGSKIPET_KAFKA_SYKMELDING_GROUP_ID` | `flaggskipet-sykmelding-v1` | Stabil consumer group-id for sykmelding-consumer |
 | `FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET` | `earliest` | Lokal standard for sykmelding-consumer |
 
 I NAIS settes `KAFKA_BROKERS`, `KAFKA_TRUSTSTORE_PATH`, `KAFKA_KEYSTORE_PATH` og `KAFKA_CREDSTORE_PASSWORD` automatisk når `kafka.pool` er aktivert. `mise run infra` starter alltid PostgreSQL fra `docker-compose.yaml` og Kafka fra `docker-compose.kafka.yaml`.
+
+For å sende syntetiske sykmelding-meldinger lokalt:
+
+- `mise run kafka:sykmelding` — sender en gyldig melding
+- `mise run kafka:sykmelding valid` — sender en gyldig melding
+- `mise run kafka:sykmelding invalid` — sender en permanent ugyldig melding
+- `mise run kafka:sykmelding tombstone` — sender tombstone/null-payload

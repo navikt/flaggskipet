@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.kafka
+package no.nav.flaggskipet.infrastructure.kafka.core
 
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -6,7 +6,7 @@ import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.serialization.Deserializer
 import java.util.Properties
 
-class KafkaPropertiesFactory(
+class PropertiesFactory(
     private val kafkaConfig: KafkaConfig,
 ) {
     fun consumer(
@@ -29,8 +29,9 @@ class KafkaPropertiesFactory(
         put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.bootstrapServers)
 
         when (val security = kafkaConfig.security) {
-            KafkaSecurityConfig.Plaintext -> put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "PLAINTEXT")
-            is KafkaSecurityConfig.Ssl -> {
+            SecurityConfig.Plaintext -> put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "PLAINTEXT")
+
+            is SecurityConfig.Ssl -> {
                 put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL")
                 put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12")
                 put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, security.truststorePath)

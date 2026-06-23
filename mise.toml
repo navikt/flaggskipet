@@ -8,6 +8,7 @@ FLAGGSKIPET_DB_DATABASE = "flaggskipet"
 FLAGGSKIPET_DB_USERNAME = "flaggskipet"
 FLAGGSKIPET_DB_PASSWORD = "dummy-password"
 FLAGGSKIPET_KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED = "true"
 FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC = "teamsykmelding.syfo-sendt-sykmelding"
 FLAGGSKIPET_KAFKA_SYKMELDING_GROUP_ID = "flaggskipet-sykmelding-v1"
 FLAGGSKIPET_KAFKA_SYKMELDING_AUTO_OFFSET_RESET = "earliest"
@@ -31,6 +32,7 @@ run = './gradlew build'
 
 [tasks.test]
 description = "Run tests with gradle"
+depends = ["infra"]
 run = './gradlew test'
 
 [tasks.lint]
@@ -44,7 +46,25 @@ run = './gradlew ktlintFormat'
 # Local infrastructure
 [tasks.infra]
 description = "Start local infrastructure"
-run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml up -d'
+run = '''
+docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml up -d
+
+until docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml exec -T kafka \
+  /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:19092 \
+  --list >/dev/null 2>&1; do
+  sleep 1
+done
+
+docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml exec -T kafka \
+  /opt/kafka/bin/kafka-topics.sh \
+  --create \
+  --if-not-exists \
+  --topic "${FLAGGSKIPET_KAFKA_SYKMELDING_TOPIC}" \
+  --partitions 1 \
+  --replication-factor 1 \
+  --bootstrap-server localhost:19092
+'''
 
 [tasks."infra:down"]
 description = "Stop local infrastructure"
@@ -55,14 +75,15 @@ description = "Remove local infrastructure including volumes"
 run = 'docker-compose -f docker-compose.yaml -f docker-compose.kafka.yaml down --volumes'
 
 # Local kafka dev tools
-[tasks."kafka:hello-world"]
-description = "Send a hello-world message to local Kafka"
-usage = 'arg "[count]"'
+# Variants: valid (default), invalid, tombstone
+[tasks."kafka:sykmelding"]
+description = "Send a sykmelding message to local Kafka with a given variant (default), invalid, tombstone"
+usage = 'arg "[variant]"'
 run = '''
-if [ -z "${usage_count:-}" ]; then
-  ./gradlew :devtools:runKafkaHelloWorld
+if [ -z "${usage_variant:-}" ]; then
+  ./gradlew :devtools:runKafkaSykmeldingProducer
 else
-  ./gradlew :devtools:runKafkaHelloWorld --args="${usage_count}"
+  ./gradlew :devtools:runKafkaSykmeldingProducer --args="${usage_variant}"
 fi
 '''
 

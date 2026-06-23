@@ -8,26 +8,26 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.flaggskipet.bootstrap.ApplicationState
-import no.nav.flaggskipet.infrastructure.db.DatabaseHealthIndicator
+import no.nav.flaggskipet.infrastructure.db.core.isHealthy
 import org.koin.ktor.ext.inject
+import javax.sql.DataSource
 
 private const val POD_HEALTH_PATH = "/internal/health"
 const val POD_METRICS_PATH = "/internal/metrics"
 
-fun Application.configureInternalApi() {
-    val applicationState by inject<ApplicationState>()
-    val databaseHealthIndicator by inject<DatabaseHealthIndicator>()
+fun Application.configureInternalApi(state: ApplicationState) {
+    val dataSource by inject<DataSource>()
     val meterRegistry by inject<PrometheusMeterRegistry>()
 
     routing {
-        registerPodApi(applicationState, databaseHealthIndicator)
+        registerPodApi(state, dataSource)
         registerMetricApi(meterRegistry)
     }
 }
 
 fun Routing.registerPodApi(
     applicationState: ApplicationState,
-    databaseHealthIndicator: DatabaseHealthIndicator,
+    dataSource: DataSource,
 ) {
     get("$POD_HEALTH_PATH/is_alive") {
         if (applicationState.alive) {
@@ -37,7 +37,7 @@ fun Routing.registerPodApi(
         }
     }
     get("$POD_HEALTH_PATH/is_ready") {
-        if (isReady(applicationState, databaseHealthIndicator)) {
+        if (isReady(applicationState, dataSource)) {
             call.respondText("I'm ready! :)")
         } else {
             call.respondText("Please wait! I'm not ready :(", status = HttpStatusCode.InternalServerError)
@@ -47,8 +47,8 @@ fun Routing.registerPodApi(
 
 private fun isReady(
     applicationState: ApplicationState,
-    databaseHealthIndicator: DatabaseHealthIndicator,
-): Boolean = applicationState.ready && databaseHealthIndicator.isHealthy()
+    dataSource: DataSource,
+) = applicationState.ready && dataSource.isHealthy()
 
 fun Routing.registerMetricApi(meterRegistry: PrometheusMeterRegistry) {
     get(POD_METRICS_PATH) {
