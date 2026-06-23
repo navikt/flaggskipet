@@ -7,6 +7,7 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import no.nav.flaggskipet.infrastructure.clients.ereg.eregHttpClientQualifier
 import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
 import no.nav.flaggskipet.infrastructure.clients.ereg.toEregConfig
 import no.nav.flaggskipet.infrastructure.db.core.databaseModule
@@ -33,6 +34,6 @@ internal fun Application.installDependencyInjection() {
 
     monitor.subscribe(ApplicationStopped) {
         get<HikariDataSource>().close()
-        get<HttpClient>().close()
+        get<HttpClient>(eregHttpClientQualifier).close()
     }
 }

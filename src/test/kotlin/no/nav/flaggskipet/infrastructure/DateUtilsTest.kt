@@ -1,11 +1,10 @@
-package no.nav.flaggskipet.infrastructure.clients.ereg
+package no.nav.flaggskipet.infrastructure
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import no.nav.flaggskipet.infrastructure.dagensDato
 import kotlin.time.Instant
 
-class EregDateUtilsTest :
+class DateUtilsTest :
     FunSpec({
         test("dagensDatoOslo uses Europe Oslo date") {
             dagensDato(Instant.parse("2026-06-23T22:30:00Z")) shouldBe "2026-06-24"

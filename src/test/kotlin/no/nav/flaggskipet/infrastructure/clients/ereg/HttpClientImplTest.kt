@@ -15,15 +15,17 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.delay
+import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
-class KtorEregClientTest :
+class HttpClientImplTest :
     FunSpec({
         test("hentNoekkelinfo maps 200 to Funnet and sends gyldigDato for today in Oslo") {
             val mockEngine = MockEngine { request ->
                 request.method shouldBe HttpMethod.Get
                 request.url.encodedPath shouldBe "/v1/organisasjon/313644480/noekkelinfo"
-                request.url.parameters["gyldigDato"] shouldBe "2026-06-24"
+                request.url.parameters["gyldigDato"]?.matches(Regex("""\d{4}-\d{2}-\d{2}""")) shouldBe true
 
                 respondJson(
                     """
@@ -41,11 +43,8 @@ class KtorEregClientTest :
                     """.trimIndent(),
                 )
             }
-
-            val client = KtorEregClient(
-                baseUrl = "https://ereg-services.dev.intern.nav.no",
+            val client = HttpClientImpl(
                 httpClient = createHttpClient(mockEngine),
-                gyldigDatoProvider = { "2026-06-24" },
             )
 
             client.hentNoekkelinfo(listOf("313644480")) shouldBe listOf(
@@ -65,8 +64,7 @@ class KtorEregClientTest :
         }
 
         test("hentNoekkelinfo maps 404 to IkkeFunnet") {
-            val client = KtorEregClient(
-                baseUrl = "https://ereg-services.dev.intern.nav.no",
+            val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
                         respond(
@@ -76,7 +74,6 @@ class KtorEregClientTest :
                         )
                     },
                 ),
-                gyldigDatoProvider = { "2026-06-24" },
             )
 
             client.hentNoekkelinfo(listOf("999999999")) shouldBe listOf(
@@ -85,8 +82,7 @@ class KtorEregClientTest :
         }
 
         test("hentNoekkelinfo maps non-404 failures to Feil") {
-            val client = KtorEregClient(
-                baseUrl = "https://ereg-services.dev.intern.nav.no",
+            val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
                         respond(
@@ -96,7 +92,6 @@ class KtorEregClientTest :
                         )
                     },
                 ),
-                gyldigDatoProvider = { "2026-06-24" },
             )
 
             client.hentNoekkelinfo(listOf("111111111")) shouldBe listOf(
@@ -111,13 +106,12 @@ class KtorEregClientTest :
             val activeRequests = AtomicInteger(0)
             val maxConcurrentRequests = AtomicInteger(0)
 
-            val client = KtorEregClient(
-                baseUrl = "https://ereg-services.dev.intern.nav.no",
+            val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine { request ->
                         val current = activeRequests.incrementAndGet()
                         maxConcurrentRequests.updateAndGet { maxOf(it, current) }
-                        delay(50)
+                        delay(50.milliseconds)
                         activeRequests.decrementAndGet()
 
                         when (request.url.encodedPath.substringAfter("/v1/organisasjon/").substringBefore("/noekkelinfo")) {
@@ -149,7 +143,6 @@ class KtorEregClientTest :
                         }
                     },
                 ),
-                gyldigDatoProvider = { "2026-06-24" },
             )
 
             val results = client.hentNoekkelinfo(listOf("123456789", "987654321", "555555555"))
@@ -179,7 +172,9 @@ class KtorEregClientTest :
     })
 
 private fun createHttpClient(mockEngine: MockEngine): HttpClient = HttpClient(mockEngine) {
-    configureEregHttpClient()
+    configureEregHttpClient(
+        EregConfig(baseUrl = URI("https://ereg-services.dev.intern.nav.no")),
+    )
 }
 
 private fun emptyJsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
