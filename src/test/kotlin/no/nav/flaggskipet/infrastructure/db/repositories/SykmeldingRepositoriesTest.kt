@@ -4,9 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
-import java.time.OffsetDateTime
 import kotlin.time.Instant
-import kotlin.time.toKotlinInstant
 
 class SykmeldingRepositoriesTest :
     FunSpec({
@@ -40,31 +38,3 @@ class SykmeldingRepositoriesTest :
             }
         }
     })
-
-private data class HendelseRow(
-    val sykmeldingId: String,
-    val fnr: String,
-    val organisasjonsnummer: String?,
-    val eventTimestamp: Instant?,
-)
-
-private fun com.zaxxer.hikari.HikariDataSource.querySingleHendelse(): HendelseRow = connection.use { connection ->
-    connection.prepareStatement(
-        """
-        SELECT sykmelding_id, fnr, organisasjonsnummer, periode_fom, periode_tom, event_timestamp
-        FROM sykmelding_hendelse
-        """.trimIndent(),
-    ).use { statement ->
-        statement.executeQuery().use { resultSet ->
-            resultSet.next()
-            HendelseRow(
-                sykmeldingId = resultSet.getString("sykmelding_id"),
-                fnr = resultSet.getString("fnr"),
-                organisasjonsnummer = resultSet.getString("organisasjonsnummer"),
-                eventTimestamp = resultSet.getObject("event_timestamp", OffsetDateTime::class.java)
-                    ?.toInstant()
-                    ?.toKotlinInstant(),
-            )
-        }
-    }
-}
