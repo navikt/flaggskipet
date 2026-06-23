@@ -74,15 +74,14 @@ private data class EregNoekkelinfoResponse(
     )
 }
 
-private fun EregNoekkelinfoResponse.toOrganisasjon() =
-    Organisasjon(
-        adresse = adresse?.let {
-            Adresse(
-                type = it.type,
-                adresselinje1 = it.adresselinje1,
-                postnummer = it.postnummer,
-                landkode = it.landkode,
-                kommunenummer = it.kommunenummer,
-            )
-        },
-    )
+private fun EregNoekkelinfoResponse.toOrganisasjon() = Organisasjon(
+    adresse = adresse?.let {
+        Adresse(
+            type = it.type,
+            adresselinje1 = it.adresselinje1,
+            postnummer = it.postnummer,
+            landkode = it.landkode,
+            kommunenummer = it.kommunenummer,
+        )
+    },
+)

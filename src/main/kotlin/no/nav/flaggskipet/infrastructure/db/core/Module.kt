@@ -13,12 +13,15 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 import org.slf4j.LoggerFactory
 import java.sql.SQLException
 import javax.sql.DataSource
 
-fun databaseModule(consumerConfig: DatabaseConfig): Module = module {
-    single<HikariDataSource> { createDataSource(consumerConfig) }
+fun databaseModule(): Module = module {
+    single<HikariDataSource> { createDataSource(get()) } onClose {
+        it?.close()
+    }
     single<DataSource> { get<HikariDataSource>() }
     single { Database.connect(get<DataSource>()) }
     single<SykmeldingHendelseRepository> { SykmeldingHendelseRepositoryImpl(get()) }
@@ -29,12 +32,12 @@ suspend fun <T> Database.transact(block: () -> T): T = withContext(Dispatchers.I
     transaction(this@transact) { block() }
 }
 
-fun createDataSource(consumerConfig: DatabaseConfig): HikariDataSource = HikariDataSource(
+fun createDataSource(databaseConfig: DatabaseConfig): HikariDataSource = HikariDataSource(
     HikariConfig().apply {
         driverClassName = "org.postgresql.Driver"
-        jdbcUrl = consumerConfig.jdbcUrl
-        username = consumerConfig.username
-        password = consumerConfig.password
+        jdbcUrl = databaseConfig.jdbcUrl
+        username = databaseConfig.username
+        password = databaseConfig.password
         maximumPoolSize = 3
         minimumIdle = 1
         connectionTimeout = 10_000

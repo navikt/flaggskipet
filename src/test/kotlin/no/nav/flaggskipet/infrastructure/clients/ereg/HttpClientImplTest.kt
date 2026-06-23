@@ -12,6 +12,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.delay
@@ -24,6 +25,8 @@ class HttpClientImplTest :
         test("hentNoekkelinfo maps 200 to Funnet and sends gyldigDato for today in Oslo") {
             val mockEngine = MockEngine { request ->
                 request.method shouldBe HttpMethod.Get
+                request.url.protocol shouldBe URLProtocol.HTTPS
+                request.url.host shouldBe "ereg-services.dev.intern.nav.no"
                 request.url.encodedPath shouldBe "/v1/organisasjon/313644480/noekkelinfo"
                 request.url.parameters["gyldigDato"]?.matches(Regex("""\d{4}-\d{2}-\d{2}""")) shouldBe true
 
