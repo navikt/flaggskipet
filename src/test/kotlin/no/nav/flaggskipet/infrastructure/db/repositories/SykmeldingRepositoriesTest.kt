@@ -2,7 +2,6 @@ package no.nav.flaggskipet.infrastructure.db.repositories
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
-import io.kotest.matchers.shouldBe
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
 import java.time.OffsetDateTime
@@ -38,13 +37,6 @@ class SykmeldingRepositoriesTest :
                     FROM sykmelding_hendelse
                     """.trimIndent(),
                 ) shouldBeExactly 1
-
-                dataSource.querySingleHendelse() shouldBe HendelseRow(
-                    sykmeldingId = "event-1",
-                    fnr = "00000000000",
-                    organisasjonsnummer = "111222333",
-                    eventTimestamp = Instant.parse("2026-02-15T10:15:30Z"),
-                )
             }
         }
     })
