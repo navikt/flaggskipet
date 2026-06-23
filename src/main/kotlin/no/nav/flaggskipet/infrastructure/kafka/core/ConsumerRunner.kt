@@ -162,6 +162,9 @@ class ConsumerRunner<K, V>(
         repeat(maxAttempts) { attempt ->
             try {
                 handler.handle(record)
+                // TODO metrics on poison pill
+                // TODO no retry when Serialization exception
+                // TODO should consumer give up after five serialization exceptions without killing the whole app?
                 return
             } catch (error: Exception) {
                 onHandleError(record, error, attempt, maxAttempts)
