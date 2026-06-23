@@ -48,9 +48,15 @@ spec:
     enabled: true
   kafka:
     pool: nav-dev
+  accessPolicy:
+    outbound:
+      external:
+        - host: ereg-services.dev.intern.nav.no
   env:
     - name: FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED
       value: "false"
+    - name: EREG_API_URL
+      value: "https://ereg-services.dev.intern.nav.no"
   leaderElection: true
   gcp:
     sqlInstances:
