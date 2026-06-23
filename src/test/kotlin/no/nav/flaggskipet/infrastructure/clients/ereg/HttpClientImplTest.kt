@@ -57,7 +57,7 @@ class HttpClientImplTest :
                 EregResult.Funnet(
                     organisasjonsnummer = "313644480",
                     organisasjon = Organisasjon(
-                        adresse = Adresse(
+                        adresse = Organisasjon.Adresse(
                             type = "Forretningsadresse",
                             adresselinje1 = "Ottars veg 8 A",
                             postnummer = "9012",
@@ -158,7 +158,7 @@ class HttpClientImplTest :
                 EregResult.Funnet(
                     organisasjonsnummer = "123456789",
                     organisasjon = Organisasjon(
-                        adresse = Adresse(
+                        adresse = Organisasjon.Adresse(
                             type = "Forretningsadresse",
                             adresselinje1 = "Storgata 1",
                             postnummer = "0001",

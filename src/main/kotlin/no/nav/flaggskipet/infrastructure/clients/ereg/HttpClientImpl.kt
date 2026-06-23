@@ -76,7 +76,7 @@ private data class EregNoekkelinfoResponse(
 
 private fun EregNoekkelinfoResponse.toOrganisasjon() = Organisasjon(
     adresse = adresse?.let {
-        Adresse(
+        Organisasjon.Adresse(
             type = it.type,
             adresselinje1 = it.adresselinje1,
             postnummer = it.postnummer,

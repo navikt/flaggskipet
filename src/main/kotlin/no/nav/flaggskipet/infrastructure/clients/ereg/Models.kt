@@ -22,12 +22,12 @@ sealed interface EregResult {
 
 data class Organisasjon(
     val adresse: Adresse?,
-)
-
-data class Adresse(
-    val type: String?,
-    val adresselinje1: String?,
-    val postnummer: String?,
-    val landkode: String?,
-    val kommunenummer: String?,
-)
+) {
+    data class Adresse(
+        val type: String?,
+        val adresselinje1: String?,
+        val postnummer: String?,
+        val landkode: String?,
+        val kommunenummer: String?,
+    )
+}
