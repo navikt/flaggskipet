@@ -2,8 +2,6 @@ CREATE TABLE sykmelding_hendelse (
     sykmelding_id TEXT PRIMARY KEY,
     fnr TEXT NOT NULL,
     organisasjonsnummer TEXT NULL,
-    periode_fom DATE NULL,
-    periode_tom DATE NULL,
     event_timestamp TIMESTAMPTZ NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
