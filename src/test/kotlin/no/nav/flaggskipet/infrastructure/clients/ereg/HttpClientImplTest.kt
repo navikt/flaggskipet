@@ -8,15 +8,18 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.headersOf
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.delay
-import java.net.URI
+import kotlinx.serialization.json.Json
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -175,9 +178,19 @@ class HttpClientImplTest :
     })
 
 private fun createHttpClient(mockEngine: MockEngine): HttpClient = HttpClient(mockEngine) {
-    configureEregHttpClient(
-        EregConfig(baseUrl = URI("https://ereg-services.dev.intern.nav.no")),
-    )
+    expectSuccess = false
+    defaultRequest {
+        url("https://ereg-services.dev.intern.nav.no")
+    }
+
+    install(ContentNegotiation) {
+        json(
+            Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+            },
+        )
+    }
 }
 
 private fun emptyJsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())

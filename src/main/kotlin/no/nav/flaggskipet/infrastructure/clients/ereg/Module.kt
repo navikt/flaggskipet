@@ -38,10 +38,6 @@ fun ApplicationConfig.toEregConfig(): EregConfig {
 }
 
 internal fun createEregHttpClient(config: EregConfig): HttpClient = HttpClient(CIO) {
-    configureEregHttpClient(config)
-}
-
-internal fun io.ktor.client.HttpClientConfig<*>.configureEregHttpClient(config: EregConfig) {
     expectSuccess = false
     defaultRequest {
         url(config.baseUrl.toString())
