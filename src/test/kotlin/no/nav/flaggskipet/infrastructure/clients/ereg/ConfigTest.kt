@@ -23,12 +23,6 @@ class ConfigTest :
                 MapApplicationConfig().toEregConfig()
             }.message shouldBe "Invalid ereg configuration: ereg.baseUrl must be set"
         }
-
-        test("toEregConfig rejects invalid or relative base url") {
-            shouldThrow<IllegalStateException> {
-                config(baseUrl = "not-a-url").toEregConfig()
-            }.message shouldBe "Invalid ereg configuration: ereg.baseUrl must be a valid URL"
-        }
     })
 
 private fun config(baseUrl: String = "https://ereg-services.dev.intern.nav.no"): MapApplicationConfig = MapApplicationConfig(

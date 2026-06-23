@@ -13,7 +13,6 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.dsl.onClose
 import java.net.URI
-import java.net.URISyntaxException
 
 internal val eregHttpClientQualifier = named("eregHttpClient")
 
@@ -35,17 +34,7 @@ fun ApplicationConfig.toEregConfig(): EregConfig {
         "Invalid ereg configuration: ereg.baseUrl must be set"
     }
 
-    val uri = try {
-        URI(baseUrl)
-    } catch (_: URISyntaxException) {
-        null
-    }
-
-    check(uri?.scheme?.isNotBlank() == true && uri.host?.isNotBlank() == true) {
-        "Invalid ereg configuration: ereg.baseUrl must be a valid URL"
-    }
-
-    return EregConfig(uri)
+    return EregConfig(URI(baseUrl))
 }
 
 internal fun createEregHttpClient(config: EregConfig): HttpClient = HttpClient(CIO) {
