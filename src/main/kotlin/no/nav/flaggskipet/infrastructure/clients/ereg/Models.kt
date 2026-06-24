@@ -21,13 +21,15 @@ sealed interface EregResult {
 }
 
 data class Organisasjon(
-    val adresse: Adresse?,
+    val adresse: Adresse,
 ) {
     data class Adresse(
-        val type: String?,
-        val adresselinje1: String?,
-        val postnummer: String?,
-        val landkode: String?,
-        val kommunenummer: String?,
-    )
+        val type: String,
+        val adresselinje1: String,
+        val postnummer: String,
+        val landkode: String,
+        val kommunenummer: String,
+    ) {
+        fun fylke(): String = kommunenummer.take(2)
+    }
 }

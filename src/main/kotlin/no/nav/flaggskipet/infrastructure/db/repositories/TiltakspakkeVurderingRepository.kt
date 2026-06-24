@@ -1,6 +1,7 @@
 package no.nav.flaggskipet.infrastructure.db.repositories
 
 import kotlinx.datetime.LocalDate
+import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.infrastructure.dagensDato
 import no.nav.flaggskipet.infrastructure.db.core.transact
 import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeDeltakelseTable
@@ -24,12 +25,6 @@ data class VirksomhetDeltakelse(
     val deltakelse: Deltakelse,
 )
 
-enum class Deltakelse {
-    DELTAR,
-    DELTAR_IKKE,
-    UTENFOR_SCOPE,
-}
-
 interface TiltakspakkeVurderingRepository {
     suspend fun hentVurderinger(orgnumre: Collection<String>): List<TiltakspakkeVurdering>
 }
@@ -37,35 +32,33 @@ interface TiltakspakkeVurderingRepository {
 class TiltakspakkeVurderingRepositoryImpl(
     private val database: Database,
 ) : TiltakspakkeVurderingRepository {
-    override suspend fun hentVurderinger(orgnumre: Collection<String>): List<TiltakspakkeVurdering> {
-        return database.transact {
-            val dagensDato = LocalDate.parse(dagensDato())
+    override suspend fun hentVurderinger(orgnumre: Collection<String>): List<TiltakspakkeVurdering> = database.transact {
+        val dagensDato = LocalDate.parse(dagensDato())
 
-            TiltakspakkeDeltakelseTable
-                .innerJoin(TiltakspakkeTable)
-                .selectAll()
-                .where {
-                    (TiltakspakkeDeltakelseTable.orgnummer inList orgnumre) and
-                        (
-                            TiltakspakkeTable.sluttDato.isNull() or
-                                (TiltakspakkeTable.sluttDato greaterEq dagensDato)
+        TiltakspakkeDeltakelseTable
+            .innerJoin(TiltakspakkeTable)
+            .selectAll()
+            .where {
+                (TiltakspakkeDeltakelseTable.orgnummer inList orgnumre) and
+                    (
+                        TiltakspakkeTable.sluttDato.isNull() or
+                            (TiltakspakkeTable.sluttDato greaterEq dagensDato)
                         )
-                }.map(ResultRow::toTiltakspakkeDeltakelseRow)
-                .groupBy(TiltakspakkeDeltakelseRow::tiltakspakkeId)
-                .toSortedMap()
-                .map { (tiltakspakkeId, rows) ->
-                    TiltakspakkeVurdering(
-                        id = tiltakspakkeId,
-                        virksomheter = rows
-                            .map { row ->
-                                VirksomhetDeltakelse(
-                                    orgnummer = row.orgnummer,
-                                    deltakelse = row.deltakelse,
-                                )
-                            },
-                    )
-                }
-        }
+            }.map(ResultRow::toTiltakspakkeDeltakelseRow)
+            .groupBy(TiltakspakkeDeltakelseRow::tiltakspakkeId)
+            .toSortedMap()
+            .map { (tiltakspakkeId, rows) ->
+                TiltakspakkeVurdering(
+                    id = tiltakspakkeId,
+                    virksomheter = rows
+                        .map { row ->
+                            VirksomhetDeltakelse(
+                                orgnummer = row.orgnummer,
+                                deltakelse = row.deltakelse,
+                            )
+                        },
+                )
+            }
     }
 }
 

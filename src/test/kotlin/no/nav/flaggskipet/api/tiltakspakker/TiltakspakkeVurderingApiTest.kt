@@ -9,14 +9,14 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.api.installPlugins
-import no.nav.flaggskipet.infrastructure.db.repositories.Deltakelse
+import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.VirksomhetDeltakelse

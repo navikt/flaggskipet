@@ -1,6 +1,6 @@
 package no.nav.flaggskipet.infrastructure.db.tables
 
-import no.nav.flaggskipet.infrastructure.db.repositories.Deltakelse
+import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.CurrentTimestamp
 import org.jetbrains.exposed.v1.datetime.timestamp

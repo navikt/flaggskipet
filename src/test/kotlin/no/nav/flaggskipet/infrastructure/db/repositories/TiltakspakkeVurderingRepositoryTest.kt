@@ -2,6 +2,7 @@ package no.nav.flaggskipet.infrastructure.db.repositories
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.infrastructure.dagensDato
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
 import java.time.LocalDate
