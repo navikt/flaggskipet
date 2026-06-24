@@ -15,7 +15,7 @@ flyway = "12.8.1"
 postgresql = "42.7.11"
 testcontainers = "1.21.4"
 commonsCompress = "1.28.0"
-coroutines = "1.10.2"
+coroutines = "1.11.0"
 kotlinx-datetime = "0.8.0"
 
 [plugins]
