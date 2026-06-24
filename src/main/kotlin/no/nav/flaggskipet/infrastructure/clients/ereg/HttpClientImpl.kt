@@ -62,20 +62,20 @@ internal class HttpClientImpl(
 
 @Serializable
 private data class EregNoekkelinfoResponse(
-    val adresse: Adresse? = null,
+    val adresse: Adresse = Adresse(),
 ) {
     @Serializable
     data class Adresse(
-        val type: String? = null,
-        val adresselinje1: String? = null,
-        val postnummer: String? = null,
-        val landkode: String? = null,
-        val kommunenummer: String? = null,
+        val type: String = "",
+        val adresselinje1: String = "",
+        val postnummer: String = "",
+        val landkode: String = "",
+        val kommunenummer: String = "",
     )
 }
 
 private fun EregNoekkelinfoResponse.toOrganisasjon() = Organisasjon(
-    adresse = adresse?.let {
+    adresse = adresse.let {
         Organisasjon.Adresse(
             type = it.type,
             adresselinje1 = it.adresselinje1,
