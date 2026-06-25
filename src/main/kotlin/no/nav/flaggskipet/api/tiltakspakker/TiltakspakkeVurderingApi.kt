@@ -10,6 +10,7 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.domain.vurdering.getGjeldendeTiltakspakker
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import org.koin.ktor.ext.inject
@@ -32,10 +33,14 @@ fun Routing.registerTiltakspakkeVurderingApi(repository: TiltakspakkeVurderingRe
 
         get("/{orgnummer}") {
             val orgnummer = requireOrgnummer(call.parameters["orgnummer"])
+            val gjeldendeTiltakspakkeIder = getGjeldendeTiltakspakker().map { it.tiltakspakke.id }
 
             call.respond(
                 TiltakspakkeVurderingResponse(
-                    tiltakspakker = repository.hentVurderinger(listOf(orgnummer)).toResponse(),
+                    tiltakspakker = repository.hentVurderinger(
+                        orgnumre = listOf(orgnummer),
+                        tiltakspakkeIder = gjeldendeTiltakspakkeIder,
+                    ).toResponse(),
                 ),
             )
         }
@@ -43,10 +48,14 @@ fun Routing.registerTiltakspakkeVurderingApi(repository: TiltakspakkeVurderingRe
         post {
             val request = call.receive<TiltakspakkeVurderingRequest>()
             val orgnumre = request.validatedOrgnumre()
+            val gjeldendeTiltakspakkeIder = getGjeldendeTiltakspakker().map { it.tiltakspakke.id }
 
             call.respond(
                 TiltakspakkeVurderingResponse(
-                    tiltakspakker = repository.hentVurderinger(orgnumre).toResponse(),
+                    tiltakspakker = repository.hentVurderinger(
+                        orgnumre = orgnumre,
+                        tiltakspakkeIder = gjeldendeTiltakspakkeIder,
+                    ).toResponse(),
                 ),
             )
         }

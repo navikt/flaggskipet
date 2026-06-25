@@ -60,7 +60,12 @@ class TiltakspakkeVurderingApiTest :
                             ),
                         ),
                     )
-                repository.requests shouldBe listOf(listOf("123456789"))
+                repository.requests shouldBe listOf(
+                    FakeTiltakspakkeVurderingRepository.Request(
+                        orgnumre = listOf("123456789"),
+                        tiltakspakkeIder = listOf("TILTAKSPAKKE_EN"),
+                    ),
+                )
             }
         }
 
@@ -112,7 +117,12 @@ class TiltakspakkeVurderingApiTest :
                             ),
                         ),
                     )
-                repository.requests shouldBe listOf(listOf("123456789", "987654321"))
+                repository.requests shouldBe listOf(
+                    FakeTiltakspakkeVurderingRepository.Request(
+                        orgnumre = listOf("123456789", "987654321"),
+                        tiltakspakkeIder = listOf("TILTAKSPAKKE_EN"),
+                    ),
+                )
             }
         }
 
@@ -170,10 +180,21 @@ private fun Application.installTiltakspakkeApi(repository: TiltakspakkeVurdering
 private class FakeTiltakspakkeVurderingRepository(
     private val result: List<TiltakspakkeVurdering> = emptyList(),
 ) : TiltakspakkeVurderingRepository {
-    val requests = mutableListOf<List<String>>()
+    val requests = mutableListOf<Request>()
 
-    override suspend fun hentVurderinger(orgnumre: Collection<String>): List<TiltakspakkeVurdering> {
-        requests += orgnumre.toList()
+    override suspend fun hentVurderinger(
+        orgnumre: Collection<String>,
+        tiltakspakkeIder: Collection<String>,
+    ): List<TiltakspakkeVurdering> {
+        requests += Request(
+            orgnumre = orgnumre.toList(),
+            tiltakspakkeIder = tiltakspakkeIder.toList(),
+        )
         return result
     }
+
+    data class Request(
+        val orgnumre: List<String>,
+        val tiltakspakkeIder: List<String>,
+    )
 }
