@@ -8,6 +8,8 @@ import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.upsert
+import kotlin.time.Clock
 
 data class TiltakspakkeVurdering(
     val id: String,
@@ -19,11 +21,21 @@ data class VirksomhetDeltakelse(
     val deltakelse: Deltakelse,
 )
 
+data class NyTiltakspakkeVurdering(
+    val tiltakspakkeId: String,
+    val orgnummer: String,
+    val deltakelse: Deltakelse,
+)
+
 interface TiltakspakkeVurderingRepository {
     suspend fun hentVurderinger(
         orgnumre: Collection<String>,
         tiltakspakkeIder: Collection<String>,
     ): List<TiltakspakkeVurdering>
+
+    suspend fun lagreVurderinger(
+        vurderinger: Collection<NyTiltakspakkeVurdering>,
+    )
 }
 
 class TiltakspakkeVurderingRepositoryImpl(
@@ -57,6 +69,30 @@ class TiltakspakkeVurderingRepositoryImpl(
                             },
                     )
                 }
+        }
+    }
+
+    override suspend fun lagreVurderinger(
+        vurderinger: Collection<NyTiltakspakkeVurdering>,
+    ) {
+        if (vurderinger.isEmpty()) {
+            return
+        }
+
+        database.transact {
+            val now = Clock.System.now()
+
+            vurderinger.forEach { vurdering ->
+                TiltakspakkeDeltakelseTable.upsert(
+                    TiltakspakkeDeltakelseTable.tiltakspakkeId,
+                    TiltakspakkeDeltakelseTable.orgnummer,
+                ) {
+                    it[tiltakspakkeId] = vurdering.tiltakspakkeId
+                    it[orgnummer] = vurdering.orgnummer
+                    it[deltakelse] = vurdering.deltakelse
+                    it[updatedAt] = now
+                }
+            }
         }
     }
 }

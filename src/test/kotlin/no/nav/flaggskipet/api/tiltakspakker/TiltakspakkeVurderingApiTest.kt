@@ -17,6 +17,7 @@ import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
+import no.nav.flaggskipet.infrastructure.db.repositories.NyTiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.VirksomhetDeltakelse
@@ -192,6 +193,8 @@ private class FakeTiltakspakkeVurderingRepository(
         )
         return result
     }
+
+    override suspend fun lagreVurderinger(vurderinger: Collection<NyTiltakspakkeVurdering>) = Unit
 
     data class Request(
         val orgnumre: List<String>,
