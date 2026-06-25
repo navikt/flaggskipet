@@ -10,7 +10,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.andWhere
-import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
 
@@ -73,41 +73,34 @@ class TiltakspakkeVurderingRepositoryImpl(
     override suspend fun hentVurderinger(
         orgnumre: Collection<String>,
         tiltakspakkeIder: Collection<String>,
-    ): List<TiltakspakkeVurdering> {
-        if (orgnumre.isEmpty() || tiltakspakkeIder.isEmpty()) {
-            return emptyList()
-        }
-
-        return database.transact {
-            TiltakspakkeDeltakelseTable
-                .selectAll()
-                .where { TiltakspakkeDeltakelseTable.orgnummer inList orgnumre }
-                .andWhere { TiltakspakkeDeltakelseTable.tiltakspakkeId inList tiltakspakkeIder }
-                .map(ResultRow::toTiltakspakkeDeltakelseRow)
-                .groupBy(TiltakspakkeDeltakelseRow::tiltakspakkeId)
-                .toSortedMap()
-                .map { (tiltakspakkeId, rows) ->
-                    TiltakspakkeVurdering(
-                        id = tiltakspakkeId,
-                        virksomheter = rows
-                            .map { row ->
-                                VirksomhetDeltakelse(
-                                    orgnummer = row.orgnummer,
-                                    deltakelse = row.deltakelse,
-                                )
-                            },
-                    )
-                }
-        }
+    ): List<TiltakspakkeVurdering> = database.transact {
+        TiltakspakkeDeltakelseTable
+            .select(
+                TiltakspakkeDeltakelseTable.tiltakspakkeId,
+                TiltakspakkeDeltakelseTable.deltakelse,
+                TiltakspakkeDeltakelseTable.orgnummer,
+            )
+            .where { TiltakspakkeDeltakelseTable.orgnummer inList orgnumre }
+            .andWhere { TiltakspakkeDeltakelseTable.tiltakspakkeId inList tiltakspakkeIder }
+            .map(ResultRow::toTiltakspakkeDeltakelseRow)
+            .groupBy(TiltakspakkeDeltakelseRow::tiltakspakkeId)
+            .map { (tiltakspakkeId, rows) ->
+                TiltakspakkeVurdering(
+                    id = tiltakspakkeId,
+                    virksomheter = rows
+                        .map { row ->
+                            VirksomhetDeltakelse(
+                                orgnummer = row.orgnummer,
+                                deltakelse = row.deltakelse,
+                            )
+                        },
+                )
+            }
     }
 
     override suspend fun lagreVurderinger(
         vurderinger: Collection<NyTiltakspakkeVurdering>,
     ) {
-        if (vurderinger.isEmpty()) {
-            return
-        }
-
         database.transact {
             val now = Clock.System.now()
 
