@@ -1,16 +1,10 @@
 package no.nav.flaggskipet.infrastructure.db.repositories
 
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
-import no.nav.flaggskipet.infrastructure.dagensDato
 import no.nav.flaggskipet.infrastructure.db.core.transact
 import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeDeltakelseTable
-import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeTable
 import org.jetbrains.exposed.v1.core.ResultRow
-import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.inList
-import org.jetbrains.exposed.v1.core.isNull
-import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
 
@@ -32,18 +26,10 @@ class TiltakspakkeVurderingRepositoryImpl(
     private val database: Database,
 ) : TiltakspakkeVurderingRepository {
     override suspend fun hentVurderinger(orgnumre: Collection<String>): List<TiltakspakkeVurdering> = database.transact {
-        val dagensDato = dagensDato()
-
         TiltakspakkeDeltakelseTable
-            .innerJoin(TiltakspakkeTable)
             .selectAll()
-            .where {
-                (TiltakspakkeDeltakelseTable.orgnummer inList orgnumre) and
-                    (
-                        TiltakspakkeTable.sluttdato.isNull() or
-                            (TiltakspakkeTable.sluttdato greaterEq dagensDato)
-                        )
-            }.map(ResultRow::toTiltakspakkeDeltakelseRow)
+            .where { TiltakspakkeDeltakelseTable.orgnummer inList orgnumre }
+            .map(ResultRow::toTiltakspakkeDeltakelseRow)
             .groupBy(TiltakspakkeDeltakelseRow::tiltakspakkeId)
             .toSortedMap()
             .map { (tiltakspakkeId, rows) ->
@@ -68,7 +54,7 @@ private data class TiltakspakkeDeltakelseRow(
 )
 
 private fun ResultRow.toTiltakspakkeDeltakelseRow() = TiltakspakkeDeltakelseRow(
-    tiltakspakkeId = this[TiltakspakkeTable.id],
+    tiltakspakkeId = this[TiltakspakkeDeltakelseTable.tiltakspakkeId],
     orgnummer = this[TiltakspakkeDeltakelseTable.orgnummer],
     deltakelse = this[TiltakspakkeDeltakelseTable.deltakelse],
 )

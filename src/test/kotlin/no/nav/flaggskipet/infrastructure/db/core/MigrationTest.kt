@@ -36,6 +36,18 @@ class MigrationTest :
                                 statement
                                     .executeQuery(
                                         """
+                                        SELECT COUNT(*)
+                                        FROM information_schema.tables
+                                        WHERE table_name = 'tiltakspakke'
+                                        """.trimIndent(),
+                                    ).use { resultSet ->
+                                        resultSet.next().shouldBeTrue()
+                                        resultSet.getInt(1).shouldBeExactly(0)
+                                    }
+
+                                statement
+                                    .executeQuery(
+                                        """
                                         SELECT success
                                         FROM flyway_schema_history
                                         WHERE version = '1'

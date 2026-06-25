@@ -8,7 +8,7 @@ import org.jetbrains.exposed.v1.datetime.timestamp
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 object TiltakspakkeDeltakelseTable : Table("tiltakspakke_deltakelse") {
     val id = uuid("id")
-    val tiltakspakkeId = reference("tiltakspakke_id", TiltakspakkeTable.id)
+    val tiltakspakkeId = text("tiltakspakke_id")
     val orgnummer = text("orgnummer")
     val deltakelse = enumerationByName<Deltakelse>("deltakelse", 32)
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
