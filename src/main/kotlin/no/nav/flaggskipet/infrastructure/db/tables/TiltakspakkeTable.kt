@@ -9,7 +9,7 @@ object TiltakspakkeTable : Table("tiltakspakke") {
     val id = text("id")
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
     val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
-    val sluttDato = date("slutt_dato").nullable()
+    val sluttdato = date("slutt_dato").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

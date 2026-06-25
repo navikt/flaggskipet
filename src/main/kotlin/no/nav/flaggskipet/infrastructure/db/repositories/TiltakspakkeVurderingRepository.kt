@@ -1,6 +1,5 @@
 package no.nav.flaggskipet.infrastructure.db.repositories
 
-import kotlinx.datetime.LocalDate
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.infrastructure.dagensDato
 import no.nav.flaggskipet.infrastructure.db.core.transact
@@ -33,7 +32,7 @@ class TiltakspakkeVurderingRepositoryImpl(
     private val database: Database,
 ) : TiltakspakkeVurderingRepository {
     override suspend fun hentVurderinger(orgnumre: Collection<String>): List<TiltakspakkeVurdering> = database.transact {
-        val dagensDato = LocalDate.parse(dagensDato())
+        val dagensDato = dagensDato()
 
         TiltakspakkeDeltakelseTable
             .innerJoin(TiltakspakkeTable)
@@ -41,8 +40,8 @@ class TiltakspakkeVurderingRepositoryImpl(
             .where {
                 (TiltakspakkeDeltakelseTable.orgnummer inList orgnumre) and
                     (
-                        TiltakspakkeTable.sluttDato.isNull() or
-                            (TiltakspakkeTable.sluttDato greaterEq dagensDato)
+                        TiltakspakkeTable.sluttdato.isNull() or
+                            (TiltakspakkeTable.sluttdato greaterEq dagensDato)
                         )
             }.map(ResultRow::toTiltakspakkeDeltakelseRow)
             .groupBy(TiltakspakkeDeltakelseRow::tiltakspakkeId)

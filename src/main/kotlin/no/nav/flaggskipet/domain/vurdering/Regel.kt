@@ -1,15 +1,12 @@
 package no.nav.flaggskipet.domain.vurdering
 
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
-import kotlin.time.Clock
+import no.nav.flaggskipet.infrastructure.dagensDato
 
-data class Tiltakspakke(val id: String, val sluttDato: LocalDateTime? = null) {
-    fun gyldig() = sluttDato?.let {
-        it > Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-    } ?: true
+data class Tiltakspakke(val id: String, val sluttdato: LocalDate? = null) {
+    fun erGjeldene(now: LocalDate = dagensDato()) = sluttdato?.compareTo(now)?.let { it > 0 } ?: true
 }
 
 interface Regel {

@@ -7,17 +7,22 @@ object FylkeKode {
 
 class TiltakspakkeEnRegel(override val tiltakspakke: Tiltakspakke) : Regel {
 
-    private val fylkerSomErInScope = setOf(FylkeKode.TRONDHEIM, FylkeKode.TROMS)
+    private val fylkerIScopet = setOf(FylkeKode.TRONDHEIM, FylkeKode.TROMS)
 
-    override fun vurder(grunnlag: VurderingsGrunnlag): Deltakelse {
-        if (!fylkerSomErInScope.contains(grunnlag.virksomhet.adresse.fylke())) return Deltakelse.UTENFOR_SCOPE
+    override fun vurder(grunnlag: VurderingsGrunnlag): Deltakelse = when {
+        grunnlag.virksomhet.adresse.fylke() !in fylkerIScopet ->
+            Deltakelse.UTENFOR_SCOPE
 
-        return if (grunnlag.metadata.erSann(0.5)) {
+        grunnlag.metadata.erSann(0.5) ->
             Deltakelse.DELTAR
-        } else {
+
+        else ->
             Deltakelse.DELTAR_IKKE
-        }
     }
 }
 
-val gyldigePakker = listOf(TiltakspakkeEnRegel(Tiltakspakke("TILTAKSPAKKE_EN", null))).filter { it.tiltakspakke.gyldig() }
+fun getGjeldendeTiltakspakker(): List<Regel> {
+    return listOf(
+        TiltakspakkeEnRegel(Tiltakspakke("TILTAKSPAKKE_EN", null))
+    ).filter { it.tiltakspakke.erGjeldene() }
+}
