@@ -42,5 +42,4 @@ private class JsonbColumnType : ColumnType<JsonObject>() {
         type = "jsonb"
         this.value = json.encodeToString(JsonObject.serializer(), value)
     }
-
 }

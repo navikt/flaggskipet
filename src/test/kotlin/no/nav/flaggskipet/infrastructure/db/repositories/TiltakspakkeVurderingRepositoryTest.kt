@@ -22,9 +22,7 @@ class TiltakspakkeVurderingRepositoryTest :
                             deltakelse = Deltakelse.DELTAR,
                             vurderingsgrunnlag = AdresseVurderingsgrunnlagData(
                                 type = "forretningsadresse",
-                                adresselinje1 = "Storgata 1",
                                 postnummer = "0155",
-                                landkode = "NO",
                                 kommunenummer = "0301",
                             ),
                         ),
@@ -44,9 +42,7 @@ class TiltakspakkeVurderingRepositoryTest :
                             deltakelse = Deltakelse.DELTAR_IKKE,
                             vurderingsgrunnlag = AdresseVurderingsgrunnlagData(
                                 type = "forretningsadresse",
-                                adresselinje1 = "Karl Johans gate 1",
                                 postnummer = "0154",
-                                landkode = "NO",
                                 kommunenummer = "0301",
                             ),
                         ),
@@ -101,9 +97,7 @@ class TiltakspakkeVurderingRepositoryTest :
                                 Json.parseToJsonElement(resultSet.getString(1)) shouldBe
                                     AdresseVurderingsgrunnlagData(
                                         type = "forretningsadresse",
-                                        adresselinje1 = "Karl Johans gate 1",
                                         postnummer = "0154",
-                                        landkode = "NO",
                                         kommunenummer = "0301",
                                     ).toJsonObject()
                             }

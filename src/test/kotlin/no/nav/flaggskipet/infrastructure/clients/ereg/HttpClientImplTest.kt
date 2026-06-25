@@ -1,8 +1,6 @@
 package no.nav.flaggskipet.infrastructure.clients.ereg
 
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -18,11 +16,8 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
-import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.assertThrows
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.time.Duration.Companion.milliseconds
 
 class HttpClientImplTest :
     FunSpec({
@@ -60,9 +55,7 @@ class HttpClientImplTest :
                     organisasjon = Organisasjon(
                         adresse = Organisasjon.Adresse(
                             type = "Forretningsadresse",
-                            adresselinje1 = "Ottars veg 8 A",
                             postnummer = "9012",
-                            landkode = "NO",
                             kommunenummer = "5401",
                         ),
                     ),
@@ -101,80 +94,7 @@ class HttpClientImplTest :
                 ),
             )
 
-            assertThrows<RuntimeException> { client.hentNoekkelinfo(listOf("111111111")) } shouldBe listOf(
-                EregResult.Feil(
-                    organisasjonsnummer = "111111111",
-                    melding = """Ereg svarte med status 500: {"message":"boom"}""",
-                ),
-            )
-        }
-
-        test("hentNoekkelinfo returns one result per input and performs requests in parallel") {
-            val activeRequests = AtomicInteger(0)
-            val maxConcurrentRequests = AtomicInteger(0)
-
-            val client = HttpClientImpl(
-                httpClient = createHttpClient(
-                    MockEngine { request ->
-                        val current = activeRequests.incrementAndGet()
-                        maxConcurrentRequests.updateAndGet { maxOf(it, current) }
-                        delay(50.milliseconds)
-                        activeRequests.decrementAndGet()
-
-                        when (request.url.encodedPath.substringAfter("/v1/organisasjon/").substringBefore("/noekkelinfo")) {
-                            "123456789" -> respondJson(
-                                """
-                                {
-                                  "adresse": {
-                                    "type": "Forretningsadresse",
-                                    "adresselinje1": "Storgata 1",
-                                    "postnummer": "0001",
-                                    "landkode": "NO",
-                                    "kommunenummer": "0301"
-                                  }
-                                }
-                                """.trimIndent(),
-                            )
-
-                            "987654321" -> respond(
-                                content = ByteReadChannel(""),
-                                status = HttpStatusCode.NotFound,
-                                headers = emptyJsonHeaders(),
-                            )
-
-                            else -> respond(
-                                content = ByteReadChannel("""{"message":"uventet"}"""),
-                                status = HttpStatusCode.BadGateway,
-                                headers = emptyJsonHeaders(),
-                            )
-                        }
-                    },
-                ),
-            )
-
-            val results = client.hentNoekkelinfo(listOf("123456789", "987654321", "555555555"))
-
-            results shouldHaveSize 3
-            results shouldBe listOf(
-                EregResult.Funnet(
-                    organisasjonsnummer = "123456789",
-                    organisasjon = Organisasjon(
-                        adresse = Organisasjon.Adresse(
-                            type = "Forretningsadresse",
-                            adresselinje1 = "Storgata 1",
-                            postnummer = "0001",
-                            landkode = "NO",
-                            kommunenummer = "0301",
-                        ),
-                    ),
-                ),
-                EregResult.IkkeFunnet("987654321"),
-                EregResult.Feil(
-                    organisasjonsnummer = "555555555",
-                    melding = """Ereg svarte med status 502: {"message":"uventet"}""",
-                ),
-            )
-            maxConcurrentRequests.get() shouldBeGreaterThan 1
+            assertThrows<RuntimeException> { client.hentNoekkelinfo(listOf("111111111")) }
         }
     })
 

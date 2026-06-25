@@ -8,8 +8,8 @@ import no.nav.flaggskipet.infrastructure.db.core.transact
 import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeDeltakelseTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.inList
-import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
@@ -37,16 +37,12 @@ sealed interface VurderingsgrunnlagData {
 
 data class AdresseVurderingsgrunnlagData(
     val type: String,
-    val adresselinje1: String,
     val postnummer: String,
-    val landkode: String,
     val kommunenummer: String,
 ) : VurderingsgrunnlagData {
     override fun toJsonObject(): JsonObject = buildJsonObject {
         put("type", type)
-        put("adresselinje1", adresselinje1)
         put("postnummer", postnummer)
-        put("landkode", landkode)
         put("kommunenummer", kommunenummer)
     }
 }

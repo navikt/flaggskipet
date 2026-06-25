@@ -20,9 +20,7 @@ data class Organisasjon(
 ) {
     data class Adresse(
         val type: String,
-        val adresselinje1: String,
         val postnummer: String,
-        val landkode: String,
         val kommunenummer: String,
     ) {
         fun fylke(): String = kommunenummer.take(2)

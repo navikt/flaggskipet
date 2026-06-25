@@ -131,8 +131,6 @@ private fun vurderFunnetVirksomhet(
 
 private fun Organisasjon.Adresse.toVurderingsgrunnlagData() = AdresseVurderingsgrunnlagData(
     type = type,
-    adresselinje1 = adresselinje1,
     postnummer = postnummer,
-    landkode = landkode,
     kommunenummer = kommunenummer,
 )

@@ -58,9 +58,7 @@ private data class EregNoekkelinfoResponse(
     @Serializable
     data class Adresse(
         val type: String = "",
-        val adresselinje1: String = "",
         val postnummer: String = "",
-        val landkode: String = "",
         val kommunenummer: String = "",
     )
 }
@@ -69,9 +67,7 @@ private fun EregNoekkelinfoResponse.toOrganisasjon() = Organisasjon(
     adresse = adresse.let {
         Organisasjon.Adresse(
             type = it.type,
-            adresselinje1 = it.adresselinje1,
             postnummer = it.postnummer,
-            landkode = it.landkode,
             kommunenummer = it.kommunenummer,
         )
     },

@@ -18,7 +18,7 @@ internal fun Application.installDependencyInjection() {
             databaseModule(),
             eregModule(),
             kafkaModule(),
-            useCaseModule()
+            useCaseModule(),
         )
     }
 }

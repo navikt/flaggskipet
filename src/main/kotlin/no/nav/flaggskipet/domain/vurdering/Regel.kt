@@ -40,7 +40,6 @@ fun erSann(sannsynlighet: Double): Boolean {
     }
 
     return random.nextDouble() < sannsynlighet
-
 }
 
 data class VurderingsMetadata(
