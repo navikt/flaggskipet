@@ -11,15 +11,19 @@ import no.nav.flaggskipet.infrastructure.db.repositories.NyTiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.VirksomhetDeltakelse
+import org.slf4j.LoggerFactory
+import java.lang.invoke.MethodHandles
 import kotlin.random.Random
 import kotlin.time.Clock
 
+private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
+
 class VurderTiltakspakkerUseCase(
-    val eregClient: EregClient,
-    val tiltakspakkeVurderingRepository: TiltakspakkeVurderingRepository,
+    private val eregClient: EregClient,
+    private val tiltakspakkeVurderingRepository: TiltakspakkeVurderingRepository,
 ) {
     suspend fun execute(orgnumre: List<String>): List<TiltakspakkeVurdering> {
-        val gjeldeneTiltakspakker = getGjeldendeTiltakspakker()
+        val gjeldeneTiltakspakker = getGjeldendeTiltakspakker().also { logger.debug("Gjeldende tiltakspakker: {}", it) }
         if (gjeldeneTiltakspakker.isEmpty()) return emptyList()
         val eksisterendeVurderinger = tiltakspakkeVurderingRepository.hentVurderinger(
             orgnumre = orgnumre,

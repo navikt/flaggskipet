@@ -1,5 +1,6 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -10,54 +11,35 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.domain.vurdering.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.getGjeldendeTiltakspakker
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import org.koin.ktor.ext.inject
 
-private val orgnummerPattern = Regex("^\\d{9}$")
-
 fun Application.configureTiltakspakkeVurderingApi() {
-    val repository by inject<TiltakspakkeVurderingRepository>()
+    val vurderUseCase by inject<VurderTiltakspakkerUseCase>()
 
     routing {
-        registerTiltakspakkeVurderingApi(repository)
-    }
-}
+        route("/api/v1/tiltakspakker/vurdering") {
+            get {
+                throw ApiErrorException.BadRequest("Path parameter orgnummer is required")
+            }
 
-fun Routing.registerTiltakspakkeVurderingApi(repository: TiltakspakkeVurderingRepository) {
-    route("/api/v1/tiltakspakker/vurdering") {
-        get {
-            throw ApiErrorException.BadRequest("Path parameter orgnummer is required")
-        }
+            get("/{orgnummer}") {
+                val orgnummer = call.parameters["orgnummer"]
+                if (orgnummer.isNullOrBlank()) {
+                    call.respond(HttpStatusCode.NoContent)
+                    return@get
+                }
+                call.respond(vurderUseCase.execute(listOf(orgnummer)).toResponse())
+            }
 
-        get("/{orgnummer}") {
-            val orgnummer = requireOrgnummer(call.parameters["orgnummer"])
-            val gjeldendeTiltakspakkeIder = getGjeldendeTiltakspakker().map { it.tiltakspakke.id }
-
-            call.respond(
-                TiltakspakkeVurderingResponse(
-                    tiltakspakker = repository.hentVurderinger(
-                        orgnumre = listOf(orgnummer),
-                        tiltakspakkeIder = gjeldendeTiltakspakkeIder,
-                    ).toResponse(),
-                ),
-            )
-        }
-
-        post {
-            val request = call.receive<TiltakspakkeVurderingRequest>()
-            val orgnumre = request.validatedOrgnumre()
-            val gjeldendeTiltakspakkeIder = getGjeldendeTiltakspakker().map { it.tiltakspakke.id }
-
-            call.respond(
-                TiltakspakkeVurderingResponse(
-                    tiltakspakker = repository.hentVurderinger(
-                        orgnumre = orgnumre,
-                        tiltakspakkeIder = gjeldendeTiltakspakkeIder,
-                    ).toResponse(),
-                ),
-            )
+            post {
+                val request = call.receive<TiltakspakkeVurderingRequest>()
+                vurderUseCase.execute(request.orgnumre).toResponse()
+                call.respond(vurderUseCase.execute(request.orgnumre).toResponse())
+            }
         }
     }
 }
@@ -83,28 +65,6 @@ data class VirksomhetResponse(
     val orgnummer: String,
     val deltakelse: String,
 )
-
-private fun requireOrgnummer(orgnummer: String?): String {
-    if (orgnummer == null) {
-        throw ApiErrorException.BadRequest("Path parameter orgnummer is required")
-    }
-
-    if (!orgnummerPattern.matches(orgnummer)) {
-        throw ApiErrorException.BadRequest("orgnummer must be 9 digits")
-    }
-
-    return orgnummer
-}
-
-private fun TiltakspakkeVurderingRequest.validatedOrgnumre(): List<String> {
-    if (orgnumre.isEmpty()) {
-        throw ApiErrorException.BadRequest("orgnumre must contain at least one value")
-    }
-
-    return orgnumre
-        .distinct()
-        .onEach { requireOrgnummer(it) }
-}
 
 private fun List<TiltakspakkeVurdering>.toResponse(): List<TiltakspakkeResponse> = map { tiltakspakke ->
     TiltakspakkeResponse(
