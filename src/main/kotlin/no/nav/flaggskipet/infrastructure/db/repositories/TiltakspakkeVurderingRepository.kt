@@ -1,5 +1,8 @@
 package no.nav.flaggskipet.infrastructure.db.repositories
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.infrastructure.db.core.transact
 import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeDeltakelseTable
@@ -25,7 +28,37 @@ data class NyTiltakspakkeVurdering(
     val tiltakspakkeId: String,
     val orgnummer: String,
     val deltakelse: Deltakelse,
+    val vurderingsgrunnlag: VurderingsgrunnlagData,
 )
+
+sealed interface VurderingsgrunnlagData {
+    fun toJsonObject(): JsonObject
+}
+
+data class AdresseVurderingsgrunnlagData(
+    val type: String,
+    val adresselinje1: String,
+    val postnummer: String,
+    val landkode: String,
+    val kommunenummer: String,
+) : VurderingsgrunnlagData {
+    override fun toJsonObject(): JsonObject = buildJsonObject {
+        put("type", type)
+        put("adresselinje1", adresselinje1)
+        put("postnummer", postnummer)
+        put("landkode", landkode)
+        put("kommunenummer", kommunenummer)
+    }
+}
+
+data class EregIkkeFunnetVurderingsgrunnlagData(
+    val organisasjonsnummer: String,
+) : VurderingsgrunnlagData {
+    override fun toJsonObject(): JsonObject = buildJsonObject {
+        put("type", "EREG_IKKE_FUNNET")
+        put("organisasjonsnummer", organisasjonsnummer)
+    }
+}
 
 interface TiltakspakkeVurderingRepository {
     suspend fun hentVurderinger(
@@ -90,6 +123,7 @@ class TiltakspakkeVurderingRepositoryImpl(
                     it[tiltakspakkeId] = vurdering.tiltakspakkeId
                     it[orgnummer] = vurdering.orgnummer
                     it[deltakelse] = vurdering.deltakelse
+                    it[vurderingsgrunnlag] = vurdering.vurderingsgrunnlag.toJsonObject()
                     it[updatedAt] = now
                 }
             }

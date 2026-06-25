@@ -4,6 +4,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregResult
+import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
+import no.nav.flaggskipet.infrastructure.db.repositories.AdresseVurderingsgrunnlagData
+import no.nav.flaggskipet.infrastructure.db.repositories.EregIkkeFunnetVurderingsgrunnlagData
 import no.nav.flaggskipet.infrastructure.db.repositories.NyTiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
@@ -86,37 +89,56 @@ private fun vurder(
     regler: List<Regel>,
     noekkelinfo: List<EregResult>,
     metadata: VurderingsMetadata,
-): List<NyTiltakspakkeVurdering> = hentVirksomheterUnderVurdering(noekkelinfo)
-    .flatMap { virksomhet ->
-        regler.map { regel ->
-            NyTiltakspakkeVurdering(
-                tiltakspakkeId = regel.tiltakspakke.id,
-                orgnummer = virksomhet.orgnummer,
-                deltakelse = regel.vurder(
-                    VurderingsGrunnlag(
-                        virksomhet = virksomhet,
-                        metadata = metadata,
-                    ),
-                ),
-            )
-        }
-    }
-
-private fun hentVirksomheterUnderVurdering(
-    noekkelinfo: List<EregResult>,
-): List<VirksomhetUnderVurdering> = noekkelinfo.map { resultat ->
+): List<NyTiltakspakkeVurdering> = noekkelinfo.flatMap { resultat ->
     when (resultat) {
-        is EregResult.Funnet -> VirksomhetUnderVurdering(
-            orgnummer = resultat.organisasjonsnummer,
-            adresse = resultat.organisasjon.adresse,
+        is EregResult.Funnet -> vurderFunnetVirksomhet(
+            regler = regler,
+            resultat = resultat,
+            metadata = metadata,
         )
 
-        is EregResult.IkkeFunnet ->
-            throw IllegalStateException("Fant ikke nøkkelinfo for orgnummer ${resultat.organisasjonsnummer}")
-
-        is EregResult.Feil ->
-            throw IllegalStateException(
-                "Klarte ikke å hente nøkkelinfo for orgnummer ${resultat.organisasjonsnummer}: ${resultat.melding}",
+        is EregResult.IkkeFunnet -> regler.map { regel ->
+            NyTiltakspakkeVurdering(
+                tiltakspakkeId = regel.tiltakspakke.id,
+                orgnummer = resultat.organisasjonsnummer,
+                deltakelse = Deltakelse.UTENFOR_SCOPE,
+                vurderingsgrunnlag = EregIkkeFunnetVurderingsgrunnlagData(resultat.organisasjonsnummer),
             )
+        }
+
+        is EregResult.Feil -> emptyList()
     }
 }
+
+private fun vurderFunnetVirksomhet(
+    regler: List<Regel>,
+    resultat: EregResult.Funnet,
+    metadata: VurderingsMetadata,
+): List<NyTiltakspakkeVurdering> {
+    val virksomhet = VirksomhetUnderVurdering(
+        orgnummer = resultat.organisasjonsnummer,
+        adresse = resultat.organisasjon.adresse,
+    )
+
+    return regler.map { regel ->
+        NyTiltakspakkeVurdering(
+            tiltakspakkeId = regel.tiltakspakke.id,
+            orgnummer = virksomhet.orgnummer,
+            deltakelse = regel.vurder(
+                VurderingsGrunnlag(
+                    virksomhet = virksomhet,
+                    metadata = metadata,
+                ),
+            ),
+            vurderingsgrunnlag = resultat.organisasjon.adresse.toVurderingsgrunnlagData(),
+        )
+    }
+}
+
+private fun Organisasjon.Adresse.toVurderingsgrunnlagData() = AdresseVurderingsgrunnlagData(
+    type = type,
+    adresselinje1 = adresselinje1,
+    postnummer = postnummer,
+    landkode = landkode,
+    kommunenummer = kommunenummer,
+)

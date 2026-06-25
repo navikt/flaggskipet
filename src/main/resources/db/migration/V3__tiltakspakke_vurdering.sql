@@ -3,6 +3,7 @@ CREATE TABLE tiltakspakke_deltakelse (
     tiltakspakke_id TEXT NOT NULL,
     orgnummer TEXT NOT NULL,
     deltakelse TEXT NOT NULL,
+    vurderingsgrunnlag JSONB NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     CONSTRAINT uq_tiltakspakke_orgnr UNIQUE (tiltakspakke_id, orgnummer),
