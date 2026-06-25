@@ -13,11 +13,6 @@ sealed interface EregResult {
     data class IkkeFunnet(
         val organisasjonsnummer: String,
     ) : EregResult
-
-    data class Feil(
-        val organisasjonsnummer: String,
-        val melding: String,
-    ) : EregResult
 }
 
 data class Organisasjon(

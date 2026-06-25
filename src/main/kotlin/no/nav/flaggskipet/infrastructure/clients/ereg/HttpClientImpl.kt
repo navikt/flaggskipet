@@ -8,7 +8,6 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -26,13 +25,14 @@ internal class HttpClientImpl(
         }.awaitAll()
     }
 
-    private suspend fun hentNoekkelinfoFor(organisasjonsnummer: String): EregResult = try {
+    private suspend fun hentNoekkelinfoFor(
+        organisasjonsnummer: String,
+    ): EregResult {
         val response = httpClient.get("/v1/organisasjon/$organisasjonsnummer/noekkelinfo") {
             parameter("gyldigDato", dagensDato())
             accept(ContentType.Application.Json)
         }
-
-        when (response.status) {
+        return when (response.status) {
             HttpStatusCode.OK -> {
                 val body = response.body<EregNoekkelinfoResponse>()
                 EregResult.Funnet(
@@ -41,21 +41,13 @@ internal class HttpClientImpl(
                 )
             }
 
-            HttpStatusCode.NotFound -> EregResult.IkkeFunnet(organisasjonsnummer)
+            HttpStatusCode.NotFound ->
+                EregResult.IkkeFunnet(organisasjonsnummer)
 
             else -> throw IllegalStateException(
                 "Ereg responded with ${response.status.value}: ${response.bodyAsText()}",
             )
         }
-    } catch (error: Throwable) {
-        if (error is CancellationException) {
-            throw error
-        }
-
-        EregResult.Feil(
-            organisasjonsnummer = organisasjonsnummer,
-            melding = error.message ?: "Ukjent feil ved kall mot Ereg",
-        )
     }
 }
 

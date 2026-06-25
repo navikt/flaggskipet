@@ -12,8 +12,6 @@ import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.VirksomhetDeltakelse
 import org.slf4j.LoggerFactory
-import java.lang.invoke.MethodHandles
-import kotlin.random.Random
 import kotlin.time.Clock
 
 private val logger = LoggerFactory.getLogger("VurderTiltakspakkerUseCase")
@@ -103,8 +101,6 @@ private fun vurder(
                 vurderingsgrunnlag = EregIkkeFunnetVurderingsgrunnlagData(resultat.organisasjonsnummer),
             )
         }
-
-        is EregResult.Feil -> emptyList()
     }
 }
 
