@@ -1,0 +1,20 @@
+meta {
+  name: Get tiltakspakke vurdering
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/tiltakspakker/vurdering/313644480
+  body: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
