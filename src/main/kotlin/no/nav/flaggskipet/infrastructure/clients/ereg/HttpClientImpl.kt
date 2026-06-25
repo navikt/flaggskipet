@@ -43,9 +43,8 @@ internal class HttpClientImpl(
 
             HttpStatusCode.NotFound -> EregResult.IkkeFunnet(organisasjonsnummer)
 
-            else -> EregResult.Feil(
-                organisasjonsnummer = organisasjonsnummer,
-                melding = "Ereg svarte med status ${response.status.value}: ${response.bodyAsText()}",
+            else -> throw IllegalStateException(
+                "Ereg responded with ${response.status.value}: ${response.bodyAsText()}",
             )
         }
     } catch (error: Throwable) {

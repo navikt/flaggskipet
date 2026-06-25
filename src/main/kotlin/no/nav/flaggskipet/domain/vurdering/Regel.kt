@@ -4,6 +4,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
 import no.nav.flaggskipet.infrastructure.dagensDato
+import java.security.SecureRandom
 
 data class Tiltakspakke(val id: String, val sluttdato: LocalDate? = null) {
     fun erGjeldene(now: LocalDate = dagensDato()) = sluttdato?.compareTo(now)?.let { it > 0 } ?: true
@@ -31,7 +32,18 @@ enum class Deltakelse {
     UTENFOR_SCOPE,
 }
 
+private val random = SecureRandom()
+
+fun erSann(sannsynlighet: Double): Boolean {
+    require(sannsynlighet in 0.0..1.0) {
+        "Sannsynlighet må være mellom 0.0 og 1.0"
+    }
+
+    return random.nextDouble() < sannsynlighet
+
+}
+
 data class VurderingsMetadata(
     val tidspunkt: LocalDateTime,
-    val erSann: (Double) -> Boolean,
+    val erSann: (Double) -> Boolean = ::erSann,
 )

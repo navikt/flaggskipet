@@ -16,14 +16,14 @@ import java.lang.invoke.MethodHandles
 import kotlin.random.Random
 import kotlin.time.Clock
 
-private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
+private val logger = LoggerFactory.getLogger("VurderTiltakspakkerUseCase")
 
 class VurderTiltakspakkerUseCase(
     private val eregClient: EregClient,
     private val tiltakspakkeVurderingRepository: TiltakspakkeVurderingRepository,
 ) {
     suspend fun execute(orgnumre: List<String>): List<TiltakspakkeVurdering> {
-        val gjeldeneTiltakspakker = getGjeldendeTiltakspakker().also { logger.debug("Gjeldende tiltakspakker: {}", it) }
+        val gjeldeneTiltakspakker = getGjeldendeTiltakspakker().also { logger.info("Antall gjeldene tiltakspakker: {}", it.count()) }
         if (gjeldeneTiltakspakker.isEmpty()) return emptyList()
         val eksisterendeVurderinger = tiltakspakkeVurderingRepository.hentVurderinger(
             orgnumre = orgnumre,
@@ -36,13 +36,7 @@ class VurderTiltakspakkerUseCase(
         val adresser = eregClient.hentNoekkelinfo(orgnumreTilVurdering)
         val metadata = VurderingsMetadata(
             tidspunkt = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Oslo")),
-            erSann = { sannsynlighet -> Random.Default.nextDouble() < sannsynlighet },
         )
-
-        // Neste skritt:
-        // Vurder alle gjendene tiltakene for de manglende bedrifter
-        // Opprett nye vurderinger for manglende orgnumre i database
-        // merge sammen eksisterende og ny vurderte vurderinger og gir tilbake resultatet.
         val nyeVurderinger = vurder(
             regler = gjeldeneTiltakspakker,
             noekkelinfo = adresser,

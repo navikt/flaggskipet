@@ -20,6 +20,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -87,7 +88,7 @@ class HttpClientImplTest :
             )
         }
 
-        test("hentNoekkelinfo maps non-404 failures to Feil") {
+        test("hentNoekkelinfo kaster feil, når ereg feiler") {
             val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
@@ -100,7 +101,7 @@ class HttpClientImplTest :
                 ),
             )
 
-            client.hentNoekkelinfo(listOf("111111111")) shouldBe listOf(
+            assertThrows<RuntimeException> { client.hentNoekkelinfo(listOf("111111111")) } shouldBe listOf(
                 EregResult.Feil(
                     organisasjonsnummer = "111111111",
                     melding = """Ereg svarte med status 500: {"message":"boom"}""",
