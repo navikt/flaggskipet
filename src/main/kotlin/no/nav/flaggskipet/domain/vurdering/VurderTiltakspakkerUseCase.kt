@@ -1,7 +1,5 @@
 package no.nav.flaggskipet.domain.vurdering
 
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregResult
 import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
@@ -12,7 +10,6 @@ import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.VirksomhetDeltakelse
 import org.slf4j.LoggerFactory
-import kotlin.time.Clock
 
 private val logger = LoggerFactory.getLogger("VurderTiltakspakkerUseCase")
 
@@ -27,18 +24,14 @@ class VurderTiltakspakkerUseCase(
             orgnumre = orgnumre,
             tiltakspakkeIder = gjeldeneTiltakspakker.map { it.tiltakspakke.id },
         )
-        val eksisterendeOrgnumre = eksisterendeVurderinger.orgnumre()
-        val orgnumreTilVurdering = orgnumre.filterNot { it in eksisterendeOrgnumre }
+        val orgnumreTilVurdering = orgnumre.filterNot { it in eksisterendeVurderinger.orgnumre() }
         if (orgnumreTilVurdering.isEmpty()) return eksisterendeVurderinger
 
         val adresser = eregClient.hentNoekkelinfo(orgnumreTilVurdering)
-        val metadata = VurderingsMetadata(
-            tidspunkt = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Oslo")),
-        )
+
         val nyeVurderinger = vurder(
             regler = gjeldeneTiltakspakker,
             noekkelinfo = adresser,
-            metadata = metadata,
         )
         tiltakspakkeVurderingRepository.lagreVurderinger(nyeVurderinger)
 
@@ -84,13 +77,11 @@ internal fun mergeVurderinger(
 private fun vurder(
     regler: List<Regel>,
     noekkelinfo: List<EregResult>,
-    metadata: VurderingsMetadata,
 ): List<NyTiltakspakkeVurdering> = noekkelinfo.flatMap { resultat ->
     when (resultat) {
         is EregResult.Funnet -> vurderFunnetVirksomhet(
             regler = regler,
             resultat = resultat,
-            metadata = metadata,
         )
 
         is EregResult.IkkeFunnet -> regler.map { regel ->
@@ -107,7 +98,6 @@ private fun vurder(
 private fun vurderFunnetVirksomhet(
     regler: List<Regel>,
     resultat: EregResult.Funnet,
-    metadata: VurderingsMetadata,
 ): List<NyTiltakspakkeVurdering> {
     val virksomhet = VirksomhetUnderVurdering(
         orgnummer = resultat.organisasjonsnummer,
@@ -121,7 +111,6 @@ private fun vurderFunnetVirksomhet(
             deltakelse = regel.vurder(
                 VurderingsGrunnlag(
                     virksomhet = virksomhet,
-                    metadata = metadata,
                 ),
             ),
             vurderingsgrunnlag = resultat.organisasjon.adresse.toVurderingsgrunnlagData(),

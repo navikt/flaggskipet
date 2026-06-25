@@ -1,7 +1,6 @@
 package no.nav.flaggskipet.domain.vurdering
 
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
 import no.nav.flaggskipet.infrastructure.dagensDato
 import java.security.SecureRandom
@@ -11,7 +10,6 @@ data class Tiltakspakke(val id: String, val sluttdato: LocalDate? = null) {
 }
 
 interface Regel {
-
     val tiltakspakke: Tiltakspakke
 
     fun vurder(
@@ -23,7 +21,6 @@ data class VirksomhetUnderVurdering(val orgnummer: String, val adresse: Organisa
 
 data class VurderingsGrunnlag(
     val virksomhet: VirksomhetUnderVurdering,
-    val metadata: VurderingsMetadata,
 )
 
 enum class Deltakelse {
@@ -41,8 +38,3 @@ fun erSann(sannsynlighet: Double): Boolean {
 
     return random.nextDouble() < sannsynlighet
 }
-
-data class VurderingsMetadata(
-    val tidspunkt: LocalDateTime,
-    val erSann: (Double) -> Boolean = ::erSann,
-)

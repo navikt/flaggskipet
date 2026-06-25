@@ -14,7 +14,7 @@ class TiltakspakkeEnRegel(override val tiltakspakke: Tiltakspakke) : Regel {
         grunnlag.virksomhet.adresse.fylke() !in fylkerIScopet ->
             Deltakelse.UTENFOR_SCOPE
 
-        grunnlag.metadata.erSann(0.5) ->
+        erSann(0.5) ->
             Deltakelse.DELTAR
 
         else ->
