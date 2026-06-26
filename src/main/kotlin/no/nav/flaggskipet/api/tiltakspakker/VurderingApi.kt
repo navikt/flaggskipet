@@ -42,7 +42,7 @@ fun Application.configureVurderingApi() {
 
 private fun List<TiltakspakkeVurdering>.toResponse(): List<VurderingResponse> = map { tiltakspakke ->
     VurderingResponse(
-        id = tiltakspakke.id,
+        tiltakspakkeId = tiltakspakke.id,
         virksomheter = tiltakspakke.virksomheter.map { virksomhet ->
             VirksomhetResponse(
                 orgnummer = virksomhet.orgnummer,

@@ -9,7 +9,7 @@ data class VurderingRequest(
 
 @Serializable
 data class VurderingResponse(
-    val id: String,
+    val tiltakspakkeId: String,
     val virksomheter: List<VirksomhetResponse>,
 )
 
