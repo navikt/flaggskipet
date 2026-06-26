@@ -23,7 +23,6 @@ fun Application.configureVurderingApi() {
 
             post {
                 val request = call.receive<VurderingRequest>()
-                vurderUseCase.execute(request.orgnumre).toResponse()
                 call.respond(vurderUseCase.execute(request.orgnumre).toResponse())
             }
         }
