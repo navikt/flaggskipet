@@ -2,7 +2,7 @@ package no.nav.flaggskipet.domain.vurdering
 
 import kotlinx.datetime.LocalDate
 
-class GeoTiltakspakkeRegel(
+data class GeoTiltakspakkeRegel(
     private val fylkerIScopet: Set<String>,
     private val sannsynlighet: Double = 0.5,
 ) : Regel {
