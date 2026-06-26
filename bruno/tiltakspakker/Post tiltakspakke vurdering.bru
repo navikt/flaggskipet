@@ -1,0 +1,36 @@
+meta {
+  name: Post tiltakspakke vurdering
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/tiltakspakker/vurdering
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "orgnumre": [
+      "313644480",
+      "312864606",
+      "215649202",
+      "314252217",
+      "314560124"
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

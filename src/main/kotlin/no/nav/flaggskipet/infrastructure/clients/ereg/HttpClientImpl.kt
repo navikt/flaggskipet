@@ -8,17 +8,17 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
-import no.nav.flaggskipet.infrastructure.dagensDato
+import no.nav.flaggskipet.domain.vurdering.Adresse
+import no.nav.flaggskipet.domain.dagensDato
 
 internal class HttpClientImpl(
     private val httpClient: HttpClient,
 ) : EregClient {
-    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregResult> = coroutineScope {
+    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = coroutineScope {
         organisasjonsnummer.map { orgnummer ->
             async {
                 hentNoekkelinfoFor(orgnummer)
@@ -26,62 +26,44 @@ internal class HttpClientImpl(
         }.awaitAll()
     }
 
-    private suspend fun hentNoekkelinfoFor(organisasjonsnummer: String): EregResult = try {
+    private suspend fun hentNoekkelinfoFor(
+        organisasjonsnummer: String,
+    ): EregNoekkelinfo {
         val response = httpClient.get("/v1/organisasjon/$organisasjonsnummer/noekkelinfo") {
             parameter("gyldigDato", dagensDato())
             accept(ContentType.Application.Json)
         }
-
-        when (response.status) {
+        return when (response.status) {
             HttpStatusCode.OK -> {
                 val body = response.body<EregNoekkelinfoResponse>()
-                EregResult.Funnet(
+                EregNoekkelinfo(
                     organisasjonsnummer = organisasjonsnummer,
-                    organisasjon = body.toOrganisasjon(),
+                    adresse = Adresse(
+                        type = body.adresse.type,
+                        postnummer = body.adresse.postnummer,
+                        kommunenummer = body.adresse.kommunenummer,
+                    ),
                 )
             }
 
-            HttpStatusCode.NotFound -> EregResult.IkkeFunnet(organisasjonsnummer)
+            HttpStatusCode.NotFound ->
+                EregNoekkelinfo(organisasjonsnummer = organisasjonsnummer, adresse = null)
 
-            else -> EregResult.Feil(
-                organisasjonsnummer = organisasjonsnummer,
-                melding = "Ereg svarte med status ${response.status.value}: ${response.bodyAsText()}",
+            else -> throw IllegalStateException(
+                "Ereg responded with ${response.status.value}: ${response.bodyAsText()}",
             )
         }
-    } catch (error: Throwable) {
-        if (error is CancellationException) {
-            throw error
-        }
-
-        EregResult.Feil(
-            organisasjonsnummer = organisasjonsnummer,
-            melding = error.message ?: "Ukjent feil ved kall mot Ereg",
-        )
     }
 }
 
 @Serializable
 private data class EregNoekkelinfoResponse(
-    val adresse: Adresse? = null,
+    val adresse: Adresse = Adresse(),
 ) {
     @Serializable
     data class Adresse(
-        val type: String? = null,
-        val adresselinje1: String? = null,
-        val postnummer: String? = null,
-        val landkode: String? = null,
-        val kommunenummer: String? = null,
+        val type: String = "",
+        val postnummer: String = "",
+        val kommunenummer: String = "",
     )
 }
-
-private fun EregNoekkelinfoResponse.toOrganisasjon() = Organisasjon(
-    adresse = adresse?.let {
-        Organisasjon.Adresse(
-            type = it.type,
-            adresselinje1 = it.adresselinje1,
-            postnummer = it.postnummer,
-            landkode = it.landkode,
-            kommunenummer = it.kommunenummer,
-        )
-    },
-)
