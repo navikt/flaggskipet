@@ -1,14 +1,10 @@
-package no.nav.flaggskipet.domene.vurdering
+package no.nav.flaggskipet.domain.vurdering
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import no.nav.flaggskipet.domain.vurdering.Deltakelse
-import no.nav.flaggskipet.domain.vurdering.Regel
-import no.nav.flaggskipet.domain.vurdering.Tiltakspakke
-import no.nav.flaggskipet.domain.vurdering.VirksomhetUnderVurdering
 import no.nav.flaggskipet.infrastructure.dagensDato
 
 class TiltakspakkeTest :

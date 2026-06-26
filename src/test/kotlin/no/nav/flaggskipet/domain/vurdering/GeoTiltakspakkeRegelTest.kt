@@ -1,11 +1,7 @@
-package no.nav.flaggskipet.domene.vurdering
+package no.nav.flaggskipet.domain.vurdering
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import no.nav.flaggskipet.domain.vurdering.Adresse
-import no.nav.flaggskipet.domain.vurdering.Deltakelse
-import no.nav.flaggskipet.domain.vurdering.GeoTiltakspakkeRegel
-import no.nav.flaggskipet.domain.vurdering.VirksomhetUnderVurdering
 
 class GeoTiltakspakkeRegelTest :
     FunSpec({

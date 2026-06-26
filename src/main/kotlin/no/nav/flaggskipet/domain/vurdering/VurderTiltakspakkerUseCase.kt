@@ -4,16 +4,12 @@ import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregNoekkelinfo
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.VurderingForLagring
-import org.slf4j.LoggerFactory
-
-private val logger = LoggerFactory.getLogger("VurderTiltakspakkerUseCase")
 
 class VurderTiltakspakkerUseCase(
     private val eregClient: EregClient,
     private val tiltakspakkeVurderingRepository: TiltakspakkeVurderingRepository,
 ) {
-    suspend fun execute(orgnumre: List<Orgnummer>): List<TiltakspakkeVurdering> {
-        val tiltakspakker = getGjeldendeTiltakspakker().also { logger.info("Antall gjeldene tiltakspakker: {}", it.size) }
+    suspend fun execute(orgnumre: List<Orgnummer>, tiltakspakker: List<Tiltakspakke> = getGjeldendeTiltakspakker()): List<TiltakspakkeVurdering> {
         if (tiltakspakker.isEmpty()) return emptyList()
 
         val eksisterende = hentEksisterende(tiltakspakker, orgnumre)
