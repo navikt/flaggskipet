@@ -17,6 +17,7 @@ testcontainers = "1.21.4"
 commonsCompress = "1.28.0"
 coroutines = "1.10.2"
 kotlinx-datetime = "0.8.0"
+mockk = "1.14.11"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -58,3 +59,4 @@ kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.
 testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
