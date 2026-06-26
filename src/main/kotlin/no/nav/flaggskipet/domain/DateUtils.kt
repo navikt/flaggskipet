@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure
+package no.nav.flaggskipet.domain
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

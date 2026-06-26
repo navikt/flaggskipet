@@ -2,7 +2,7 @@
 package no.nav.flaggskipet.domain.vurdering
 
 import kotlinx.datetime.LocalDate
-import no.nav.flaggskipet.infrastructure.dagensDato
+import no.nav.flaggskipet.domain.dagensDato
 import kotlin.random.Random
 
 typealias Orgnummer = String

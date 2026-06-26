@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import no.nav.flaggskipet.domain.dagensDato
 import kotlin.time.Instant
 
 class DateUtilsTest :

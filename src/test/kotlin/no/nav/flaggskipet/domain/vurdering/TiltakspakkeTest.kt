@@ -5,7 +5,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import no.nav.flaggskipet.infrastructure.dagensDato
+import no.nav.flaggskipet.domain.dagensDato
 
 class TiltakspakkeTest :
     FunSpec({

@@ -13,7 +13,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import no.nav.flaggskipet.domain.vurdering.Adresse
-import no.nav.flaggskipet.infrastructure.dagensDato
+import no.nav.flaggskipet.domain.dagensDato
 
 internal class HttpClientImpl(
     private val httpClient: HttpClient,
