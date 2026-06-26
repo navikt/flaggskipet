@@ -1,6 +1,5 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -20,15 +19,6 @@ fun Application.configureVurderingApi() {
         route("/api/v1/tiltakspakker/vurdering") {
             get {
                 throw ApiErrorException.BadRequest("Path parameter orgnummer is required")
-            }
-
-            get("/{orgnummer}") {
-                val orgnummer = call.parameters["orgnummer"]
-                if (orgnummer.isNullOrBlank()) {
-                    call.respond(HttpStatusCode.NoContent)
-                    return@get
-                }
-                call.respond(vurderUseCase.execute(listOf(orgnummer)).toResponse())
             }
 
             post {
