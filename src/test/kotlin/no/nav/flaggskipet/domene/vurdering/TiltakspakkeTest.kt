@@ -5,16 +5,21 @@ import io.kotest.matchers.shouldBe
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import no.nav.flaggskipet.domain.vurdering.Deltakelse
+import no.nav.flaggskipet.domain.vurdering.Regel
 import no.nav.flaggskipet.domain.vurdering.Tiltakspakke
+import no.nav.flaggskipet.domain.vurdering.VirksomhetUnderVurdering
 import no.nav.flaggskipet.infrastructure.dagensDato
-import kotlin.time.Duration.Companion.days
 
 class TiltakspakkeTest :
     FunSpec({
 
         val tiltakspakke = Tiltakspakke(
-            id = "TILTAKSPAKKE_EN",
+            id = "MIN_TILTAK",
             sluttdato = null,
+            regel = object : Regel {
+                override fun vurder(virksomhet: VirksomhetUnderVurdering): Deltakelse = Deltakelse.TILTAKSGRUPPE
+            },
         )
 
         test("pakke uten sluttdato er gjeldende") {

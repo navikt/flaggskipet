@@ -12,12 +12,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
+import no.nav.flaggskipet.domain.vurdering.Adresse
 import no.nav.flaggskipet.infrastructure.dagensDato
 
 internal class HttpClientImpl(
     private val httpClient: HttpClient,
 ) : EregClient {
-    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregResult> = coroutineScope {
+    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = coroutineScope {
         organisasjonsnummer.map { orgnummer ->
             async {
                 hentNoekkelinfoFor(orgnummer)
@@ -27,7 +28,7 @@ internal class HttpClientImpl(
 
     private suspend fun hentNoekkelinfoFor(
         organisasjonsnummer: String,
-    ): EregResult {
+    ): EregNoekkelinfo {
         val response = httpClient.get("/v1/organisasjon/$organisasjonsnummer/noekkelinfo") {
             parameter("gyldigDato", dagensDato())
             accept(ContentType.Application.Json)
@@ -35,14 +36,18 @@ internal class HttpClientImpl(
         return when (response.status) {
             HttpStatusCode.OK -> {
                 val body = response.body<EregNoekkelinfoResponse>()
-                EregResult.Funnet(
+                EregNoekkelinfo(
                     organisasjonsnummer = organisasjonsnummer,
-                    organisasjon = body.toOrganisasjon(),
+                    adresse = Adresse(
+                        type = body.adresse.type,
+                        postnummer = body.adresse.postnummer,
+                        kommunenummer = body.adresse.kommunenummer,
+                    ),
                 )
             }
 
             HttpStatusCode.NotFound ->
-                EregResult.IkkeFunnet(organisasjonsnummer)
+                EregNoekkelinfo(organisasjonsnummer = organisasjonsnummer, adresse = null)
 
             else -> throw IllegalStateException(
                 "Ereg responded with ${response.status.value}: ${response.bodyAsText()}",
@@ -62,13 +67,3 @@ private data class EregNoekkelinfoResponse(
         val kommunenummer: String = "",
     )
 }
-
-private fun EregNoekkelinfoResponse.toOrganisasjon() = Organisasjon(
-    adresse = adresse.let {
-        Organisasjon.Adresse(
-            type = it.type,
-            postnummer = it.postnummer,
-            kommunenummer = it.kommunenummer,
-        )
-    },
-)

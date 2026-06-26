@@ -8,13 +8,12 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import kotlinx.serialization.Serializable
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
 import no.nav.flaggskipet.domain.vurdering.VurderTiltakspakkerUseCase
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
 import org.koin.ktor.ext.inject
 
-fun Application.configureTiltakspakkeVurderingApi() {
+fun Application.configureVurderingApi() {
     val vurderUseCase by inject<VurderTiltakspakkerUseCase>()
 
     routing {
@@ -33,7 +32,7 @@ fun Application.configureTiltakspakkeVurderingApi() {
             }
 
             post {
-                val request = call.receive<TiltakspakkeVurderingRequest>()
+                val request = call.receive<VurderingRequest>()
                 vurderUseCase.execute(request.orgnumre).toResponse()
                 call.respond(vurderUseCase.execute(request.orgnumre).toResponse())
             }
@@ -41,30 +40,8 @@ fun Application.configureTiltakspakkeVurderingApi() {
     }
 }
 
-@Serializable
-data class TiltakspakkeVurderingRequest(
-    val orgnumre: List<String>,
-)
-
-@Serializable
-data class TiltakspakkeVurderingResponse(
-    val tiltakspakker: List<TiltakspakkeResponse>,
-)
-
-@Serializable
-data class TiltakspakkeResponse(
-    val id: String,
-    val virksomheter: List<VirksomhetResponse>,
-)
-
-@Serializable
-data class VirksomhetResponse(
-    val orgnummer: String,
-    val deltakelse: String,
-)
-
-private fun List<TiltakspakkeVurdering>.toResponse(): List<TiltakspakkeResponse> = map { tiltakspakke ->
-    TiltakspakkeResponse(
+private fun List<TiltakspakkeVurdering>.toResponse(): List<VurderingResponse> = map { tiltakspakke ->
+    VurderingResponse(
         id = tiltakspakke.id,
         virksomheter = tiltakspakke.virksomheter.map { virksomhet ->
             VirksomhetResponse(

@@ -1,35 +1,45 @@
+
 package no.nav.flaggskipet.domain.vurdering
 
 import kotlinx.datetime.LocalDate
-import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
 import no.nav.flaggskipet.infrastructure.dagensDato
-import java.security.SecureRandom
+import kotlin.random.Random
 
-data class Tiltakspakke(val id: String, val sluttdato: LocalDate? = null) {
-    fun erGjeldene(now: LocalDate = dagensDato()) = sluttdato?.compareTo(now)?.let { it > 0 } ?: true
+typealias Orgnummer = String
+
+data class Adresse(
+    val type: String,
+    val postnummer: String,
+    val kommunenummer: String,
+) {
+    fun fylke(): String = kommunenummer.take(2)
+}
+
+data class Tiltakspakke(
+    val id: String,
+    val sluttdato: LocalDate? = null,
+    val regel: Regel,
+) {
+    fun erGjeldene(now: LocalDate = dagensDato()) = sluttdato?.let { it > now } ?: true
+    fun vurder(virksomhet: VirksomhetUnderVurdering): Deltakelse = regel.vurder(virksomhet)
 }
 
 interface Regel {
-    val tiltakspakke: Tiltakspakke
-
-    fun vurder(
-        grunnlag: VurderingsGrunnlag,
-    ): Deltakelse
+    fun vurder(virksomhet: VirksomhetUnderVurdering): Deltakelse
 }
 
-data class VirksomhetUnderVurdering(val orgnummer: String, val adresse: Organisasjon.Adresse)
-
-data class VurderingsGrunnlag(
-    val virksomhet: VirksomhetUnderVurdering,
+data class VirksomhetUnderVurdering(
+    val orgnummer: Orgnummer,
+    val adresse: Adresse,
 )
 
 enum class Deltakelse {
-    DELTAR,
-    DELTAR_IKKE,
+    TILTAKSGRUPPE,
+    KONTROLLGRUPPE,
     UTENFOR_SCOPE,
 }
 
-private val random = SecureRandom()
+private val random = Random
 
 fun erSann(sannsynlighet: Double): Boolean {
     require(sannsynlighet in 0.0..1.0) {

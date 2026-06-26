@@ -4,7 +4,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
-import no.nav.flaggskipet.api.tiltakspakker.configureTiltakspakkeVurderingApi
+import no.nav.flaggskipet.api.tiltakspakker.configureVurderingApi
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
@@ -28,6 +28,7 @@ fun main(args: Array<String>) {
     }
 }
 
+@Suppress("unused")
 fun Application.module() {
     val applicationState = ApplicationState()
     configureLifecycleHooks(applicationState)
@@ -35,6 +36,6 @@ fun Application.module() {
     installDependencyInjection()
     get<DataSource>().migrate()
     startKafkaConsumers(applicationState)
-    configureTiltakspakkeVurderingApi()
+    configureVurderingApi()
     configureInternalApi(applicationState)
 }

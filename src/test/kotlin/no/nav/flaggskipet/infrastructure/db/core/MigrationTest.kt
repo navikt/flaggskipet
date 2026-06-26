@@ -3,7 +3,6 @@ package no.nav.flaggskipet.infrastructure.db.core
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.ints.shouldBeExactly
-import io.kotest.matchers.shouldBe
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
@@ -44,19 +43,6 @@ class MigrationTest :
                                     ).use { resultSet ->
                                         resultSet.next().shouldBeTrue()
                                         resultSet.getInt(1).shouldBeExactly(0)
-                                    }
-
-                                statement
-                                    .executeQuery(
-                                        """
-                                        SELECT udt_name
-                                        FROM information_schema.columns
-                                        WHERE table_name = 'tiltakspakke_deltakelse'
-                                          AND column_name = 'vurderingsgrunnlag'
-                                        """.trimIndent(),
-                                    ).use { resultSet ->
-                                        resultSet.next().shouldBeTrue()
-                                        resultSet.getString("udt_name") shouldBe "jsonb"
                                     }
 
                                 statement

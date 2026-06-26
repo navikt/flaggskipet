@@ -1,14 +1,9 @@
 package no.nav.flaggskipet.domain.vurdering
 
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
-import no.nav.flaggskipet.infrastructure.clients.ereg.EregResult
-import no.nav.flaggskipet.infrastructure.clients.ereg.Organisasjon
-import no.nav.flaggskipet.infrastructure.db.repositories.AdresseVurderingsgrunnlagData
-import no.nav.flaggskipet.infrastructure.db.repositories.EregIkkeFunnetVurderingsgrunnlagData
-import no.nav.flaggskipet.infrastructure.db.repositories.NyTiltakspakkeVurdering
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurdering
+import no.nav.flaggskipet.infrastructure.clients.ereg.EregNoekkelinfo
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.VirksomhetDeltakelse
+import no.nav.flaggskipet.infrastructure.db.repositories.VurderingForLagring
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("VurderTiltakspakkerUseCase")
@@ -17,109 +12,48 @@ class VurderTiltakspakkerUseCase(
     private val eregClient: EregClient,
     private val tiltakspakkeVurderingRepository: TiltakspakkeVurderingRepository,
 ) {
-    suspend fun execute(orgnumre: List<String>): List<TiltakspakkeVurdering> {
-        val gjeldeneTiltakspakker = getGjeldendeTiltakspakker().also { logger.info("Antall gjeldene tiltakspakker: {}", it.count()) }
-        if (gjeldeneTiltakspakker.isEmpty()) return emptyList()
-        val eksisterendeVurderinger = tiltakspakkeVurderingRepository.hentVurderinger(
-            orgnumre = orgnumre,
-            tiltakspakkeIder = gjeldeneTiltakspakker.map { it.tiltakspakke.id },
-        )
-        val orgnumreTilVurdering = orgnumre.filterNot { it in eksisterendeVurderinger.orgnumre() }
-        if (orgnumreTilVurdering.isEmpty()) return eksisterendeVurderinger
+    suspend fun execute(orgnumre: List<Orgnummer>): List<TiltakspakkeVurdering> {
+        val tiltakspakker = getGjeldendeTiltakspakker().also { logger.info("Antall gjeldene tiltakspakker: {}", it.size) }
+        if (tiltakspakker.isEmpty()) return emptyList()
 
-        val adresser = eregClient.hentNoekkelinfo(orgnumreTilVurdering)
+        val eksisterende = hentEksisterende(tiltakspakker, orgnumre)
+        val nye = vurderOgLagre(tiltakspakker, orgnumre, eksisterende)
 
-        val nyeVurderinger = vurder(
-            regler = gjeldeneTiltakspakker,
-            noekkelinfo = adresser,
-        )
-        tiltakspakkeVurderingRepository.lagreVurderinger(nyeVurderinger)
+        return (eksisterende + nye).groupByTiltakspakke()
+    }
 
-        return mergeVurderinger(eksisterendeVurderinger, nyeVurderinger)
+    private suspend fun hentEksisterende(
+        tiltakspakker: List<Tiltakspakke>,
+        orgnumre: List<Orgnummer>,
+    ) = tiltakspakkeVurderingRepository.hentVurderinger(
+        orgnumre = orgnumre,
+        tiltakspakkeIder = tiltakspakker.map { it.id },
+    )
+
+    private suspend fun vurderOgLagre(
+        tiltakspakker: List<Tiltakspakke>,
+        orgnumre: List<Orgnummer>,
+        eksisterende: List<Vurderingsresultat>,
+    ): List<Vurderingsresultat> {
+        val nyeOrgnumre = orgnumre - eksisterende.map { it.orgnummer }.toSet()
+        if (nyeOrgnumre.isEmpty()) return emptyList()
+
+        val vurderinger = vurder(tiltakspakker, eregClient.hentNoekkelinfo(nyeOrgnumre))
+        tiltakspakkeVurderingRepository.lagreVurderinger(vurderinger)
+        return vurderinger.map { Vurderingsresultat(it.tiltakspakkeId, it.orgnummer, it.deltakelse) }
     }
 }
-
-private fun List<TiltakspakkeVurdering>.orgnumre(): Set<String> = flatMap { it.virksomheter }
-    .map { it.orgnummer }
-    .toSet()
-
-internal fun mergeVurderinger(
-    eksisterendeVurderinger: List<TiltakspakkeVurdering>,
-    nyeVurderinger: List<NyTiltakspakkeVurdering>,
-): List<TiltakspakkeVurdering> = (
-    eksisterendeVurderinger.flatMap { tiltakspakkeVurdering ->
-        tiltakspakkeVurdering.virksomheter.map { virksomhet ->
-            tiltakspakkeVurdering.id to virksomhet
-        }
-    } + nyeVurderinger.map { vurdering ->
-        vurdering.tiltakspakkeId to VirksomhetDeltakelse(
-            orgnummer = vurdering.orgnummer,
-            deltakelse = vurdering.deltakelse,
-        )
-    }
-    ).associateBy(
-    keySelector = { (tiltakspakkeId, virksomhet) -> tiltakspakkeId to virksomhet.orgnummer },
-    valueTransform = { (tiltakspakkeId, virksomhet) -> tiltakspakkeId to virksomhet },
-)
-    .values
-    .groupBy(
-        keySelector = { (tiltakspakkeId, _) -> tiltakspakkeId },
-        valueTransform = { (_, virksomhet) -> virksomhet },
-    )
-    .toSortedMap()
-    .map { (tiltakspakkeId, virksomheter) ->
-        TiltakspakkeVurdering(
-            id = tiltakspakkeId,
-            virksomheter = virksomheter.sortedBy(VirksomhetDeltakelse::orgnummer),
-        )
-    }
 
 private fun vurder(
-    regler: List<Regel>,
-    noekkelinfo: List<EregResult>,
-): List<NyTiltakspakkeVurdering> = noekkelinfo.flatMap { resultat ->
-    when (resultat) {
-        is EregResult.Funnet -> vurderFunnetVirksomhet(
-            regler = regler,
-            resultat = resultat,
-        )
-
-        is EregResult.IkkeFunnet -> regler.map { regel ->
-            NyTiltakspakkeVurdering(
-                tiltakspakkeId = regel.tiltakspakke.id,
-                orgnummer = resultat.organisasjonsnummer,
-                deltakelse = Deltakelse.UTENFOR_SCOPE,
-                vurderingsgrunnlag = EregIkkeFunnetVurderingsgrunnlagData(resultat.organisasjonsnummer),
-            )
-        }
-    }
-}
-
-private fun vurderFunnetVirksomhet(
-    regler: List<Regel>,
-    resultat: EregResult.Funnet,
-): List<NyTiltakspakkeVurdering> {
-    val virksomhet = VirksomhetUnderVurdering(
-        orgnummer = resultat.organisasjonsnummer,
-        adresse = resultat.organisasjon.adresse,
-    )
-
-    return regler.map { regel ->
-        NyTiltakspakkeVurdering(
-            tiltakspakkeId = regel.tiltakspakke.id,
-            orgnummer = virksomhet.orgnummer,
-            deltakelse = regel.vurder(
-                VurderingsGrunnlag(
-                    virksomhet = virksomhet,
-                ),
-            ),
-            vurderingsgrunnlag = resultat.organisasjon.adresse.toVurderingsgrunnlagData(),
+    tiltakspakker: List<Tiltakspakke>,
+    noekkelinfo: List<EregNoekkelinfo>,
+): List<VurderingForLagring> = noekkelinfo.flatMap { info ->
+    tiltakspakker.map { tiltakspakke ->
+        VurderingForLagring(
+            tiltakspakkeId = tiltakspakke.id,
+            orgnummer = info.organisasjonsnummer,
+            deltakelse = info.adresse?.let { tiltakspakke.vurder(VirksomhetUnderVurdering(info.organisasjonsnummer, it)) }
+                ?: Deltakelse.UTENFOR_SCOPE,
         )
     }
 }
-
-private fun Organisasjon.Adresse.toVurderingsgrunnlagData() = AdresseVurderingsgrunnlagData(
-    type = type,
-    postnummer = postnummer,
-    kommunenummer = kommunenummer,
-)

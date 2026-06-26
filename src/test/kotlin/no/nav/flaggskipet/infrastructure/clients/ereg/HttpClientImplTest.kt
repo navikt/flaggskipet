@@ -17,11 +17,12 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.Json
+import no.nav.flaggskipet.domain.vurdering.Adresse
 import org.junit.jupiter.api.assertThrows
 
 class HttpClientImplTest :
     FunSpec({
-        test("hentNoekkelinfo maps 200 to Funnet and sends gyldigDato for today in Oslo") {
+        test("hentNoekkelinfo maps 200 to EregNoekkelinfo with adresse and sends gyldigDato for today in Oslo") {
             val mockEngine = MockEngine { request ->
                 request.method shouldBe HttpMethod.Get
                 request.url.protocol shouldBe URLProtocol.HTTPS
@@ -50,20 +51,18 @@ class HttpClientImplTest :
             )
 
             client.hentNoekkelinfo(listOf("313644480")) shouldBe listOf(
-                EregResult.Funnet(
+                EregNoekkelinfo(
                     organisasjonsnummer = "313644480",
-                    organisasjon = Organisasjon(
-                        adresse = Organisasjon.Adresse(
-                            type = "Forretningsadresse",
-                            postnummer = "9012",
-                            kommunenummer = "5401",
-                        ),
+                    adresse = Adresse(
+                        type = "Forretningsadresse",
+                        postnummer = "9012",
+                        kommunenummer = "5401",
                     ),
                 ),
             )
         }
 
-        test("hentNoekkelinfo maps 404 to IkkeFunnet") {
+        test("hentNoekkelinfo maps 404 to EregNoekkelinfo with null adresse") {
             val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
@@ -77,7 +76,7 @@ class HttpClientImplTest :
             )
 
             client.hentNoekkelinfo(listOf("999999999")) shouldBe listOf(
-                EregResult.IkkeFunnet("999999999"),
+                EregNoekkelinfo(organisasjonsnummer = "999999999", adresse = null),
             )
         }
 

@@ -3,8 +3,8 @@ package no.nav.flaggskipet.infrastructure.db.repositories
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
+import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
 import no.nav.flaggskipet.infrastructure.db.queryForInt
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
 
@@ -16,35 +16,25 @@ class TiltakspakkeVurderingRepositoryTest :
 
                 repository.lagreVurderinger(
                     listOf(
-                        NyTiltakspakkeVurdering(
+                        VurderingForLagring(
                             tiltakspakkeId = "PAKKE_A",
                             orgnummer = "123456789",
-                            deltakelse = Deltakelse.DELTAR,
-                            vurderingsgrunnlag = AdresseVurderingsgrunnlagData(
-                                type = "forretningsadresse",
-                                postnummer = "0155",
-                                kommunenummer = "0301",
-                            ),
+                            deltakelse = Deltakelse.TILTAKSGRUPPE,
                         ),
-                        NyTiltakspakkeVurdering(
+                        VurderingForLagring(
                             tiltakspakkeId = "PAKKE_B",
                             orgnummer = "123456789",
                             deltakelse = Deltakelse.UTENFOR_SCOPE,
-                            vurderingsgrunnlag = EregIkkeFunnetVurderingsgrunnlagData("123456789"),
                         ),
                     ),
                 )
+
                 repository.lagreVurderinger(
                     listOf(
-                        NyTiltakspakkeVurdering(
+                        VurderingForLagring(
                             tiltakspakkeId = "PAKKE_A",
                             orgnummer = "123456789",
-                            deltakelse = Deltakelse.DELTAR_IKKE,
-                            vurderingsgrunnlag = AdresseVurderingsgrunnlagData(
-                                type = "forretningsadresse",
-                                postnummer = "0154",
-                                kommunenummer = "0301",
-                            ),
+                            deltakelse = Deltakelse.KONTROLLGRUPPE,
                         ),
                     ),
                 )
@@ -53,23 +43,15 @@ class TiltakspakkeVurderingRepositoryTest :
                     orgnumre = listOf("123456789"),
                     tiltakspakkeIder = listOf("PAKKE_A", "PAKKE_B"),
                 ) shouldBe listOf(
-                    TiltakspakkeVurdering(
-                        id = "PAKKE_A",
-                        virksomheter = listOf(
-                            VirksomhetDeltakelse(
-                                orgnummer = "123456789",
-                                deltakelse = Deltakelse.DELTAR_IKKE,
-                            ),
-                        ),
+                    Vurderingsresultat(
+                        tiltakspakkeId = "PAKKE_A",
+                        orgnummer = "123456789",
+                        deltakelse = Deltakelse.KONTROLLGRUPPE,
                     ),
-                    TiltakspakkeVurdering(
-                        id = "PAKKE_B",
-                        virksomheter = listOf(
-                            VirksomhetDeltakelse(
-                                orgnummer = "123456789",
-                                deltakelse = Deltakelse.UTENFOR_SCOPE,
-                            ),
-                        ),
+                    Vurderingsresultat(
+                        tiltakspakkeId = "PAKKE_B",
+                        orgnummer = "123456789",
+                        deltakelse = Deltakelse.UTENFOR_SCOPE,
                     ),
                 )
 
@@ -79,30 +61,6 @@ class TiltakspakkeVurderingRepositoryTest :
                     FROM tiltakspakke_deltakelse
                     """.trimIndent(),
                 ) shouldBeExactly 2
-
-                dataSource.connection.use { connection ->
-                    connection
-                        .prepareStatement(
-                            """
-                            SELECT vurderingsgrunnlag::text
-                            FROM tiltakspakke_deltakelse
-                            WHERE tiltakspakke_id = ? AND orgnummer = ?
-                            """.trimIndent(),
-                        ).use { statement ->
-                            statement.setString(1, "PAKKE_A")
-                            statement.setString(2, "123456789")
-
-                            statement.executeQuery().use { resultSet ->
-                                resultSet.next()
-                                Json.parseToJsonElement(resultSet.getString(1)) shouldBe
-                                    AdresseVurderingsgrunnlagData(
-                                        type = "forretningsadresse",
-                                        postnummer = "0154",
-                                        kommunenummer = "0301",
-                                    ).toJsonObject()
-                            }
-                        }
-                }
             }
         }
     })

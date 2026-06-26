@@ -1,27 +1,30 @@
 package no.nav.flaggskipet.domain.vurdering
 
-object FylkeKode {
-    const val TRONDHEIM = "50"
-    const val GAMMEL_TROMS = "54"
-    const val TROMS = "55"
-}
+import kotlinx.datetime.LocalDate
 
-class TiltakspakkeEnRegel(override val tiltakspakke: Tiltakspakke) : Regel {
-
-    private val fylkerIScopet = setOf(FylkeKode.TRONDHEIM, FylkeKode.TROMS, FylkeKode.GAMMEL_TROMS)
-
-    override fun vurder(grunnlag: VurderingsGrunnlag): Deltakelse = when {
-        grunnlag.virksomhet.adresse.fylke() !in fylkerIScopet ->
+class GeoTiltakspakkeRegel(
+    private val fylkerIScopet: Set<String>,
+    private val sannsynlighet: Double = 0.5,
+) : Regel {
+    override fun vurder(virksomhet: VirksomhetUnderVurdering): Deltakelse = when {
+        virksomhet.adresse.fylke() !in fylkerIScopet ->
             Deltakelse.UTENFOR_SCOPE
 
-        erSann(0.5) ->
-            Deltakelse.DELTAR
+        erSann(sannsynlighet) ->
+            Deltakelse.TILTAKSGRUPPE
 
         else ->
-            Deltakelse.DELTAR_IKKE
+            Deltakelse.KONTROLLGRUPPE
     }
 }
 
-fun getGjeldendeTiltakspakker(): List<Regel> = listOf(
-    TiltakspakkeEnRegel(Tiltakspakke("TILTAKSPAKKE_EN", null)),
-).filter { it.tiltakspakke.erGjeldene() }
+fun getGjeldendeTiltakspakker(): List<Tiltakspakke> = listOf(
+    Tiltakspakke(
+        id = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1",
+        sluttdato = LocalDate(2026, 7, 1),
+        regel = GeoTiltakspakkeRegel(
+            fylkerIScopet = setOf("50", "54", "55"),
+            sannsynlighet = 0.5,
+        ),
+    ),
+).filter { it.erGjeldene() }
