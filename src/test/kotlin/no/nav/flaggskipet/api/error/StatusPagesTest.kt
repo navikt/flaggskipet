@@ -16,7 +16,7 @@ import no.nav.flaggskipet.api.installPlugins
 
 class StatusPagesTest :
     FunSpec({
-        test("status pages responds with api error for not found exception") {
+        test("status pages svarer med api error for not found exception") {
             testApplication {
                 application {
                     installPluginTestRoutes()

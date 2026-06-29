@@ -22,7 +22,7 @@ import org.junit.jupiter.api.assertThrows
 
 class HttpClientImplTest :
     FunSpec({
-        test("hentNoekkelinfo maps 200 to EregNoekkelinfo with adresse and sends gyldigDato for today in Oslo") {
+        test("hentNoekkelinfo mapper 200 til EregNoekkelinfo med adresse og sender gyldigDato for i dag") {
             val mockEngine = MockEngine { request ->
                 request.method shouldBe HttpMethod.Get
                 request.url.protocol shouldBe URLProtocol.HTTPS
@@ -62,7 +62,7 @@ class HttpClientImplTest :
             )
         }
 
-        test("hentNoekkelinfo maps 404 to EregNoekkelinfo with null adresse") {
+        test("hentNoekkelinfo mapper 404 til EregNoekkelinfo med null adresse") {
             val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {

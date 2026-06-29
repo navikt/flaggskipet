@@ -6,11 +6,11 @@ import io.kotest.matchers.shouldBe
 class VurderingsresultatTest :
     FunSpec({
 
-        test("groupByTiltakspakke returns empty list for empty input") {
+        test("groupByTiltakspakke returnerer tom liste for tom input") {
             emptyList<Vurderingsresultat>().groupByTiltakspakke() shouldBe emptyList()
         }
 
-        test("groupByTiltakspakke returns single group for single result") {
+        test("groupByTiltakspakke returnerer en enkelt gruppe for enkelt resultat") {
             listOf(
                 Vurderingsresultat("PAKKE_A", "123", Deltakelse.TILTAKSGRUPPE),
             ).groupByTiltakspakke() shouldBe listOf(
@@ -18,7 +18,7 @@ class VurderingsresultatTest :
             )
         }
 
-        test("groupByTiltakspakke groups multiple virksomheter under same tiltakspakke") {
+        test("groupByTiltakspakke grupperer flere virksomheter under samme tiltakspakke") {
             listOf(
                 Vurderingsresultat("PAKKE_A", "123", Deltakelse.TILTAKSGRUPPE),
                 Vurderingsresultat("PAKKE_A", "456", Deltakelse.KONTROLLGRUPPE),
@@ -33,7 +33,7 @@ class VurderingsresultatTest :
             )
         }
 
-        test("groupByTiltakspakke groups multiple tiltakspakker sorted by id") {
+        test("groupByTiltakspakke grupperer flere tiltakspakker sortert etter id") {
             listOf(
                 Vurderingsresultat("PAKKE_B", "456", Deltakelse.UTENFOR_SCOPE),
                 Vurderingsresultat("PAKKE_A", "123", Deltakelse.TILTAKSGRUPPE),
@@ -43,7 +43,7 @@ class VurderingsresultatTest :
             )
         }
 
-        test("groupByTiltakspakke sorts virksomheter by orgnummer within each group") {
+        test("groupByTiltakspakke sorterer virksomheter etter orgnummer innen hver gruppe") {
             listOf(
                 Vurderingsresultat("PAKKE_A", "999", Deltakelse.TILTAKSGRUPPE),
                 Vurderingsresultat("PAKKE_A", "111", Deltakelse.KONTROLLGRUPPE),

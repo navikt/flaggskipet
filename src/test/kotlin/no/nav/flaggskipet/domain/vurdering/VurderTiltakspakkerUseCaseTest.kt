@@ -24,7 +24,7 @@ class VurderTiltakspakkerUseCaseTest :
             regel = GeoTiltakspakkeRegel(fylkerIScopet = setOf("50"), sannsynlighet = 1.0),
         )
 
-        test("returns empty list when no tiltakspakker") {
+        test("returnerer tom liste når det ikke finnes noen tiltakspakker") {
             val ereg = mockk<EregClient>(relaxed = true)
             val repo = mockk<TiltakspakkeVurderingRepository>(relaxed = true)
             val useCase = VurderTiltakspakkerUseCase(ereg, repo)
@@ -36,7 +36,7 @@ class VurderTiltakspakkerUseCaseTest :
             coVerify(exactly = 0) { repo.lagreVurderinger(any()) }
         }
 
-        test("returns existing vurderinger without calling ereg") {
+        test("returnerer eksisterende vurderinger uten å kalle ereg") {
             val ereg = mockk<EregClient>(relaxed = true)
             val repo = mockk<TiltakspakkeVurderingRepository> {
                 coEvery { hentVurderinger(any(), any()) } returns listOf(
@@ -53,7 +53,7 @@ class VurderTiltakspakkerUseCaseTest :
             coVerify(exactly = 0) { repo.lagreVurderinger(any()) }
         }
 
-        test("evaluates new orgnumre and saves vurderinger") {
+        test("evaluerer nye orgnumre og lagrer vurderinger") {
             val ereg = mockk<EregClient> {
                 coEvery { hentNoekkelinfo(listOf("123")) } returns listOf(
                     EregNoekkelinfo("123", adresseI50),
@@ -79,7 +79,7 @@ class VurderTiltakspakkerUseCaseTest :
             }
         }
 
-        test("evaluates to UTENFOR_SCOPE when ereg returns no adresse") {
+        test("evaluerer til UTENFOR_SCOPE når ereg returnerer ingen adresse") {
             val ereg = mockk<EregClient> {
                 coEvery { hentNoekkelinfo(listOf("123")) } returns listOf(
                     EregNoekkelinfo("123", null),
@@ -104,7 +104,7 @@ class VurderTiltakspakkerUseCaseTest :
             }
         }
 
-        test("only evaluates new orgnumre, skips existing ones") {
+        test("evaluerer kun nye orgnumre, hopper over eksisterende") {
             val ereg = mockk<EregClient>(relaxed = true)
             val repo = mockk<TiltakspakkeVurderingRepository> {
                 coEvery { hentVurderinger(any(), any()) } returns listOf(
@@ -120,7 +120,7 @@ class VurderTiltakspakkerUseCaseTest :
             coVerify(exactly = 0) { ereg.hentNoekkelinfo(listOf("111")) }
         }
 
-        test("handles multiple tiltakspakker and orgnumre with correct grouping") {
+        test("håndterer flere tiltakspakker og orgnumre med korrekt gruppering") {
             val adresse = Adresse("Forretningsadresse", "7004", "5001")
             val ereg = mockk<EregClient> {
                 coEvery { hentNoekkelinfo(listOf("111", "222")) } returns listOf(
