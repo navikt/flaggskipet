@@ -27,7 +27,7 @@ class HttpClientImplTest :
                 request.method shouldBe HttpMethod.Get
                 request.url.protocol shouldBe URLProtocol.HTTPS
                 request.url.host shouldBe "ereg-services.dev.intern.nav.no"
-                request.url.encodedPath shouldBe "/v1/organisasjon/313644480/noekkelinfo"
+                request.url.encodedPath shouldBe "/v2/organisasjon/313644480/noekkelinfo"
                 request.url.parameters["gyldigDato"]?.matches(Regex("""\d{4}-\d{2}-\d{2}""")) shouldBe true
 
                 respondJson(
