@@ -9,7 +9,7 @@ class VurderTiltakspakkerUseCase(
     private val eregClient: EregClient,
     private val tiltakspakkeVurderingRepository: TiltakspakkeVurderingRepository,
 ) {
-    suspend fun execute(orgnumre: List<Orgnummer>, tiltakspakker: List<Tiltakspakke> = getGjeldendeTiltakspakker()): List<TiltakspakkeVurdering> {
+    suspend fun execute(orgnumre: List<Orgnummer>, tiltakspakker: List<Tiltakspakke> = getGjeldendeTiltakspakker): List<TiltakspakkeVurdering> {
         if (tiltakspakker.isEmpty()) return emptyList()
 
         val eksisterende = hentEksisterende(tiltakspakker, orgnumre)

@@ -18,7 +18,7 @@ data class GeoTiltakspakkeRegel(
     }
 }
 
-fun getGjeldendeTiltakspakker(): List<Tiltakspakke> = listOf(
+val getGjeldendeTiltakspakker = listOf(
     Tiltakspakke(
         id = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1",
         sluttdato = LocalDate(2026, 7, 1),
