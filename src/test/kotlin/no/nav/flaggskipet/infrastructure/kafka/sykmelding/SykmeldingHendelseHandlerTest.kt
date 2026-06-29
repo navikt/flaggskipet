@@ -16,7 +16,7 @@ import kotlin.time.Instant
 @OptIn(ExperimentalSerializationApi::class)
 class SykmeldingHendelseHandlerTest :
     FunSpec({
-        test("handler stores valid sykmelding hendelse") {
+        test("handler lagrer gyldig sykmelding hendelse") {
             val repo = mockk<SykmeldingHendelseRepository>()
             coEvery { repo.upsert(any()) } returns Unit
 
@@ -43,7 +43,7 @@ class SykmeldingHendelseHandlerTest :
             }
         }
 
-        test("handler throws on invalid message") {
+        test("handler kaster med ugyldig melding") {
             val repo = mockk<SykmeldingHendelseRepository>(relaxed = true)
             val handler = SykmeldingHendelseHandler(repo)
 
@@ -60,7 +60,7 @@ class SykmeldingHendelseHandlerTest :
             }
         }
 
-        test("handler commits tombstone without db writes") {
+        test("handler committer tombstone uten db-skrivinger") {
             val repo = mockk<SykmeldingHendelseRepository>(relaxed = true)
             val handler = SykmeldingHendelseHandler(repo)
 
@@ -77,7 +77,7 @@ class SykmeldingHendelseHandlerTest :
             coVerify(exactly = 0) { repo.upsert(any()) }
         }
 
-        test("handler propagates repository failures") {
+        test("handler propagerer repository feil") {
             val repo = mockk<SykmeldingHendelseRepository>()
             coEvery { repo.upsert(any()) } throws RuntimeException("db failure")
 
