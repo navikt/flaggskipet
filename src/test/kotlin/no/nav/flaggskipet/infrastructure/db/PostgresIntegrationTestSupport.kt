@@ -21,7 +21,7 @@ internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, 
         DatabaseConfig(
             username = postgres.username,
             password = postgres.password,
-            jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.getDatabaseName()}",
+            jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}",
         ),
     ).use { dataSource ->
         dataSource.migrate()
@@ -31,8 +31,9 @@ internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, 
 
 private class RepoPostgresContainer : PostgreSQLContainer<RepoPostgresContainer>("postgres:18-alpine")
 
-internal fun HikariDataSource.queryForInt(sql: String): Int = connection.use { connection ->
-    connection.prepareStatement(sql).use { statement ->
+@Suppress("SqlSourceToSinkFlow")
+internal fun HikariDataSource.queryForInt(hardcodedSqlQuery: String): Int = connection.use { connection ->
+    connection.prepareStatement(hardcodedSqlQuery).use { statement ->
         statement.executeQuery().use { resultSet ->
             resultSet.next()
             resultSet.getInt(1)

@@ -8,6 +8,8 @@ import no.nav.flaggskipet.infrastructure.db.repositories.InvalidHendelseReposito
 import no.nav.flaggskipet.infrastructure.db.repositories.InvalidHendelseRepositoryImpl
 import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepositoryImpl
+import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepositoryImpl
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -26,6 +28,7 @@ fun databaseModule(): Module = module {
     single { Database.connect(get<DataSource>()) }
     single<SykmeldingHendelseRepository> { SykmeldingHendelseRepositoryImpl(get()) }
     single<InvalidHendelseRepository> { InvalidHendelseRepositoryImpl(get()) }
+    single<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(get()) }
 }
 
 suspend fun <T> Database.transact(block: () -> T): T = withContext(Dispatchers.IO) {

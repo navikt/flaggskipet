@@ -2,113 +2,100 @@ package no.nav.flaggskipet.infrastructure.kafka.sykmelding
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
-import no.nav.flaggskipet.infrastructure.db.queryForInt
-import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepositoryImpl
-import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
+import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelse
+import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepository
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.jetbrains.exposed.v1.jdbc.Database
+import kotlin.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
 class SykmeldingHendelseHandlerTest :
     FunSpec({
-        test("handler stores valid sykmelding hendelse row and returns commit") {
-            withMigratedPostgres { dataSource, database ->
-                val handler = createHandler(database)
+        test("handler lagrer gyldig sykmelding hendelse") {
+            val repo = mockk<SykmeldingHendelseRepository>()
+            coEvery { repo.upsert(any()) } returns Unit
 
+            val handler = SykmeldingHendelseHandler(repo)
+            handler.handle(
+                ConsumerRecord(
+                    "teamsykmelding.syfo-sendt-sykmelding",
+                    0,
+                    10L,
+                    "sykmelding-key",
+                    SykmeldingHendelseFixtures.validMessage(),
+                ),
+            )
+
+            coVerify(exactly = 1) {
+                repo.upsert(
+                    SykmeldingHendelse(
+                        sykmeldingId = "sm-123456789",
+                        fnr = "12039456789",
+                        organisasjonsnummer = "987654321",
+                        eventTimestamp = Instant.parse("2026-06-22T10:15:30Z"),
+                    ),
+                )
+            }
+        }
+
+        test("handler kaster med ugyldig melding") {
+            val repo = mockk<SykmeldingHendelseRepository>(relaxed = true)
+            val handler = SykmeldingHendelseHandler(repo)
+
+            shouldThrow<MissingFieldException> {
                 handler.handle(
                     ConsumerRecord(
                         "teamsykmelding.syfo-sendt-sykmelding",
                         0,
                         10L,
                         "sykmelding-key",
-                        SykmeldingHendelseFixtures.validMessage(),
+                        SykmeldingHendelseFixtures.mismatchedSykmeldingIdMessage(),
                     ),
                 )
-
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM sykmelding_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 1
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM invalid_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 0
             }
         }
 
-        test("handler will throw exception") {
-            withMigratedPostgres { _, database ->
-                shouldThrow<MissingFieldException> {
-                    createHandler(database).handle(
-                        ConsumerRecord(
-                            "teamsykmelding.syfo-sendt-sykmelding",
-                            0,
-                            10L,
-                            "sykmelding-key",
-                            SykmeldingHendelseFixtures.mismatchedSykmeldingIdMessage(),
-                        ),
-                    )
-                }
-            }
+        test("handler committer tombstone uten db-skrivinger") {
+            val repo = mockk<SykmeldingHendelseRepository>(relaxed = true)
+            val handler = SykmeldingHendelseHandler(repo)
+
+            handler.handle(
+                ConsumerRecord(
+                    "teamsykmelding.syfo-sendt-sykmelding",
+                    2,
+                    30L,
+                    "sykmelding-key",
+                    null,
+                ),
+            )
+
+            coVerify(exactly = 0) { repo.upsert(any()) }
         }
 
-        test("handler commits tombstone without db writes") {
-            withMigratedPostgres { dataSource, database ->
-                val handler = createHandler(database)
+        test("handler propagerer repository feil") {
+            val repo = mockk<SykmeldingHendelseRepository>()
+            coEvery { repo.upsert(any()) } throws RuntimeException("db failure")
 
+            val handler = SykmeldingHendelseHandler(repo)
+
+            runCatching {
                 handler.handle(
                     ConsumerRecord(
                         "teamsykmelding.syfo-sendt-sykmelding",
-                        2,
-                        30L,
+                        0,
+                        40L,
                         "sykmelding-key",
-                        null,
+                        SykmeldingHendelseFixtures.validMessage(),
                     ),
                 )
-
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM sykmelding_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 0
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM invalid_hendelse
-                    """.trimIndent(),
-                ) shouldBeExactly 0
-            }
-        }
-
-        test("handler propagates database failures for valid messages") {
-            withMigratedPostgres { dataSource, database ->
-                val handler = createHandler(database)
-                dataSource.close()
-
-                runCatching {
-                    handler.handle(
-                        ConsumerRecord(
-                            "teamsykmelding.syfo-sendt-sykmelding",
-                            0,
-                            40L,
-                            "sykmelding-key",
-                            SykmeldingHendelseFixtures.validMessage(),
-                        ),
-                    )
-                }.isFailure shouldBe true
+            }.let {
+                it.isFailure shouldBe true
+                it.exceptionOrNull()?.message shouldBe "db failure"
             }
         }
     })
-
-private fun createHandler(database: Database): SykmeldingHendelseHandler = SykmeldingHendelseHandler(
-    sykmeldingHendelseRepository = SykmeldingHendelseRepositoryImpl(database),
-)

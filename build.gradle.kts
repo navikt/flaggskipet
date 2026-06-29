@@ -62,6 +62,7 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.mockk)
 
     constraints {
         testImplementation(libs.commons.compress) {
