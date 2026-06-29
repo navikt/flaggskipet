@@ -51,7 +51,7 @@ spec:
   accessPolicy:
     outbound:
       external:
-        - host: ereg-services-q1.dev-fss-pub.nais.io
+        - host: https://ereg-services.dev.intern.nav.no
   env:
     - name: FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED
       value: "false"
