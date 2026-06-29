@@ -56,7 +56,7 @@ spec:
     - name: FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED
       value: "false"
     - name: EREG_API_URL
-      value: "https://ereg-services-q1.dev-fss-pub.nais.io"
+      value: "https://ereg-services.dev.intern.nav.no"
   leaderElection: true
   gcp:
     sqlInstances:
