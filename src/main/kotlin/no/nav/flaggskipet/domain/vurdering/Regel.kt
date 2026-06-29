@@ -20,7 +20,7 @@ data class Tiltakspakke(
     val sluttdato: LocalDate? = null,
     val regel: Regel,
 ) {
-    fun erGjeldene(now: LocalDate = dagensDato()) = sluttdato?.let { it > now } ?: true
+    fun erGjeldene(now: LocalDate = dagensDato()) = sluttdato?.let { it >= now } ?: true
     fun vurder(virksomhet: VirksomhetUnderVurdering): Deltakelse = regel.vurder(virksomhet)
 }
 

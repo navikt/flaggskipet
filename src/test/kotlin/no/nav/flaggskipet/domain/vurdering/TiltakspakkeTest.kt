@@ -29,4 +29,8 @@ class TiltakspakkeTest :
         test("pakke med fremtidig sluttdato er gjeldende") {
             tiltakspakke.copy(sluttdato = dagensDato().plus(DatePeriod(days = 10))).erGjeldene() shouldBe true
         }
+
+        test("pakke med dagensdato sluttdato er gjeldende") {
+            tiltakspakke.copy(sluttdato = dagensDato()).erGjeldene() shouldBe true
+        }
     })
