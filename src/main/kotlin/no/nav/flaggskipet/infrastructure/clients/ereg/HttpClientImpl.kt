@@ -29,7 +29,7 @@ internal class HttpClientImpl(
     private suspend fun hentNoekkelinfoFor(
         organisasjonsnummer: String,
     ): EregNoekkelinfo {
-        val response = httpClient.get("/v1/organisasjon/$organisasjonsnummer/noekkelinfo") {
+        val response = httpClient.get("/v2/organisasjon/$organisasjonsnummer/noekkelinfo") {
             parameter("gyldigDato", dagensDato())
             accept(ContentType.Application.Json)
         }
