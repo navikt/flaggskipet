@@ -1,3 +1,4 @@
+import com.adarshr.gradle.testlogger.theme.ThemeType
 import org.gradle.api.file.DuplicatesStrategy
 
 buildscript {
@@ -12,6 +13,7 @@ plugins {
     alias(libs.plugins.ktor)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.flyway)
+    alias(libs.plugins.test.logger)
 }
 
 group = "no.nav.flaggskipet"
@@ -81,6 +83,11 @@ tasks {
 
     test {
         useJUnitPlatform()
+        testlogger {
+            theme = ThemeType.MOCHA_PARALLEL
+            showFullStackTraces = true
+            showSimpleNames = true
+        }
     }
 
     named("check") {
