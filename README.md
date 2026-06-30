@@ -23,6 +23,10 @@ Appen bruker PostgreSQL 18 via Cloud SQL i dev og lokal Postgres via Docker Comp
 Se [Utvikling](docs/development/utvikling.md) for lokal database og oppsett.
 Bruk `mise tasks` for tilgjengelige kommandoer.
 
+## Dokumentasjon
+
+Dokumentasjon og beslutningsgrunnlag for tjenesten finnes i [docs](docs) mappen.
+
 ## For Nav-ansatte
 
 Spørsmål om tjenesten kan tas i [#esyfo på Slack](https://nav-it.slack.com/archives/C012X796B4L).
