@@ -50,10 +50,8 @@ spec:
     pool: nav-dev
   accessPolicy:
     outbound:
-      rules:
-        - application: ereg-services
-          namespace: arbeidsforhold
-          cluster: dev-fss
+      external:
+        - host: ereg-services-q2.intern.dev.nav.no
   env:
     - name: FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED
       value: "false"
