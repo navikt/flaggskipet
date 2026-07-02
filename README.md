@@ -12,7 +12,7 @@ Flaggskipet er en Ktor-backend for feature flags i team-esyfo.
 
 ## Formål
 
-Dette repoet inneholder Ktor-applikasjonen, lokal PostgreSQL for utvikling og NAIS-oppsett for deploy til dev.
+Dette repoet inneholder Ktor-applikasjonen, lokal PostgreSQL for utvikling og NAIS-oppsett for deploy til dev og prod.
 
 ## Database
 
