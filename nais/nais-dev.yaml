@@ -53,7 +53,6 @@ spec:
   env:
     - name: EREG_API_URL
       value: "https://ereg-services-q2.dev-fss-pub.nais.io"
-  leaderElection: true
   gcp:
     sqlInstances:
       - name: flaggskipet-instance
