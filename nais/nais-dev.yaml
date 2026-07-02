@@ -44,8 +44,6 @@ spec:
       runtime: java
   ingresses:
     - "https://flaggskipet.intern.dev.nav.no"
-  tokenx:
-    enabled: true
   accessPolicy:
     outbound:
       external:
