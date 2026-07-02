@@ -5,7 +5,6 @@ import io.ktor.server.application.install
 import no.nav.flaggskipet.domain.useCaseModule
 import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
 import no.nav.flaggskipet.infrastructure.db.core.databaseModule
-import no.nav.flaggskipet.infrastructure.kafka.core.kafkaModule
 import org.koin.logger.slf4jLogger
 import org.koin.ktor.plugin.Koin as KoinPlugin
 
@@ -17,7 +16,6 @@ internal fun Application.installDependencyInjection() {
             metricsModule(),
             databaseModule(),
             eregModule(),
-            kafkaModule(),
             useCaseModule(),
         )
     }

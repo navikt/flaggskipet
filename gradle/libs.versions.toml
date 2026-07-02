@@ -2,7 +2,6 @@
 kotlin = "2.3.21"
 ktor = "3.5.1"
 java = "25"
-kafka = "4.3.1"
 logback = "1.5.35"
 kotest = "6.2.1"
 ktlint = "14.2.0"
@@ -29,7 +28,6 @@ flyway = { id = "org.flywaydb.flyway", version.ref = "flyway" }
 test-logger = { id = "com.adarshr.test-logger", version.ref = "testLogger" }
 
 [libraries]
-kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -58,7 +56,6 @@ logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-enc
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
-testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

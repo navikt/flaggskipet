@@ -8,7 +8,6 @@ import no.nav.flaggskipet.api.tiltakspakker.configureVurderingApi
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
-import no.nav.flaggskipet.bootstrap.startKafkaConsumers
 import no.nav.flaggskipet.infrastructure.db.core.migrate
 import org.koin.ktor.ext.get
 import org.slf4j.LoggerFactory
@@ -35,7 +34,6 @@ fun Application.module() {
     installPlugins()
     installDependencyInjection()
     get<DataSource>().migrate()
-    startKafkaConsumers(applicationState)
     configureVurderingApi()
     configureInternalApi(applicationState)
 }

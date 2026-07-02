@@ -12,5 +12,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "flaggskipet"
-
-include("devtools")
