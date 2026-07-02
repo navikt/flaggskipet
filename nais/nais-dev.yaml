@@ -46,15 +46,11 @@ spec:
     - "https://flaggskipet.intern.dev.nav.no"
   tokenx:
     enabled: true
-  kafka:
-    pool: nav-dev
   accessPolicy:
     outbound:
       external:
         - host: ereg-services-q2.dev-fss-pub.nais.io
   env:
-    - name: FLAGGSKIPET_KAFKA_SYKMELDING_ENABLED
-      value: "false"
     - name: EREG_API_URL
       value: "https://ereg-services-q2.dev-fss-pub.nais.io"
   leaderElection: true

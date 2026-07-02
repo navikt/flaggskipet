@@ -32,7 +32,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.kafka.clients)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.datetime)
     implementation(libs.ktor.client.core)
@@ -62,7 +61,6 @@ dependencies {
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.mockk)
 
