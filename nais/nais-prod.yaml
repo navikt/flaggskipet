@@ -47,8 +47,6 @@ spec:
   tokenx:
     enabled: true
   accessPolicy:
-    inbound:
-      rules: []
     outbound:
       external:
         - host: ereg-services.prod-fss-pub.nais.io
