@@ -21,7 +21,7 @@ data class GeoTiltakspakkeRegel(
 val getGjeldendeTiltakspakker = listOf(
     Tiltakspakke(
         id = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1",
-        sluttdato = LocalDate(2026, 7, 1),
+        sluttdato = null,
         regel = GeoTiltakspakkeRegel(
             // 50: Trondheim; 54 (bare dev) og 55: Troms
             fylkerIScopet = setOf("50", "54", "55"),
