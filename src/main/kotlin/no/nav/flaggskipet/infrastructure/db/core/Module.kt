@@ -4,10 +4,6 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.nav.flaggskipet.infrastructure.db.repositories.InvalidHendelseRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.InvalidHendelseRepositoryImpl
-import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.SykmeldingHendelseRepositoryImpl
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepositoryImpl
 import org.flywaydb.core.Flyway
@@ -26,8 +22,6 @@ fun databaseModule(): Module = module {
     }
     single<DataSource> { get<HikariDataSource>() }
     single { Database.connect(get<DataSource>()) }
-    single<SykmeldingHendelseRepository> { SykmeldingHendelseRepositoryImpl(get()) }
-    single<InvalidHendelseRepository> { InvalidHendelseRepositoryImpl(get()) }
     single<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(get()) }
 }
 
