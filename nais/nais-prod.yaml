@@ -44,6 +44,10 @@ spec:
   ingresses:
     - "https://flaggskipet.intern.nav.no"
   accessPolicy:
+    inbound:
+      rules:
+        - application: dinesykmeldte
+        - application: syfo-oppfolgingsplan-frontend
     outbound:
       external:
         - host: ereg-services.prod-fss-pub.nais.io
