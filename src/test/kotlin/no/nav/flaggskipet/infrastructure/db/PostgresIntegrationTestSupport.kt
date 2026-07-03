@@ -6,22 +6,19 @@ import no.nav.flaggskipet.infrastructure.db.core.createDataSource
 import no.nav.flaggskipet.infrastructure.db.core.migrate
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
 internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, Database) -> T): T = RepoPostgresContainer().use { postgres ->
     postgres
-        .withExposedPorts(5432)
         .withDatabaseName("flaggskipet")
         .withUsername("flaggskipet")
         .withPassword("flaggskipet")
-    postgres.waitingFor(HostPortWaitStrategy())
     postgres.start()
 
     createDataSource(
         DatabaseConfig(
             username = postgres.username,
             password = postgres.password,
-            jdbcUrl = "jdbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}",
+            jdbcUrl = postgres.jdbcUrl,
         ),
     ).use { dataSource ->
         dataSource.migrate()
