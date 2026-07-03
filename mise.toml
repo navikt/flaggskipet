@@ -28,7 +28,6 @@ run = './gradlew build'
 
 [tasks.test]
 description = "Run tests with gradle"
-depends = ["infra"]
 run = './gradlew test'
 
 [tasks.lint]
