@@ -42,20 +42,20 @@ spec:
       enabled: true
       runtime: java
   ingresses:
-    - "https://flaggskipet.intern.dev.nav.no"
+    - "https://flaggskipet.intern.nav.no"
   accessPolicy:
     outbound:
       external:
-        - host: ereg-services-q2.dev-fss-pub.nais.io
+        - host: ereg-services.prod-fss-pub.nais.io
   env:
     - name: EREG_API_URL
-      value: "https://ereg-services-q2.dev-fss-pub.nais.io"
+      value: "https://ereg-services.prod-fss-pub.nais.io"
   gcp:
     sqlInstances:
       - name: flaggskipet-instance
         collation: nb_NO
         type: POSTGRES_18
-        tier: db-f1-micro
+        tier: db-custom-1-3840
         diskAutoresize: true
         databases:
           - name: flaggskipet-db
