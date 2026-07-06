@@ -2,6 +2,9 @@ package no.nav.flaggskipet.infrastructure.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.ktor.server.plugins.di.DependencyRegistry
+import io.ktor.server.plugins.di.provide
+import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
@@ -9,20 +12,15 @@ import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRe
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.koin.core.module.Module
-import org.koin.dsl.module
-import org.koin.dsl.onClose
 import org.slf4j.LoggerFactory
 import java.sql.SQLException
 import javax.sql.DataSource
 
-fun databaseModule(): Module = module {
-    single<HikariDataSource> { createDataSource(get()) } onClose {
-        it?.close()
-    }
-    single<DataSource> { get<HikariDataSource>() }
-    single { Database.connect(get<DataSource>()) }
-    single<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(get()) }
+fun DependencyRegistry.databaseModule() {
+    provide<HikariDataSource> { createDataSource(resolve()) }
+        .cleanup(HikariDataSource::close)
+    provide<Database> { Database.connect(resolve<DataSource>()) }
+    provide<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(resolve()) }
 }
 
 suspend fun <T> Database.transact(block: () -> T): T = withContext(Dispatchers.IO) {

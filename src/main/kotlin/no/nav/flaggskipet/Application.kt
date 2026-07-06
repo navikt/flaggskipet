@@ -2,6 +2,7 @@ package no.nav.flaggskipet
 
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
+import io.ktor.server.plugins.di.dependencies
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.api.tiltakspakker.configureVurderingApi
@@ -9,7 +10,6 @@ import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.infrastructure.db.core.migrate
-import org.koin.ktor.ext.get
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 import javax.sql.DataSource
@@ -33,7 +33,8 @@ fun Application.module() {
     configureLifecycleHooks(applicationState)
     installPlugins()
     installDependencyInjection()
-    get<DataSource>().migrate()
+    val dataSource: DataSource by dependencies
+    dataSource.migrate()
     configureVurderingApi()
     configureInternalApi(applicationState)
 }

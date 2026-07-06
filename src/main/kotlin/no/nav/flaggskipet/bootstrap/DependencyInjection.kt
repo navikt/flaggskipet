@@ -1,22 +1,18 @@
 package no.nav.flaggskipet.bootstrap
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.install
+import io.ktor.server.plugins.di.dependencies
 import no.nav.flaggskipet.domain.useCaseModule
 import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
 import no.nav.flaggskipet.infrastructure.db.core.databaseModule
-import org.koin.logger.slf4jLogger
-import org.koin.ktor.plugin.Koin as KoinPlugin
 
 internal fun Application.installDependencyInjection() {
-    install(KoinPlugin) {
-        slf4jLogger()
-        modules(
-            configModule(environment.config),
-            metricsModule(),
-            databaseModule(),
-            eregModule(),
-            useCaseModule(),
-        )
+    val config = environment.config
+    dependencies {
+        configModule(config)
+        metricsModule()
+        databaseModule()
+        eregModule()
+        useCaseModule()
     }
 }

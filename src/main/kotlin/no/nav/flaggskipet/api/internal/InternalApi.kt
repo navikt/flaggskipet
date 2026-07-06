@@ -2,6 +2,7 @@ package no.nav.flaggskipet.api.internal
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
@@ -9,15 +10,14 @@ import io.ktor.server.routing.routing
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.flaggskipet.bootstrap.ApplicationState
 import no.nav.flaggskipet.infrastructure.db.core.isHealthy
-import org.koin.ktor.ext.inject
 import javax.sql.DataSource
 
 private const val POD_HEALTH_PATH = "/internal/health"
 const val POD_METRICS_PATH = "/internal/metrics"
 
 fun Application.configureInternalApi(state: ApplicationState) {
-    val dataSource by inject<DataSource>()
-    val meterRegistry by inject<PrometheusMeterRegistry>()
+    val dataSource: DataSource by dependencies
+    val meterRegistry: PrometheusMeterRegistry by dependencies
 
     routing {
         registerPodApi(state, dataSource)
