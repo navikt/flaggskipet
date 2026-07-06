@@ -6,7 +6,9 @@ import io.kotest.matchers.shouldBe
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
 import no.nav.flaggskipet.infrastructure.db.queryForInt
+import no.nav.flaggskipet.infrastructure.db.queryForString
 import no.nav.flaggskipet.infrastructure.db.withMigratedPostgres
+import java.util.UUID
 
 class TiltakspakkeVurderingRepositoryTest :
     FunSpec({
@@ -61,6 +63,16 @@ class TiltakspakkeVurderingRepositoryTest :
                     FROM tiltakspakke_deltakelse
                     """.trimIndent(),
                 ) shouldBeExactly 2
+
+                UUID.fromString(
+                    dataSource.queryForString(
+                        """
+                        SELECT id::text
+                        FROM tiltakspakke_deltakelse
+                        WHERE tiltakspakke_id = 'PAKKE_A'
+                        """.trimIndent(),
+                    ),
+                ).version() shouldBeExactly 7
             }
         }
     })

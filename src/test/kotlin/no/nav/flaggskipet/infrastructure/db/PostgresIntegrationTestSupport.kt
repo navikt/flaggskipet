@@ -6,6 +6,7 @@ import no.nav.flaggskipet.infrastructure.db.core.createDataSource
 import no.nav.flaggskipet.infrastructure.db.core.migrate
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.testcontainers.containers.PostgreSQLContainer
+import java.sql.ResultSet
 
 internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, Database) -> T): T = RepoPostgresContainer().use { postgres ->
     postgres
@@ -29,11 +30,22 @@ internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, 
 private class RepoPostgresContainer : PostgreSQLContainer<RepoPostgresContainer>("postgres:18-alpine")
 
 @Suppress("SqlSourceToSinkFlow")
-internal fun HikariDataSource.queryForInt(hardcodedSqlQuery: String): Int = connection.use { connection ->
+internal fun HikariDataSource.queryForInt(hardcodedSqlQuery: String): Int = queryForValue(hardcodedSqlQuery) { it.getInt(1) }
+
+@Suppress("SqlSourceToSinkFlow")
+internal fun HikariDataSource.queryForString(hardcodedSqlQuery: String): String = queryForValue(hardcodedSqlQuery) { it.getString(1) }
+
+@Suppress("SqlSourceToSinkFlow")
+private fun <T> HikariDataSource.queryForValue(
+    hardcodedSqlQuery: String,
+    mapRow: (ResultSet) -> T,
+): T = connection.use { connection ->
     connection.prepareStatement(hardcodedSqlQuery).use { statement ->
         statement.executeQuery().use { resultSet ->
-            resultSet.next()
-            resultSet.getInt(1)
+            check(resultSet.next()) {
+                "Expected query to return at least one row"
+            }
+            mapRow(resultSet)
         }
     }
 }
