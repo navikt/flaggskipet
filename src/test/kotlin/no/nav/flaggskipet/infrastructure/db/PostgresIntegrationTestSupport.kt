@@ -29,13 +29,10 @@ internal suspend fun <T> withMigratedPostgres(block: suspend (HikariDataSource, 
 
 private class RepoPostgresContainer : PostgreSQLContainer<RepoPostgresContainer>("postgres:18-alpine")
 
-@Suppress("SqlSourceToSinkFlow")
 internal fun HikariDataSource.queryForInt(hardcodedSqlQuery: String): Int = queryForValue(hardcodedSqlQuery) { it.getInt(1) }
 
-@Suppress("SqlSourceToSinkFlow")
 internal fun HikariDataSource.queryForString(hardcodedSqlQuery: String): String = queryForValue(hardcodedSqlQuery) { it.getString(1) }
 
-@Suppress("SqlSourceToSinkFlow")
 private fun <T> HikariDataSource.queryForValue(
     hardcodedSqlQuery: String,
     mapRow: (ResultSet) -> T,
