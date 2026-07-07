@@ -3,7 +3,6 @@ package no.nav.flaggskipet.infrastructure.db.core
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.plugins.di.DependencyRegistry
-import io.ktor.server.plugins.di.provide
 import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
