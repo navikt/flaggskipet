@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db.config
+package no.nav.flaggskipet.infrastructure.database.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -6,8 +6,8 @@ import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepositoryImpl
+import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepositoryImpl
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -56,7 +56,7 @@ fun DataSource.isHealthy(): Boolean = try {
 fun DataSource.migrate() {
     Flyway.configure()
         .dataSource(this)
-        .locations("classpath:db/migration")
+        .locations("classpath:database.migration")
         .load()
         .migrate()
 }

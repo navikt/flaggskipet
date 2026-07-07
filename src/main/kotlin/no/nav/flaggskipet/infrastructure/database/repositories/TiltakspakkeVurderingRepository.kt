@@ -1,10 +1,10 @@
-package no.nav.flaggskipet.infrastructure.db.repositories
+package no.nav.flaggskipet.infrastructure.database.repositories
 
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.domain.vurdering.Orgnummer
 import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
-import no.nav.flaggskipet.infrastructure.db.config.transact
-import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeDeltakelseTable
+import no.nav.flaggskipet.infrastructure.database.config.transact
+import no.nav.flaggskipet.infrastructure.database.tables.TiltakspakkeDeltakelseTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.Database

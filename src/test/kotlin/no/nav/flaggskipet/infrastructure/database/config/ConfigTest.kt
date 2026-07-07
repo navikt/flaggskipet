@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db.config
+package no.nav.flaggskipet.infrastructure.database.config
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec

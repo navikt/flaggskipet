@@ -2,8 +2,8 @@ package no.nav.flaggskipet.domain.vurdering
 
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregNoekkelinfo
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.VurderingForLagring
+import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.infrastructure.database.repositories.VurderingForLagring
 
 class VurderTiltakspakkerUseCase(
     private val eregClient: EregClient,

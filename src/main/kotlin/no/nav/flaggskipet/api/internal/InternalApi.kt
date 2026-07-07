@@ -9,7 +9,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.flaggskipet.bootstrap.ApplicationState
-import no.nav.flaggskipet.infrastructure.db.config.isHealthy
+import no.nav.flaggskipet.infrastructure.database.config.isHealthy
 import javax.sql.DataSource
 
 private const val POD_HEALTH_PATH = "/internal/health"

@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db.tables
+package no.nav.flaggskipet.infrastructure.database.tables
 
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import org.jetbrains.exposed.v1.core.Table
