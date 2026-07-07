@@ -6,19 +6,21 @@ import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import no.nav.flaggskipet.infrastructure.HealthCheck
 import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepositoryImpl
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.slf4j.LoggerFactory
-import java.sql.SQLException
 import javax.sql.DataSource
 
 fun DependencyRegistry.databaseModule() {
     provide<HikariDataSource> { createDataSource(resolve()) }
         .cleanup(HikariDataSource::close)
     provide<Database> { Database.connect(resolve<DataSource>()) }
+    provide<HealthCheck> {
+        dataSourceHealthCheck(resolve())
+    }
     provide<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(resolve()) }
 }
 
@@ -41,17 +43,6 @@ fun createDataSource(databaseConfig: DatabaseConfig): HikariDataSource = HikariD
         validate()
     },
 )
-
-private val logger = LoggerFactory.getLogger("no.nav.flaggskipet.infrastructure.db.core.DatabaseHealth")
-
-fun DataSource.isHealthy(): Boolean = try {
-    connection.use { dbConnection ->
-        dbConnection.isValid(1)
-    }
-} catch (ex: SQLException) {
-    logger.error("Database health check failed", ex)
-    false
-}
 
 fun DataSource.migrate() {
     Flyway.configure()

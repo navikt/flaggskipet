@@ -7,7 +7,6 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.plugins.di.DependencyRegistry
-import io.ktor.server.plugins.di.provide
 import io.ktor.server.plugins.di.resolve
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.infrastructure.config.stringOrEmpty

@@ -6,8 +6,6 @@ import io.ktor.server.plugins.di.dependencies
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.api.tiltakspakker.configureVurderingApi
-import no.nav.flaggskipet.bootstrap.ApplicationState
-import no.nav.flaggskipet.bootstrap.configureLifecycleHooks
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.infrastructure.database.config.migrate
 import org.slf4j.LoggerFactory
@@ -29,12 +27,10 @@ fun main(args: Array<String>) {
 
 @Suppress("unused")
 fun Application.module() {
-    val applicationState = ApplicationState()
-    configureLifecycleHooks(applicationState)
     installPlugins()
     installDependencyInjection()
     val dataSource: DataSource by dependencies
     dataSource.migrate()
     configureVurderingApi()
-    configureInternalApi(applicationState)
+    configureInternalApi()
 }

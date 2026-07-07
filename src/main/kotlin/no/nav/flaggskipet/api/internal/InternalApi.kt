@@ -8,47 +8,39 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import no.nav.flaggskipet.bootstrap.ApplicationState
-import no.nav.flaggskipet.infrastructure.database.config.isHealthy
-import javax.sql.DataSource
+import no.nav.flaggskipet.infrastructure.HealthCheck
 
 private const val POD_HEALTH_PATH = "/internal/health"
 const val POD_METRICS_PATH = "/internal/metrics"
 
-fun Application.configureInternalApi(state: ApplicationState) {
-    val dataSource: DataSource by dependencies
+fun Application.configureInternalApi() {
+    val healthCheck: HealthCheck by dependencies
     val meterRegistry: PrometheusMeterRegistry by dependencies
 
     routing {
-        registerPodApi(state, dataSource)
+        registerPodApi(healthCheck)
         registerMetricApi(meterRegistry)
     }
 }
 
 fun Routing.registerPodApi(
-    applicationState: ApplicationState,
-    dataSource: DataSource,
+    healthCheck: HealthCheck,
 ) {
     get("$POD_HEALTH_PATH/is_alive") {
-        if (applicationState.alive) {
-            call.respondText("I'm alive! :)")
-        } else {
-            call.respondText("I'm dead x_x", status = HttpStatusCode.InternalServerError)
-        }
+        call.respondText("I'm alive! :)")
     }
     get("$POD_HEALTH_PATH/is_ready") {
-        if (isReady(applicationState, dataSource)) {
+        val result = healthCheck.check()
+        if (result.healthy) {
             call.respondText("I'm ready! :)")
         } else {
-            call.respondText("Please wait! I'm not ready :(", status = HttpStatusCode.InternalServerError)
+            call.respondText(
+                result.message,
+                status = HttpStatusCode.ServiceUnavailable,
+            )
         }
     }
 }
-
-private fun isReady(
-    applicationState: ApplicationState,
-    dataSource: DataSource,
-) = applicationState.ready && dataSource.isHealthy()
 
 fun Routing.registerMetricApi(meterRegistry: PrometheusMeterRegistry) {
     get(POD_METRICS_PATH) {
