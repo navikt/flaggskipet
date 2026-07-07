@@ -75,7 +75,8 @@ run = [{ task = "migration:_run", args = ["flywayRepair"] }]
 hide = true
 usage = 'arg "<flyway_task>"'
 run = '''
-./gradlew --no-configuration-cache \
+./gradlew --no-configuration-cache --warning-mode=none \
+  -Dflyway.locations=filesystem:src/main/resources/database.migration \
   -Dflyway.user="${FLAGGSKIPET_DB_USERNAME}" \
   -Dflyway.password="${FLAGGSKIPET_DB_PASSWORD}" \
   -Dflyway.url="jdbc:postgresql://${FLAGGSKIPET_DB_HOST}:${FLAGGSKIPET_DB_PORT}/${FLAGGSKIPET_DB_DATABASE}" \
