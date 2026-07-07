@@ -1,28 +1,27 @@
-package no.nav.flaggskipet.infrastructure.db.core
+package no.nav.flaggskipet.infrastructure.database.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.ktor.server.plugins.di.DependencyRegistry
+import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepositoryImpl
+import no.nav.flaggskipet.infrastructure.HealthCheck
+import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepositoryImpl
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.koin.core.module.Module
-import org.koin.dsl.module
-import org.koin.dsl.onClose
-import org.slf4j.LoggerFactory
-import java.sql.SQLException
 import javax.sql.DataSource
 
-fun databaseModule(): Module = module {
-    single<HikariDataSource> { createDataSource(get()) } onClose {
-        it?.close()
+fun DependencyRegistry.databaseModule() {
+    provide<HikariDataSource> { createDataSource(resolve()) }
+        .cleanup(HikariDataSource::close)
+    provide<Database> { Database.connect(resolve<DataSource>()) }
+    provide<HealthCheck> {
+        dataSourceHealthCheck(resolve())
     }
-    single<DataSource> { get<HikariDataSource>() }
-    single { Database.connect(get<DataSource>()) }
-    single<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(get()) }
+    provide<TiltakspakkeVurderingRepository> { TiltakspakkeVurderingRepositoryImpl(resolve()) }
 }
 
 suspend fun <T> Database.transact(block: () -> T): T = withContext(Dispatchers.IO) {
@@ -45,21 +44,10 @@ fun createDataSource(databaseConfig: DatabaseConfig): HikariDataSource = HikariD
     },
 )
 
-private val logger = LoggerFactory.getLogger("no.nav.flaggskipet.infrastructure.db.core.DatabaseHealth")
-
-fun DataSource.isHealthy(): Boolean = try {
-    connection.use { dbConnection ->
-        dbConnection.isValid(1)
-    }
-} catch (ex: SQLException) {
-    logger.error("Database health check failed", ex)
-    false
-}
-
 fun DataSource.migrate() {
     Flyway.configure()
         .dataSource(this)
-        .locations("classpath:db/migration")
+        .locations("classpath:database.migration")
         .load()
         .migrate()
 }

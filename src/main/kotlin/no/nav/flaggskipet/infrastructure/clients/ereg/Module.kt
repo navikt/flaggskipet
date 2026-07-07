@@ -6,21 +6,18 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.plugins.di.DependencyRegistry
+import io.ktor.server.plugins.di.resolve
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.infrastructure.config.stringOrEmpty
-import org.koin.core.module.Module
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
-import org.koin.dsl.onClose
 import java.net.URI
 
-internal val eregHttpClientQualifier = named("eregHttpClient")
+private const val EREG_HTTP_CLIENT = "eregHttpClient"
 
-fun eregModule(): Module = module {
-    single<HttpClient>(eregHttpClientQualifier) { createEregHttpClient(get()) } onClose {
-        it?.close()
-    }
-    single<EregClient> { HttpClientImpl(httpClient = get(eregHttpClientQualifier)) }
+fun DependencyRegistry.eregModule() {
+    provide<HttpClient>(EREG_HTTP_CLIENT) { createEregHttpClient(resolve()) }
+        .cleanup(HttpClient::close)
+    provide<EregClient> { HttpClientImpl(httpClient = resolve(EREG_HTTP_CLIENT)) }
 }
 
 data class EregConfig(

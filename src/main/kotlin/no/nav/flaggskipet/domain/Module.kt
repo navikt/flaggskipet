@@ -1,9 +1,9 @@
 package no.nav.flaggskipet.domain
 
+import io.ktor.server.plugins.di.DependencyRegistry
+import io.ktor.server.plugins.di.resolve
 import no.nav.flaggskipet.domain.vurdering.VurderTiltakspakkerUseCase
-import org.koin.core.module.Module
-import org.koin.dsl.module
 
-fun useCaseModule(): Module = module {
-    single<VurderTiltakspakkerUseCase> { VurderTiltakspakkerUseCase(get(), get()) }
+fun DependencyRegistry.useCaseModule() {
+    provide<VurderTiltakspakkerUseCase> { VurderTiltakspakkerUseCase(resolve(), resolve()) }
 }

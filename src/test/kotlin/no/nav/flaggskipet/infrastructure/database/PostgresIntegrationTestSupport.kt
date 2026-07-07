@@ -1,9 +1,9 @@
-package no.nav.flaggskipet.infrastructure.db
+package no.nav.flaggskipet.infrastructure.database
 
 import com.zaxxer.hikari.HikariDataSource
-import no.nav.flaggskipet.infrastructure.db.core.DatabaseConfig
-import no.nav.flaggskipet.infrastructure.db.core.createDataSource
-import no.nav.flaggskipet.infrastructure.db.core.migrate
+import no.nav.flaggskipet.infrastructure.database.config.DatabaseConfig
+import no.nav.flaggskipet.infrastructure.database.config.createDataSource
+import no.nav.flaggskipet.infrastructure.database.config.migrate
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.ResultSet

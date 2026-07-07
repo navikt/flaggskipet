@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db.core
+package no.nav.flaggskipet.infrastructure.database.config
 
 import io.ktor.server.config.ApplicationConfig
 import no.nav.flaggskipet.infrastructure.config.stringOrEmpty

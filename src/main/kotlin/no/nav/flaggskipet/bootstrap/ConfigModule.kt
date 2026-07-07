@@ -1,12 +1,11 @@
 package no.nav.flaggskipet.bootstrap
 
 import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.plugins.di.DependencyRegistry
 import no.nav.flaggskipet.infrastructure.clients.ereg.toEregConfig
-import no.nav.flaggskipet.infrastructure.db.core.toDatabaseConfig
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import no.nav.flaggskipet.infrastructure.database.config.toDatabaseConfig
 
-internal fun configModule(config: ApplicationConfig): Module = module {
-    single { config.toDatabaseConfig() }
-    single { config.toEregConfig() }
+internal fun DependencyRegistry.configModule(config: ApplicationConfig) {
+    provide { config.toDatabaseConfig() }
+    provide { config.toEregConfig() }
 }

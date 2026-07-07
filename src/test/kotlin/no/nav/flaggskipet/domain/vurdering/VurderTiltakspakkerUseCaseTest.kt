@@ -8,8 +8,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
 import no.nav.flaggskipet.infrastructure.clients.ereg.EregNoekkelinfo
-import no.nav.flaggskipet.infrastructure.db.repositories.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.infrastructure.db.repositories.VurderingForLagring
+import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.infrastructure.database.repositories.VurderingForLagring
 
 class VurderTiltakspakkerUseCaseTest :
     FunSpec({

@@ -1,6 +1,7 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.post
@@ -8,10 +9,9 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
 import no.nav.flaggskipet.domain.vurdering.VurderTiltakspakkerUseCase
-import org.koin.ktor.ext.inject
 
 fun Application.configureVurderingApi() {
-    val vurderUseCase by inject<VurderTiltakspakkerUseCase>()
+    val vurderUseCase: VurderTiltakspakkerUseCase by dependencies
 
     routing {
         route("/api/v1/tiltakspakker/vurdering") {
