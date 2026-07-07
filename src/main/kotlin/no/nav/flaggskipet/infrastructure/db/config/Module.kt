@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.db.core
+package no.nav.flaggskipet.infrastructure.db.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource

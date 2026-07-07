@@ -4,7 +4,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.plugins.di.dependencies
 import no.nav.flaggskipet.domain.useCaseModule
 import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
-import no.nav.flaggskipet.infrastructure.db.core.databaseModule
+import no.nav.flaggskipet.infrastructure.db.config.databaseModule
 
 internal fun Application.installDependencyInjection() {
     val config = environment.config

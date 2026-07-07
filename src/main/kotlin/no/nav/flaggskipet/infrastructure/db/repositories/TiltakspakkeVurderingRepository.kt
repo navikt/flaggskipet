@@ -3,7 +3,7 @@ package no.nav.flaggskipet.infrastructure.db.repositories
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.domain.vurdering.Orgnummer
 import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
-import no.nav.flaggskipet.infrastructure.db.core.transact
+import no.nav.flaggskipet.infrastructure.db.config.transact
 import no.nav.flaggskipet.infrastructure.db.tables.TiltakspakkeDeltakelseTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.inList
