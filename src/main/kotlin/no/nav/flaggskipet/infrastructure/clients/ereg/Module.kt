@@ -9,6 +9,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.resolve
 import kotlinx.serialization.json.Json
+import no.nav.flaggskipet.application.port.EregClient
 import no.nav.flaggskipet.infrastructure.config.stringOrEmpty
 import java.net.URI
 

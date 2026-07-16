@@ -3,6 +3,7 @@ package no.nav.flaggskipet.infrastructure.database.repositories
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
+import no.nav.flaggskipet.application.port.VurderingForLagring
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
 import no.nav.flaggskipet.infrastructure.database.queryForInt

@@ -1,7 +1,7 @@
 package no.nav.flaggskipet.infrastructure.database.repositories
 
-import no.nav.flaggskipet.domain.vurdering.Deltakelse
-import no.nav.flaggskipet.domain.vurdering.Orgnummer
+import no.nav.flaggskipet.application.port.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.application.port.VurderingForLagring
 import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
 import no.nav.flaggskipet.infrastructure.database.config.transact
 import no.nav.flaggskipet.infrastructure.database.tables.TiltakspakkeDeltakelseTable
@@ -12,23 +12,6 @@ import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
-
-data class VurderingForLagring(
-    val tiltakspakkeId: String,
-    val orgnummer: Orgnummer,
-    val deltakelse: Deltakelse,
-)
-
-interface TiltakspakkeVurderingRepository {
-    suspend fun hentVurderinger(
-        orgnumre: Collection<String>,
-        tiltakspakkeIder: Collection<String>,
-    ): List<Vurderingsresultat>
-
-    suspend fun lagreVurderinger(
-        vurderinger: Collection<VurderingForLagring>,
-    )
-}
 
 class TiltakspakkeVurderingRepositoryImpl(
     private val database: Database,

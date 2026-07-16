@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.domain.vurdering
+package no.nav.flaggskipet.application
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -6,10 +6,17 @@ import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import no.nav.flaggskipet.infrastructure.clients.ereg.EregClient
-import no.nav.flaggskipet.infrastructure.clients.ereg.EregNoekkelinfo
-import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.infrastructure.database.repositories.VurderingForLagring
+import no.nav.flaggskipet.application.port.EregClient
+import no.nav.flaggskipet.application.port.EregNoekkelinfo
+import no.nav.flaggskipet.application.port.TiltakspakkeVurderingRepository
+import no.nav.flaggskipet.application.port.VurderingForLagring
+import no.nav.flaggskipet.domain.vurdering.Adresse
+import no.nav.flaggskipet.domain.vurdering.Deltakelse
+import no.nav.flaggskipet.domain.vurdering.GeoTiltakspakkeRegel
+import no.nav.flaggskipet.domain.vurdering.Tiltakspakke
+import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
+import no.nav.flaggskipet.domain.vurdering.VirksomhetDeltakelse
+import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
 
 class VurderTiltakspakkerUseCaseTest :
     FunSpec({

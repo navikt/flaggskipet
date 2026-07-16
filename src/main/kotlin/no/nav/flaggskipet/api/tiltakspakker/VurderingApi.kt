@@ -7,8 +7,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
-import no.nav.flaggskipet.domain.vurdering.VurderTiltakspakkerUseCase
 
 fun Application.configureVurderingApi() {
     val vurderUseCase: VurderTiltakspakkerUseCase by dependencies
