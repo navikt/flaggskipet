@@ -1,4 +1,4 @@
-package no.nav.flaggskipet.infrastructure.clients.ereg
+package no.nav.flaggskipet.application.port
 
 import no.nav.flaggskipet.domain.vurdering.Adresse
 

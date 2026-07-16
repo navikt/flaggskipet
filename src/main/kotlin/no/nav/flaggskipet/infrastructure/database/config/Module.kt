@@ -6,8 +6,8 @@ import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import no.nav.flaggskipet.application.port.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.HealthCheck
-import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepository
 import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeVurderingRepositoryImpl
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database

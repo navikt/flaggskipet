@@ -4,7 +4,6 @@ import io.ktor.server.application.Application
 import io.ktor.server.plugins.di.dependencies
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import no.nav.flaggskipet.domain.useCaseModule
 import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
 import no.nav.flaggskipet.infrastructure.database.config.databaseModule
 

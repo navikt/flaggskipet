@@ -17,6 +17,7 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.Json
+import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.domain.vurdering.Adresse
 import org.junit.jupiter.api.assertThrows
 
