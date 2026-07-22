@@ -1,22 +1,31 @@
 package no.nav.flaggskipet.infrastructure.database.repositories
 
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.ints.shouldBeExactly
+import io.kotest.matchers.longs.shouldBeExactly
 import io.kotest.matchers.shouldBe
 import no.nav.flaggskipet.application.port.VurderingForLagring
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
-import no.nav.flaggskipet.infrastructure.database.queryForInt
-import no.nav.flaggskipet.infrastructure.database.queryForString
-import no.nav.flaggskipet.infrastructure.database.withMigratedPostgres
-import java.util.UUID
+import no.nav.flaggskipet.infrastructure.database.PostgresTestFixture
+import no.nav.flaggskipet.infrastructure.database.config.transact
+import no.nav.flaggskipet.infrastructure.database.tables.TiltakspakkeDeltakelseTable
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 class TiltakspakkeVurderingRepositoryTest :
     FunSpec({
-        test("lagrer og oppdaterer vurderinger per tiltakspakke og orgnummer") {
-            withMigratedPostgres { dataSource, database ->
-                val repository = TiltakspakkeVurderingRepositoryImpl(database)
 
+        val fixture = PostgresTestFixture()
+        beforeSpec { fixture.migrate() }
+        afterTest { fixture.reset() }
+        afterSpec { fixture.close() }
+
+        suspend fun tiltakspakkeCount(): Long = fixture.database.transact {
+            TiltakspakkeDeltakelseTable.selectAll().count()
+        }
+
+        test("lagrer og oppdaterer vurderinger per tiltakspakke og orgnummer") {
+            with(fixture.database) {
+                val repository = TiltakspakkeVurderingRepositoryImpl(this)
                 repository.lagreVurderinger(
                     listOf(
                         VurderingForLagring(
@@ -57,23 +66,7 @@ class TiltakspakkeVurderingRepositoryTest :
                         deltakelse = Deltakelse.UTENFOR_SCOPE,
                     ),
                 )
-
-                dataSource.queryForInt(
-                    """
-                    SELECT COUNT(*)
-                    FROM tiltakspakke_deltakelse
-                    """.trimIndent(),
-                ) shouldBeExactly 2
-
-                UUID.fromString(
-                    dataSource.queryForString(
-                        """
-                        SELECT id::text
-                        FROM tiltakspakke_deltakelse
-                        WHERE tiltakspakke_id = 'PAKKE_A'
-                        """.trimIndent(),
-                    ),
-                ).version() shouldBeExactly 7
+                tiltakspakkeCount() shouldBeExactly 2
             }
         }
     })

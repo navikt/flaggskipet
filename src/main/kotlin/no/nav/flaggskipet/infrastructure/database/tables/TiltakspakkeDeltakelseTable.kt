@@ -2,12 +2,13 @@ package no.nav.flaggskipet.infrastructure.database.tables
 
 import no.nav.flaggskipet.domain.vurdering.Deltakelse
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.datetime.CurrentTimestamp
 import org.jetbrains.exposed.v1.datetime.timestamp
 
 object TiltakspakkeDeltakelseTable : Table("tiltakspakke_deltakelse") {
-    val id = javaUUID("id")
+    val id = javaUUID("id").databaseGenerated()
     val tiltakspakkeId = text("tiltakspakke_id")
     val orgnummer = text("orgnummer")
     val deltakelse = enumerationByName<Deltakelse>("deltakelse", 32)
@@ -17,4 +18,9 @@ object TiltakspakkeDeltakelseTable : Table("tiltakspakke_deltakelse") {
     val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
 
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        check("chk_tiltakspakke_deltakelse") { deltakelse inList Deltakelse.entries.toList() }
+        index("uq_tiltakspakke_orgnr", true, tiltakspakkeId, orgnummer)
+    }
 }
