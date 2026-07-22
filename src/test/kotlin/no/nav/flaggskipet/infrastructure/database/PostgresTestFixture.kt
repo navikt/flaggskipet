@@ -96,5 +96,4 @@ class PostgresTestFixture : AutoCloseable {
 
 private fun List<Table>.toConcatenateTableNameString(): String = this.joinToString(", ") { it.tableName }
 
-private fun String.withCurrentSchema(schema: String): String =
-    if (contains("?")) "$this&currentSchema=$schema" else "$this?currentSchema=$schema"
+private fun String.withCurrentSchema(schema: String): String = if (contains("?")) "$this&currentSchema=$schema" else "$this?currentSchema=$schema"
