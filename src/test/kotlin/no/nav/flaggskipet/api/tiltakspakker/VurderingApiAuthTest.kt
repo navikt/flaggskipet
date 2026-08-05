@@ -118,6 +118,40 @@ class VurderingApiAuthTest :
             }
         }
 
+        test("flere enn 20 orgnumre gir 400") {
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
+
+                val orgnumre = List(21) { """"3136444$it"""" }.joinToString(",")
+                val response = client.post(VURDERING_PATH) {
+                    header(HttpHeaders.Authorization, "Bearer gyldig-token")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"orgnumre":[$orgnumre]}""")
+                }
+
+                response.status shouldBe HttpStatusCode.BadRequest
+                with(response.bodyAsText()) {
+                    shouldContain(""""type":"BAD_REQUEST"""")
+                    shouldContain("Maks 20 orgnumre per kall")
+                }
+            }
+        }
+
+        test("20 orgnumre gir 200") {
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
+
+                val orgnumre = List(20) { """"3136444$it"""" }.joinToString(",")
+                val response = client.post(VURDERING_PATH) {
+                    header(HttpHeaders.Authorization, "Bearer gyldig-token")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"orgnumre":[$orgnumre]}""")
+                }
+
+                response.status shouldBe HttpStatusCode.OK
+            }
+        }
+
         test("internal-endepunkter er åpne uten token") {
             testApplication {
                 setupApi(aktivtToken(acr = "Level4"))

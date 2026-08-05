@@ -9,8 +9,14 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
+import no.nav.flaggskipet.api.error.ApiErrorException
 import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
+
+// Flaggskipet validerer ikke at innlogget bruker representerer orgnumrene i requesten.
+// Grensen gjør masseoppslag av tiltaksgruppen upraktisk uten å merkes av konsumentene,
+// som sender ett orgnummer per kall.
+private const val MAKS_ANTALL_ORGNUMRE = 20
 
 fun Application.configureVurderingApi() {
     val vurderUseCase: VurderTiltakspakkerUseCase by dependencies
@@ -20,6 +26,9 @@ fun Application.configureVurderingApi() {
             route("/api/v1/tiltakspakker/vurdering") {
                 post {
                     val request = call.receive<VurderingRequest>()
+                    if (request.orgnumre.size > MAKS_ANTALL_ORGNUMRE) {
+                        throw ApiErrorException.BadRequest("Maks $MAKS_ANTALL_ORGNUMRE orgnumre per kall")
+                    }
                     call.respond(vurderUseCase.execute(request.orgnumre).toResponse())
                 }
             }
