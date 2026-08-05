@@ -48,7 +48,6 @@ spec:
   accessPolicy:
     inbound:
       rules:
-        - application: dinesykmeldte
         - application: syfo-oppfolgingsplan-frontend
         - application: tokenx-token-generator
           namespace: nais
