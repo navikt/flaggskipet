@@ -12,13 +12,20 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
 import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.coEvery
 import io.mockk.mockk
+import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
+import no.nav.flaggskipet.api.auth.TokenXPrincipal
 import no.nav.flaggskipet.api.auth.installAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
@@ -118,37 +125,70 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("flere enn 20 orgnumre gir 400") {
+        test("flere enn 20 unike orgnumre gir 400") {
             testApplication {
                 setupApi(aktivtToken(acr = "Level4"))
 
-                val orgnumre = List(21) { """"3136444$it"""" }.joinToString(",")
-                val response = client.post(VURDERING_PATH) {
-                    header(HttpHeaders.Authorization, "Bearer gyldig-token")
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"orgnumre":[$orgnumre]}""")
-                }
+                val response = postVurderingMedOrgnumre(unikeOrgnumre(21))
 
                 response.status shouldBe HttpStatusCode.BadRequest
                 with(response.bodyAsText()) {
                     shouldContain(""""type":"BAD_REQUEST"""")
-                    shouldContain("Maks 20 orgnumre per kall")
+                    shouldContain("Maks 20 unike orgnumre per kall")
                 }
             }
         }
 
-        test("20 orgnumre gir 200") {
+        test("20 unike orgnumre gir 200") {
             testApplication {
                 setupApi(aktivtToken(acr = "Level4"))
 
-                val orgnumre = List(20) { """"3136444$it"""" }.joinToString(",")
-                val response = client.post(VURDERING_PATH) {
+                postVurderingMedOrgnumre(unikeOrgnumre(20)).status shouldBe HttpStatusCode.OK
+            }
+        }
+
+        test("duplikater telles som ett orgnummer") {
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
+
+                postVurderingMedOrgnumre(List(25) { "313644480" }).status shouldBe HttpStatusCode.OK
+            }
+        }
+
+        test("tom liste gir 400") {
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
+
+                val response = postVurderingMedOrgnumre(emptyList())
+
+                response.status shouldBe HttpStatusCode.BadRequest
+                response.bodyAsText() shouldContain "orgnumre kan ikke være tom"
+            }
+        }
+
+        test("orgnummer som ikke er 9 sifre gir 400") {
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
+
+                listOf("12345678", "1234567890", "31364448a", "313644480/../admin", "").forEach { ugyldig ->
+                    val response = postVurderingMedOrgnumre(listOf("313644480", ugyldig))
+
+                    response.status shouldBe HttpStatusCode.BadRequest
+                    response.bodyAsText() shouldContain "hvert orgnummer må være nøyaktig 9 sifre"
+                }
+            }
+        }
+
+        test("principal med client_id er tilgjengelig etter vellykket autentisering") {
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
+
+                val response = client.get("/principal-test") {
                     header(HttpHeaders.Authorization, "Bearer gyldig-token")
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"orgnumre":[$orgnumre]}""")
                 }
 
                 response.status shouldBe HttpStatusCode.OK
+                response.bodyAsText() shouldBe "dev-gcp:team-esyfo:syfo-oppfolgingsplan-frontend"
             }
         }
 
@@ -188,6 +228,13 @@ private fun ApplicationTestBuilder.setupApi(texasClient: TexasClient) {
         installAuthentication()
         configureVurderingApi()
         configureInternalApi()
+        routing {
+            authenticate(TOKENX_AUTHENTICATION) {
+                get("/principal-test") {
+                    call.respondText(call.principal<TokenXPrincipal>()?.clientId ?: "ingen principal")
+                }
+            }
+        }
     }
 }
 
@@ -196,6 +243,14 @@ private suspend fun ApplicationTestBuilder.postVurdering(token: String?) = clien
     contentType(ContentType.Application.Json)
     setBody("""{"orgnumre":["313644480"]}""")
 }
+
+private suspend fun ApplicationTestBuilder.postVurderingMedOrgnumre(orgnumre: List<String>) = client.post(VURDERING_PATH) {
+    header(HttpHeaders.Authorization, "Bearer gyldig-token")
+    contentType(ContentType.Application.Json)
+    setBody("""{"orgnumre":[${orgnumre.joinToString(",") { "\"$it\"" }}]}""")
+}
+
+private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "3136444%02d".format(it) }
 
 private class FakeEregClient : EregClient {
     override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = organisasjonsnummer.map { EregNoekkelinfo(organisasjonsnummer = it, adresse = null) }
