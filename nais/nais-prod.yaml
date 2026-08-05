@@ -5,8 +5,6 @@ metadata:
   namespace: team-esyfo
   labels:
     team: team-esyfo
-  annotations:
-    texas.nais.io/enabled: "true"
 spec:
   image: {{image}}
   port: 8080
@@ -43,6 +41,8 @@ spec:
       runtime: java
   ingresses:
     - "https://flaggskipet.intern.nav.no"
+  tokenx:
+    enabled: true
   accessPolicy:
     inbound:
       rules:

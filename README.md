@@ -18,6 +18,26 @@ Dette repoet inneholder Ktor-applikasjonen, lokal PostgreSQL for utvikling og NA
 
 Appen bruker PostgreSQL 18 via Cloud SQL i dev og lokal Postgres via Docker Compose.
 
+## Autentisering
+
+`POST /api/v1/tiltakspakker/vurdering` krever et TokenX-token med flaggskipet som audience.
+Tokenet valideres via Texas-sidecaren. Appen krever i tillegg sikkerhetsnivået
+`Level4`/`idporten-loa-high`. Endepunktene under `/internal/` er åpne for prober og
+Prometheus-scraping.
+
+Flaggskipet autentiserer hvem som kaller, men kontrollerer ikke at innlogget bruker
+representerer organisasjonsnumrene i requesten. Flaggskipet har ingen egen kilde til
+denne tilknytningen, så det ansvaret ligger hos konsumenten.
+
+### Skaffe token for testing mot dev
+
+1. Åpne [token-generatoren](https://tokenx-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:team-esyfo:flaggskipet) (krever naisdevice).
+2. Logg inn med en syntetisk testbruker fra ID-porten.
+3. Bruk `access_token` fra svaret som Bearer-token mot `https://flaggskipet.intern.dev.nav.no`,
+   for eksempel som `token`-variabel i dev-miljøet i [bruno](bruno).
+
+Se [NAIS-dokumentasjonen](https://doc.nais.io/auth/tokenx/how-to/generate/) for flere varianter.
+
 ## Utvikling
 
 Se [Utvikling](docs/development/utvikling.md) for lokal database og oppsett.

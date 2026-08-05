@@ -5,6 +5,7 @@ import io.ktor.server.plugins.di.dependencies
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.flaggskipet.infrastructure.clients.ereg.eregModule
+import no.nav.flaggskipet.infrastructure.clients.texas.texasModule
 import no.nav.flaggskipet.infrastructure.database.config.databaseModule
 
 internal fun Application.installDependencyInjection() {
@@ -14,6 +15,7 @@ internal fun Application.installDependencyInjection() {
         provide { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
         databaseModule()
         eregModule()
+        texasModule()
         useCaseModule()
     }
 }

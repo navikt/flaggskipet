@@ -7,11 +7,15 @@ meta {
 post {
   url: {{baseUrl}}/api/v1/tiltakspakker/vurdering
   body: json
-  auth: none
+  auth: bearer
 }
 
 headers {
   content-type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
 }
 
 body:json {
