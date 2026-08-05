@@ -8,6 +8,8 @@ FLAGGSKIPET_DB_DATABASE = "flaggskipet"
 FLAGGSKIPET_DB_USERNAME = "flaggskipet"
 FLAGGSKIPET_DB_PASSWORD = "dummy-password"
 EREG_API_URL = "https://ereg-services.dev.intern.nav.no"
+# Settes av NAIS i cluster. Lokalt finnes ingen Texas-sidecar, så vurderings-endepunktet svarer 401.
+NAIS_TOKEN_INTROSPECTION_ENDPOINT = "http://localhost:3000/api/v1/introspect"
 
 # App lifecycle
 [tasks.go]

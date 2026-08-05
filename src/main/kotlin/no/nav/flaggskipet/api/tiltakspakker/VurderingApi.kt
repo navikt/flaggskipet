@@ -1,12 +1,14 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
 import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
 
@@ -14,10 +16,12 @@ fun Application.configureVurderingApi() {
     val vurderUseCase: VurderTiltakspakkerUseCase by dependencies
 
     routing {
-        route("/api/v1/tiltakspakker/vurdering") {
-            post {
-                val request = call.receive<VurderingRequest>()
-                call.respond(vurderUseCase.execute(request.orgnumre).toResponse())
+        authenticate(TOKENX_AUTHENTICATION) {
+            route("/api/v1/tiltakspakker/vurdering") {
+                post {
+                    val request = call.receive<VurderingRequest>()
+                    call.respond(vurderUseCase.execute(request.orgnumre).toResponse())
+                }
             }
         }
     }

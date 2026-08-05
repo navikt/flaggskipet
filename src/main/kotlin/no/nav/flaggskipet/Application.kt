@@ -3,6 +3,7 @@ package no.nav.flaggskipet
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.di.dependencies
+import no.nav.flaggskipet.api.auth.installAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.api.tiltakspakker.configureVurderingApi
@@ -29,6 +30,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     installPlugins()
     installDependencyInjection()
+    installAuthentication()
     val dataSource: DataSource by dependencies
     dataSource.migrate()
     configureVurderingApi()
