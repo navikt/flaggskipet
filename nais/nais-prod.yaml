@@ -48,6 +48,7 @@ spec:
   accessPolicy:
     inbound:
       rules:
+        - application: dinesykmeldte
         - application: syfo-oppfolgingsplan-frontend
     outbound:
       external:
