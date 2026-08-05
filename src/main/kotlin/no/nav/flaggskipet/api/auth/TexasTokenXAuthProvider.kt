@@ -16,6 +16,12 @@ import org.slf4j.LoggerFactory
 
 const val TOKENX_AUTHENTICATION = "tokenx"
 
+// pid holdes bevisst utenfor, se TexasIntrospectionResponse.
+data class TokenXPrincipal(
+    val clientId: String?,
+    val acr: String?,
+)
+
 // ID-porten bruker både legacy-navnet Level4 og det nye idporten-loa-high om høyeste
 // sikkerhetsnivå. Konsumentene logger inn med Level4, mens token fra token-generatoren
 // i dev bærer den nye verdien. Begge representerer samme nivå og godtas.
@@ -57,6 +63,13 @@ class TexasTokenXAuthProvider(
             )
             throw ApiErrorException.Forbidden("Token does not meet the required security level")
         }
+
+        context.principal(
+            TokenXPrincipal(
+                clientId = introspection.clientId,
+                acr = introspection.acr,
+            ),
+        )
     }
 }
 
