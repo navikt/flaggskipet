@@ -14,6 +14,8 @@ Dette er den lokale databasekontrakten:
 
 `mise.toml` setter ikke-sensitive defaults for host, port, databasenavn og brukernavn. Sett `FLAGGSKIPET_DB_PASSWORD` i `mise.local.toml`. Filen er git-ignorert og skal ikke committes.
 
+`mise.toml` setter også `NAIS_TOKEN_INTROSPECTION_ENDPOINT` slik at appen starter lokalt. Texas-sidecaren finnes bare i cluster, så lokale kall mot `/api/v1/tiltakspakker/vurdering` svarer 401. Test tokenvalideringen mot dev med et token fra token-generatoren, se [README](../../README.md#autentisering).
+
 Applikasjonen bruker `FLAGGSKIPET_DB_URL` fra NAIS når den finnes, og konverterer den til en JDBC-URL for Hikari uten credentials i selve URL-en. NAIS-URL-en peker `sslkey` på PEM-nøkkelen, men JDBC-driveren trenger PKCS#8/DER-nøkkelen, så `sslkey` overstyres med `FLAGGSKIPET_DB_SSLKEY_PK8`. Hvis URL-en ikke er satt, bygges lokal URL fra `FLAGGSKIPET_DB_HOST`, `FLAGGSKIPET_DB_PORT` og `FLAGGSKIPET_DB_DATABASE` som settes av `mise.toml`.
 
 Eksempel:
