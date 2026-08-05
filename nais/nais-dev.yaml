@@ -43,11 +43,15 @@ spec:
       runtime: java
   ingresses:
     - "https://flaggskipet.intern.dev.nav.no"
+  tokenx:
+    enabled: true
   accessPolicy:
     inbound:
       rules:
         - application: dinesykmeldte
         - application: syfo-oppfolgingsplan-frontend
+        - application: tokenx-token-generator
+          namespace: nais
     outbound:
       external:
         - host: ereg-services-q2.dev-fss-pub.nais.io

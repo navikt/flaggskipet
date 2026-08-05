@@ -43,6 +43,8 @@ spec:
       runtime: java
   ingresses:
     - "https://flaggskipet.intern.nav.no"
+  tokenx:
+    enabled: true
   accessPolicy:
     inbound:
       rules:
