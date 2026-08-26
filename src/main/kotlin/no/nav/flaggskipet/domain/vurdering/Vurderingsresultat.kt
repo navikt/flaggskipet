@@ -4,6 +4,8 @@ data class Vurderingsresultat(
     val tiltakspakkeId: String,
     val orgnummer: Orgnummer,
     val deltakelse: Deltakelse,
+    val fylkeskode: String? = null,
+    val vurderingsgrunn: Vurderingsgrunn = Vurderingsgrunn.IKKE_REGISTRERT,
 )
 
 data class TiltakspakkeVurdering(

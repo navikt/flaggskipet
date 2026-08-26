@@ -262,7 +262,17 @@ private class FakeTiltakspakkeVurderingRepository : TiltakspakkeVurderingReposit
         tiltakspakkeIder: Collection<String>,
     ): List<Vurderingsresultat> = emptyList()
 
-    override suspend fun lagreVurderinger(vurderinger: Collection<VurderingForLagring>) = Unit
+    override suspend fun lagreVurderinger(
+        vurderinger: Collection<VurderingForLagring>,
+    ): List<Vurderingsresultat> = vurderinger.map { vurdering ->
+        Vurderingsresultat(
+            tiltakspakkeId = vurdering.tiltakspakkeId,
+            orgnummer = vurdering.orgnummer,
+            deltakelse = vurdering.deltakelse,
+            fylkeskode = vurdering.fylkeskode,
+            vurderingsgrunn = vurdering.vurderingsgrunn,
+        )
+    }
 }
 
 private class FakeHealthCheck : HealthCheck {

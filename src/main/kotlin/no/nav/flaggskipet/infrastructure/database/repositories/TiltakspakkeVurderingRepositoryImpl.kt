@@ -9,8 +9,8 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
 
 class TiltakspakkeVurderingRepositoryImpl(
@@ -19,41 +19,54 @@ class TiltakspakkeVurderingRepositoryImpl(
     override suspend fun hentVurderinger(
         orgnumre: Collection<String>,
         tiltakspakkeIder: Collection<String>,
-    ): List<Vurderingsresultat> = database.transact {
-        TiltakspakkeDeltakelseTable
-            .select(
-                TiltakspakkeDeltakelseTable.tiltakspakkeId,
-                TiltakspakkeDeltakelseTable.deltakelse,
-                TiltakspakkeDeltakelseTable.orgnummer,
-            )
-            .where { TiltakspakkeDeltakelseTable.orgnummer inList orgnumre }
-            .andWhere { TiltakspakkeDeltakelseTable.tiltakspakkeId inList tiltakspakkeIder }
-            .map(ResultRow::toVurderingsresultat)
-    }
+    ): List<Vurderingsresultat> = database.transact { selectVurderinger(orgnumre, tiltakspakkeIder) }
 
     override suspend fun lagreVurderinger(
         vurderinger: Collection<VurderingForLagring>,
-    ) {
-        database.transact {
-            val now = Clock.System.now()
+    ): List<Vurderingsresultat> = database.transact {
+        if (vurderinger.isEmpty()) return@transact emptyList()
 
-            vurderinger.forEach { v ->
-                TiltakspakkeDeltakelseTable.upsert(
-                    TiltakspakkeDeltakelseTable.tiltakspakkeId,
-                    TiltakspakkeDeltakelseTable.orgnummer,
-                ) {
+        val now = Clock.System.now()
+        vurderinger
+            .sortedWith(compareBy(VurderingForLagring::tiltakspakkeId, VurderingForLagring::orgnummer))
+            .forEach { v ->
+                TiltakspakkeDeltakelseTable.insertIgnore {
                     it[tiltakspakkeId] = v.tiltakspakkeId
                     it[orgnummer] = v.orgnummer
                     it[deltakelse] = v.deltakelse
+                    it[fylkeskode] = v.fylkeskode
+                    it[vurderingsgrunn] = v.vurderingsgrunn
                     it[updatedAt] = now
                 }
             }
-        }
+
+        val vurderingsnokler = vurderinger.map { it.tiltakspakkeId to it.orgnummer }.toSet()
+        selectVurderinger(
+            orgnumre = vurderinger.map(VurderingForLagring::orgnummer).toSet(),
+            tiltakspakkeIder = vurderinger.map(VurderingForLagring::tiltakspakkeId).toSet(),
+        ).filter { (it.tiltakspakkeId to it.orgnummer) in vurderingsnokler }
     }
+
+    private fun selectVurderinger(
+        orgnumre: Collection<String>,
+        tiltakspakkeIder: Collection<String>,
+    ): List<Vurderingsresultat> = TiltakspakkeDeltakelseTable
+        .select(
+            TiltakspakkeDeltakelseTable.tiltakspakkeId,
+            TiltakspakkeDeltakelseTable.deltakelse,
+            TiltakspakkeDeltakelseTable.orgnummer,
+            TiltakspakkeDeltakelseTable.fylkeskode,
+            TiltakspakkeDeltakelseTable.vurderingsgrunn,
+        )
+        .where { TiltakspakkeDeltakelseTable.orgnummer inList orgnumre }
+        .andWhere { TiltakspakkeDeltakelseTable.tiltakspakkeId inList tiltakspakkeIder }
+        .map(ResultRow::toVurderingsresultat)
 }
 
 private fun ResultRow.toVurderingsresultat() = Vurderingsresultat(
     tiltakspakkeId = this[TiltakspakkeDeltakelseTable.tiltakspakkeId],
     orgnummer = this[TiltakspakkeDeltakelseTable.orgnummer],
     deltakelse = this[TiltakspakkeDeltakelseTable.deltakelse],
+    fylkeskode = this[TiltakspakkeDeltakelseTable.fylkeskode],
+    vurderingsgrunn = this[TiltakspakkeDeltakelseTable.vurderingsgrunn],
 )

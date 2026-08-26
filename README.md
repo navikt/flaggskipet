@@ -46,6 +46,8 @@ Bruk `mise tasks` for tilgjengelige kommandoer.
 ## Dokumentasjon
 
 Dokumentasjon og beslutningsgrunnlag for tjenesten finnes i [docs](docs) mappen.
+Se [pilotregel og klargjøring for tiltakspakke 1](docs/tiltakspakke1_pilot.md)
+for geografisk scope, lagret vurderingsgrunnlag og opprydding før lansering.
 
 ## For Nav-ansatte
 
