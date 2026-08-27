@@ -6,6 +6,7 @@ import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.DriverManager
+import java.sql.SQLException
 import java.util.UUID
 
 class PostgresTestFixture : AutoCloseable {
@@ -47,14 +48,15 @@ class PostgresTestFixture : AutoCloseable {
         createSchema()
     }
 
-    fun migrate() {
-        Flyway
+    fun migrate(target: String? = null) {
+        val configuration = Flyway
             .configure()
             .dataSource(schemaJdbcUrl, postgres.username, postgres.password)
             .locations("classpath:database.migration")
             .schemas(schemaName)
             .defaultSchema(schemaName)
-            .load()
+        target?.let(configuration::target)
+        configuration.load()
             .migrate()
     }
 
@@ -76,9 +78,22 @@ class PostgresTestFixture : AutoCloseable {
     }
 
     private fun createSchema() {
-        DriverManager.getConnection(postgres.jdbcUrl, username, password).use { connection ->
+        withPostgresConnection { connection ->
             connection.createStatement().use { statement ->
                 statement.executeUpdate("""CREATE SCHEMA IF NOT EXISTS "$schemaName"""")
+            }
+        }
+    }
+
+    private fun withPostgresConnection(block: (java.sql.Connection) -> Unit) {
+        // Rancher Desktop can publish the host port shortly after the container's ready log.
+        repeat(100) { attempt ->
+            try {
+                DriverManager.getConnection(postgres.jdbcUrl, username, password).use(block)
+                return
+            } catch (exception: SQLException) {
+                if (attempt == 99 || exception.sqlState?.startsWith("08") != true) throw exception
+                Thread.sleep(100)
             }
         }
     }

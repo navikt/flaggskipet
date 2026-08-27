@@ -1,14 +1,19 @@
 package no.nav.flaggskipet.domain.vurdering
 
+private const val TILTAKSPAKKE_1_ID = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1"
+private const val TROMS_FYLKESKODE = "55"
+private const val FINNMARK_FYLKESKODE = "56"
+
 data class GeoTiltakspakkeRegel(
     private val fylkerIScopet: Set<String>,
-    private val sannsynlighet: Double = 0.5,
+    private val andelTilTiltaksgruppe: Double = 0.5,
+    private val tiltakspakkeId: String,
 ) : Regel {
     override fun vurder(virksomhet: VirksomhetUnderVurdering): Deltakelse = when {
         virksomhet.adresse.fylke() !in fylkerIScopet ->
             Deltakelse.UTENFOR_SCOPE
 
-        erSann(sannsynlighet) ->
+        fordelesTilTiltaksgruppe(andelTilTiltaksgruppe, "$tiltakspakkeId:${virksomhet.orgnummer}") ->
             Deltakelse.TILTAKSGRUPPE
 
         else ->
@@ -18,12 +23,12 @@ data class GeoTiltakspakkeRegel(
 
 val getGjeldendeTiltakspakker = listOf(
     Tiltakspakke(
-        id = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1",
+        id = TILTAKSPAKKE_1_ID,
         sluttdato = null,
         regel = GeoTiltakspakkeRegel(
-            // 50: Trondheim; 54 (bare dev) og 55: Troms
-            fylkerIScopet = setOf("50", "54", "55"),
-            sannsynlighet = 0.5,
+            fylkerIScopet = setOf(TROMS_FYLKESKODE, FINNMARK_FYLKESKODE),
+            andelTilTiltaksgruppe = 0.5,
+            tiltakspakkeId = TILTAKSPAKKE_1_ID,
         ),
     ),
 ).filter { it.erGjeldene() }

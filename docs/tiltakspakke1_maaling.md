@@ -6,6 +6,13 @@ Her kommer en beskrivelse av **målinger** for tiltakspakke 1. Først forklarer 
 
 Vi har designet eksperimentet som en A/B-test med to armer: en kontrollgruppe som følger den vanlige brukerreisen, og en tiltaksgruppe som følger en brukerreise med flere dultetiltak. Vi randomiserer på arbeidsgivernivå, og fordi randomiseringsenhteten er arbeidsgivere, er det der vi evaluerer effekten av tiltakspakken. Det gjør vi fordi vi vil gi hver arbeidsgiver de samme tiltakene — både for å hindre «treatment diffusion» og for å sikre at ledere får samme tiltak. Vi fordeler på underenhet av en arbeidsgiver, ikke overenhet. Figuren under viser designet:
 
+Pilotpopulasjonen er avgrenset til Troms og Finnmark, med gjeldende fylkeskoder
+`55` og `56`. Hver arbeidsgiver tildeles deterministisk med 50 prosent
+sannsynlighet til tiltaksgruppen, basert på tiltakspakke-ID og orgnummer. Den
+faktiske populasjonen forventes derfor å bli omtrent 50/50 fordelt. Se
+[pilotregel og klargjøring](tiltakspakke1_pilot.md) for den tekniske kontrakten
+og kontrollene som skal gjennomføres før lansering.
+
 ```mermaid
 %%{ init: { 'flowchart': { 'curve': 'linear' } } }%%
 flowchart LR
