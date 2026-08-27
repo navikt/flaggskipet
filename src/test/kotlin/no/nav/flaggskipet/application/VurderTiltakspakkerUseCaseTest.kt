@@ -25,11 +25,11 @@ class VurderTiltakspakkerUseCaseTest :
         val adresseI50 = Adresse(type = "Forretningsadresse", postnummer = "7004", kommunenummer = "5001")
         val tiltakspakkeA = Tiltakspakke(
             id = "PAKKE_A",
-            regel = GeoTiltakspakkeRegel(fylkerIScopet = setOf("50"), sannsynlighet = 1.0, tiltakspakkeId = "PAKKE_A"),
+            regel = GeoTiltakspakkeRegel(fylkerIScopet = setOf("50"), andelTilTiltaksgruppe = 1.0, tiltakspakkeId = "PAKKE_A"),
         )
         val tiltakspakkeB = Tiltakspakke(
             id = "PAKKE_B",
-            regel = GeoTiltakspakkeRegel(fylkerIScopet = setOf("50"), sannsynlighet = 1.0, tiltakspakkeId = "PAKKE_B"),
+            regel = GeoTiltakspakkeRegel(fylkerIScopet = setOf("50"), andelTilTiltaksgruppe = 1.0, tiltakspakkeId = "PAKKE_B"),
         )
 
         test("returnerer tom liste når det ikke finnes noen tiltakspakker") {
