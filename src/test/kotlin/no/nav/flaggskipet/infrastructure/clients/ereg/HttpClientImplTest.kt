@@ -16,10 +16,17 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.domain.vurdering.Adresse
 import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.atomic.AtomicInteger
 
 class HttpClientImplTest :
     FunSpec({
@@ -96,7 +103,56 @@ class HttpClientImplTest :
 
             assertThrows<RuntimeException> { client.hentNoekkelinfo(listOf("111111111")) }
         }
+
+        test("avbryter hele batchen når totalfristen overskrides") {
+            val client = HttpClientImpl(
+                httpClient = createHttpClient(
+                    MockEngine {
+                        delay(5_000)
+                        respondJson("""{"adresse":{}}""")
+                    },
+                ),
+                maksParallelleKall = 1,
+                maksBatchVarighetMillis = 100,
+            )
+
+            assertThrows<TimeoutCancellationException> {
+                client.hentNoekkelinfo(unikeOrgnumre(2, start = 0))
+            }
+        }
+
+        test("begrenser parallelle ereg-kall på tvers av samtidige batcher") {
+            val aktiveKall = AtomicInteger(0)
+            val maksAktiveKall = AtomicInteger(0)
+            val treKallStartet = CompletableDeferred<Unit>()
+            val mockEngine = MockEngine {
+                val aktive = aktiveKall.incrementAndGet()
+                maksAktiveKall.updateAndGet { tidligereMaks -> maxOf(tidligereMaks, aktive) }
+                if (aktive == 3) treKallStartet.complete(Unit)
+                try {
+                    treKallStartet.await()
+                    respondJson("""{"adresse":{}}""")
+                } finally {
+                    aktiveKall.decrementAndGet()
+                }
+            }
+            val client = HttpClientImpl(
+                httpClient = createHttpClient(mockEngine),
+                maksParallelleKall = 3,
+            )
+
+            coroutineScope {
+                listOf(
+                    async { client.hentNoekkelinfo(unikeOrgnumre(10, start = 0)) },
+                    async { client.hentNoekkelinfo(unikeOrgnumre(10, start = 10)) },
+                ).awaitAll()
+            }
+
+            maksAktiveKall.get() shouldBe 3
+        }
     })
+
+private fun unikeOrgnumre(antall: Int, start: Int): List<String> = List(antall) { indeks -> "31364%04d".format(start + indeks) }
 
 private fun createHttpClient(mockEngine: MockEngine): HttpClient = HttpClient(mockEngine) {
     expectSuccess = false

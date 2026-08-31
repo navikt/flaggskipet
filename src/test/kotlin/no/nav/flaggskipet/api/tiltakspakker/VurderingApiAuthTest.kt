@@ -1,5 +1,9 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -39,6 +43,7 @@ import no.nav.flaggskipet.infrastructure.HealthCheck
 import no.nav.flaggskipet.infrastructure.HealthResult
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasIntrospectionResponse
+import org.slf4j.LoggerFactory
 
 private const val VURDERING_PATH = "/api/v1/tiltakspakker/vurdering"
 
@@ -125,25 +130,34 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("flere enn 20 unike orgnumre gir 400") {
-            testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+        test("flere enn 100 unike orgnumre gir 400") {
+            medVurderingApiLogg { loggmeldinger ->
+                testApplication {
+                    setupApi(aktivtToken(acr = "Level4"))
 
-                val response = postVurderingMedOrgnumre(unikeOrgnumre(21))
+                    val response = postVurderingMedOrgnumre(unikeOrgnumre(101))
 
-                response.status shouldBe HttpStatusCode.BadRequest
-                with(response.bodyAsText()) {
-                    shouldContain(""""type":"BAD_REQUEST"""")
-                    shouldContain("Maks 20 unike orgnumre per kall")
+                    response.status shouldBe HttpStatusCode.BadRequest
+                    with(response.bodyAsText()) {
+                        shouldContain(""""type":"BAD_REQUEST"""")
+                        shouldContain("Maks 100 unike orgnumre per kall")
+                    }
+                }
+                with(loggmeldinger.list.single()) {
+                    level shouldBe Level.WARN
+                    formattedMessage shouldBe "Avviser vurderingskall med 101 unike orgnumre; maks er 100"
                 }
             }
         }
 
-        test("20 unike orgnumre gir 200") {
-            testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+        test("100 unike orgnumre gir 200") {
+            medVurderingApiLogg { loggmeldinger ->
+                testApplication {
+                    setupApi(aktivtToken(acr = "Level4"))
 
-                postVurderingMedOrgnumre(unikeOrgnumre(20)).status shouldBe HttpStatusCode.OK
+                    postVurderingMedOrgnumre(unikeOrgnumre(100)).status shouldBe HttpStatusCode.OK
+                }
+                loggmeldinger.list.isEmpty() shouldBe true
             }
         }
 
@@ -250,7 +264,21 @@ private suspend fun ApplicationTestBuilder.postVurderingMedOrgnumre(orgnumre: Li
     setBody("""{"orgnumre":[${orgnumre.joinToString(",") { "\"$it\"" }}]}""")
 }
 
-private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "3136444%02d".format(it) }
+private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "31364%04d".format(it) }
+
+private suspend fun medVurderingApiLogg(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
+    val logger = LoggerFactory.getLogger("no.nav.flaggskipet.api.tiltakspakker.VurderingApiKt") as Logger
+    val loggmeldinger = ListAppender<ILoggingEvent>().apply {
+        start()
+        logger.addAppender(this)
+    }
+    try {
+        block(loggmeldinger)
+    } finally {
+        logger.detachAppender(loggmeldinger)
+        loggmeldinger.stop()
+    }
+}
 
 private class FakeEregClient : EregClient {
     override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = organisasjonsnummer.map { EregNoekkelinfo(organisasjonsnummer = it, adresse = null) }

@@ -10,7 +10,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import no.nav.flaggskipet.application.port.EregClient
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
@@ -19,11 +21,22 @@ import no.nav.flaggskipet.domain.vurdering.Adresse
 
 internal class HttpClientImpl(
     private val httpClient: HttpClient,
+    maksParallelleKall: Int = MAKS_PARALLELLE_EREG_KALL,
+    maksBatchVarighetMillis: Long = MAKS_BATCH_VARIGHET_MILLIS,
 ) : EregClient {
-    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = coroutineScope {
+    private val samtidighetsbegrenser = Semaphore(
+        maksParallelleKall.also { require(it > 0) { "maksParallelleKall must be positive" } },
+    )
+    private val maksBatchVarighetMillis = maksBatchVarighetMillis.also {
+        require(it > 0) { "maksBatchVarighetMillis must be positive" }
+    }
+
+    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = withTimeout(maksBatchVarighetMillis) {
         organisasjonsnummer.map { orgnummer ->
             async {
-                hentNoekkelinfoFor(orgnummer)
+                samtidighetsbegrenser.withPermit {
+                    hentNoekkelinfoFor(orgnummer)
+                }
             }
         }.awaitAll()
     }
@@ -57,6 +70,9 @@ internal class HttpClientImpl(
         }
     }
 }
+
+private const val MAKS_PARALLELLE_EREG_KALL = 10
+private const val MAKS_BATCH_VARIGHET_MILLIS = 30_000L
 
 @Serializable
 private data class EregNoekkelinfoResponse(

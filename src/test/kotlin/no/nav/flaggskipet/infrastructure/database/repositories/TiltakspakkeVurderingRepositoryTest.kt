@@ -126,6 +126,22 @@ class TiltakspakkeVurderingRepositoryTest :
             }
         }
 
+        test("batchlagrer 100 vurderinger") {
+            val repository = TiltakspakkeVurderingRepositoryImpl(fixture.database)
+            val vurderinger = (1..100).map { indeks ->
+                VurderingForLagring(
+                    tiltakspakkeId = "PAKKE_A",
+                    orgnummer = "100000${indeks.toString().padStart(3, '0')}",
+                    deltakelse = Deltakelse.TILTAKSGRUPPE,
+                    fylkeskode = "55",
+                    vurderingsgrunn = Vurderingsgrunn.FYLKE_I_SCOPE,
+                )
+            }
+
+            repository.lagreVurderinger(vurderinger).size shouldBe 100
+            tiltakspakkeCount() shouldBeExactly 100
+        }
+
         test("håndterer samtidige overlappende batcher med motsatt inputrekkefølge") {
             val repository = TiltakspakkeVurderingRepositoryImpl(fixture.database)
             val stigende = (1..20).map { indeks ->
