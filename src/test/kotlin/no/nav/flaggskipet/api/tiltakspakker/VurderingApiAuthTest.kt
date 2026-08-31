@@ -125,25 +125,25 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("flere enn 20 unike orgnumre gir 400") {
+        test("flere enn 100 unike orgnumre gir 400") {
             testApplication {
                 setupApi(aktivtToken(acr = "Level4"))
 
-                val response = postVurderingMedOrgnumre(unikeOrgnumre(21))
+                val response = postVurderingMedOrgnumre(unikeOrgnumre(101))
 
                 response.status shouldBe HttpStatusCode.BadRequest
                 with(response.bodyAsText()) {
                     shouldContain(""""type":"BAD_REQUEST"""")
-                    shouldContain("Maks 20 unike orgnumre per kall")
+                    shouldContain("Maks 100 unike orgnumre per kall")
                 }
             }
         }
 
-        test("20 unike orgnumre gir 200") {
+        test("100 unike orgnumre gir 200") {
             testApplication {
                 setupApi(aktivtToken(acr = "Level4"))
 
-                postVurderingMedOrgnumre(unikeOrgnumre(20)).status shouldBe HttpStatusCode.OK
+                postVurderingMedOrgnumre(unikeOrgnumre(100)).status shouldBe HttpStatusCode.OK
             }
         }
 
@@ -250,7 +250,7 @@ private suspend fun ApplicationTestBuilder.postVurderingMedOrgnumre(orgnumre: Li
     setBody("""{"orgnumre":[${orgnumre.joinToString(",") { "\"$it\"" }}]}""")
 }
 
-private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "3136444%02d".format(it) }
+private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "31364%04d".format(it) }
 
 private class FakeEregClient : EregClient {
     override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = organisasjonsnummer.map { EregNoekkelinfo(organisasjonsnummer = it, adresse = null) }

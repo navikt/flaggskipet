@@ -25,6 +25,9 @@ Tokenet valideres via Texas-sidecaren. Appen krever i tillegg sikkerhetsnivået
 `Level4`/`idporten-loa-high`. Endepunktene under `/internal/` er åpne for prober og
 Prometheus-scraping.
 
+Vurderingsendepunktet aksepterer maksimalt 100 unike organisasjonsnumre per kall.
+Større populasjoner må deles i flere batcher.
+
 Flaggskipet autentiserer hvem som kaller, men kontrollerer ikke at innlogget bruker
 representerer organisasjonsnumrene i requesten. Flaggskipet har ingen egen kilde til
 denne tilknytningen, så det ansvaret ligger hos konsumenten.

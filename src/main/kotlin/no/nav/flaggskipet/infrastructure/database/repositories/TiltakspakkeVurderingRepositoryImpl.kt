@@ -9,7 +9,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.andWhere
-import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.time.Clock
 
@@ -27,18 +27,21 @@ class TiltakspakkeVurderingRepositoryImpl(
         if (vurderinger.isEmpty()) return@transact emptyList()
 
         val now = Clock.System.now()
-        vurderinger
-            .sortedWith(compareBy(VurderingForLagring::tiltakspakkeId, VurderingForLagring::orgnummer))
-            .forEach { v ->
-                TiltakspakkeDeltakelseTable.insertIgnore {
-                    it[tiltakspakkeId] = v.tiltakspakkeId
-                    it[orgnummer] = v.orgnummer
-                    it[deltakelse] = v.deltakelse
-                    it[fylkeskode] = v.fylkeskode
-                    it[vurderingsgrunn] = v.vurderingsgrunn
-                    it[updatedAt] = now
-                }
-            }
+        val sorterteVurderinger = vurderinger.sortedWith(
+            compareBy(VurderingForLagring::tiltakspakkeId, VurderingForLagring::orgnummer),
+        )
+        TiltakspakkeDeltakelseTable.batchInsert(
+            data = sorterteVurderinger,
+            ignore = true,
+            shouldReturnGeneratedValues = false,
+        ) { vurdering ->
+            this[TiltakspakkeDeltakelseTable.tiltakspakkeId] = vurdering.tiltakspakkeId
+            this[TiltakspakkeDeltakelseTable.orgnummer] = vurdering.orgnummer
+            this[TiltakspakkeDeltakelseTable.deltakelse] = vurdering.deltakelse
+            this[TiltakspakkeDeltakelseTable.fylkeskode] = vurdering.fylkeskode
+            this[TiltakspakkeDeltakelseTable.vurderingsgrunn] = vurdering.vurderingsgrunn
+            this[TiltakspakkeDeltakelseTable.updatedAt] = now
+        }
 
         val vurderingsnokler = vurderinger.map { it.tiltakspakkeId to it.orgnummer }.toSet()
         selectVurderinger(
