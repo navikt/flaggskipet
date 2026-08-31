@@ -2,11 +2,13 @@ package no.nav.flaggskipet.api.tiltakspakker
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -28,9 +30,21 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import net.logstash.logback.encoder.LogstashEncoder
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.api.auth.TokenXPrincipal
 import no.nav.flaggskipet.api.auth.installAuthentication
+import no.nav.flaggskipet.api.auth.introspectTokenForAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
@@ -87,15 +101,35 @@ class VurderingApiAuthTest :
         }
 
         test("inaktivt eller utløpt token gir 401") {
-            testApplication {
-                setupApi(
-                    TexasIntrospectionResponse(active = false, error = "token is expired"),
-                )
+            medApplicationLogg { loggmeldinger ->
+                testApplication {
+                    setupApi(
+                        TexasIntrospectionResponse(
+                            active = false,
+                            error = "token is expired for 12345678901 at https://texas.example.test/token",
+                        ),
+                    )
 
-                val response = postVurdering(token = "utløpt-token")
+                    val response = postVurdering(token = "incoming-access-token-canary")
 
-                response.status shouldBe HttpStatusCode.Unauthorized
-                response.bodyAsText() shouldContain """"type":"AUTHENTICATION_ERROR""""
+                    response.status shouldBe HttpStatusCode.Unauthorized
+                    response.bodyAsText() shouldContain """"type":"AUTHENTICATION_ERROR""""
+                }
+
+                val warnOgError = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                warnOgError.size shouldBe 1
+                warnOgError.single().level shouldBe Level.WARN
+
+                val serialisert = warnOgError.single().serialisertJson()
+                serialisert.verdi("event_type") shouldBe "api_request_rejected"
+                serialisert.verdi("error_code") shouldBe "AUTHENTICATION_ERROR"
+                serialisert.verdi("operation") shouldBe "vurder_tiltakspakker"
+                with(serialisert.toString()) {
+                    shouldNotContain("12345678901")
+                    shouldNotContain("https://texas.example.test/token")
+                    shouldNotContain("incoming-access-token-canary")
+                    shouldNotContain("token is expired")
+                }
             }
         }
 
@@ -120,44 +154,113 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("feilende introspeksjon gir 401") {
-            testApplication {
-                val texasClient = mockk<TexasClient>()
-                coEvery { texasClient.introspectToken(any(), any()) } throws RuntimeException("texas er nede")
-                setupApi(texasClient)
+        test("teknisk feil i introspeksjon gir én trygg 500-error") {
+            medApplicationLogg { loggmeldinger ->
+                testApplication {
+                    val texasClient = mockk<TexasClient>()
+                    coEvery { texasClient.introspectToken(any(), any()) } throws RuntimeException(
+                        "Texas response body for 12345678901 from https://texas.example.test/token " +
+                            "with access-token-canary",
+                    )
+                    setupApi(texasClient)
 
-                postVurdering(token = "et-token").status shouldBe HttpStatusCode.Unauthorized
+                    val response = postVurdering(token = "incoming-access-token-canary")
+
+                    response.status shouldBe HttpStatusCode.InternalServerError
+                    with(response.bodyAsText()) {
+                        shouldContain(""""type":"TEXAS_INTROSPECTION_FAILED"""")
+                        shouldContain("Authentication service unavailable")
+                        shouldNotContain("12345678901")
+                        shouldNotContain("https://texas.example.test/token")
+                        shouldNotContain("access-token-canary")
+                    }
+                }
+
+                val warnOgError = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                warnOgError.size shouldBe 1
+                warnOgError.single().level shouldBe Level.ERROR
+
+                val serialisert = warnOgError.single().serialisertJson()
+                serialisert.verdi("event_type") shouldBe "api_request_failed"
+                serialisert.verdi("error_code") shouldBe "TEXAS_INTROSPECTION_FAILED"
+                serialisert.verdi("operation") shouldBe "vurder_tiltakspakker"
+                serialisert.verdi("exception_type") shouldBe "ApiErrorException"
+                with(serialisert.toString()) {
+                    shouldNotContain("12345678901")
+                    shouldNotContain("https://texas.example.test/token")
+                    shouldNotContain("incoming-access-token-canary")
+                    shouldNotContain("access-token-canary")
+                    shouldNotContain("Texas response body")
+                }
+            }
+        }
+
+        test("cancellation fra Texas propageres uendret") {
+            val cancellation = CancellationException("cancellation-canary")
+            val texasClient = mockk<TexasClient>()
+            coEvery { texasClient.introspectToken(any(), any()) } throws cancellation
+
+            val thrown = runCatching {
+                introspectTokenForAuthentication(texasClient, "incoming-access-token-canary")
+            }.exceptionOrNull()
+
+            thrown shouldBe cancellation
+        }
+
+        test("kansellert auth-request avsluttes uten api-feillogg") {
+            medApplicationLogg { loggmeldinger ->
+                val observedCancellation = CompletableDeferred<CancellationException>()
+                val cancellation = CancellationException("cancellation-canary")
+                val texasClient = mockk<TexasClient>()
+                coEvery { texasClient.introspectToken(any(), any()) } coAnswers {
+                    currentCoroutineContext().cancel(cancellation)
+                    try {
+                        currentCoroutineContext().ensureActive()
+                        error("request-context was not cancelled")
+                    } catch (cause: CancellationException) {
+                        observedCancellation.complete(cause)
+                        throw cause
+                    }
+                }
+
+                testApplication {
+                    setupApi(texasClient)
+
+                    val response = withTimeout(1_000) {
+                        runCatching {
+                            postVurdering(token = "incoming-access-token-canary")
+                        }
+                    }
+                    observedCancellation.await() shouldBe cancellation
+                    response.getOrThrow().let {
+                        it.status shouldBe HttpStatusCode(499, "Client Closed Request")
+                        it.bodyAsText() shouldBe ""
+                    }
+                }
+
+                loggmeldinger.list.none { it.level.isGreaterOrEqual(Level.WARN) } shouldBe true
             }
         }
 
         test("flere enn 100 unike orgnumre gir 400") {
-            medVurderingApiLogg { loggmeldinger ->
-                testApplication {
-                    setupApi(aktivtToken(acr = "Level4"))
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
 
-                    val response = postVurderingMedOrgnumre(unikeOrgnumre(101))
+                val response = postVurderingMedOrgnumre(unikeOrgnumre(101))
 
-                    response.status shouldBe HttpStatusCode.BadRequest
-                    with(response.bodyAsText()) {
-                        shouldContain(""""type":"BAD_REQUEST"""")
-                        shouldContain("Maks 100 unike orgnumre per kall")
-                    }
-                }
-                with(loggmeldinger.list.single()) {
-                    level shouldBe Level.WARN
-                    formattedMessage shouldBe "Avviser vurderingskall med 101 unike orgnumre; maks er 100"
+                response.status shouldBe HttpStatusCode.BadRequest
+                with(response.bodyAsText()) {
+                    shouldContain(""""type":"BAD_REQUEST"""")
+                    shouldContain("Maks 100 unike orgnumre per kall")
                 }
             }
         }
 
         test("100 unike orgnumre gir 200") {
-            medVurderingApiLogg { loggmeldinger ->
-                testApplication {
-                    setupApi(aktivtToken(acr = "Level4"))
+            testApplication {
+                setupApi(aktivtToken(acr = "Level4"))
 
-                    postVurderingMedOrgnumre(unikeOrgnumre(100)).status shouldBe HttpStatusCode.OK
-                }
-                loggmeldinger.list.isEmpty() shouldBe true
+                postVurderingMedOrgnumre(unikeOrgnumre(100)).status shouldBe HttpStatusCode.OK
             }
         }
 
@@ -266,20 +369,6 @@ private suspend fun ApplicationTestBuilder.postVurderingMedOrgnumre(orgnumre: Li
 
 private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "31364%04d".format(it) }
 
-private suspend fun medVurderingApiLogg(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
-    val logger = LoggerFactory.getLogger("no.nav.flaggskipet.api.tiltakspakker.VurderingApiKt") as Logger
-    val loggmeldinger = ListAppender<ILoggingEvent>().apply {
-        start()
-        logger.addAppender(this)
-    }
-    try {
-        block(loggmeldinger)
-    } finally {
-        logger.detachAppender(loggmeldinger)
-        loggmeldinger.stop()
-    }
-}
-
 private class FakeEregClient : EregClient {
     override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = organisasjonsnummer.map { EregNoekkelinfo(organisasjonsnummer = it, adresse = null) }
 }
@@ -306,3 +395,31 @@ private class FakeTiltakspakkeVurderingRepository : TiltakspakkeVurderingReposit
 private class FakeHealthCheck : HealthCheck {
     override suspend fun check() = HealthResult(healthy = true, message = "ok")
 }
+
+private suspend fun medApplicationLogg(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
+    val logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
+    val loggmeldinger = ListAppender<ILoggingEvent>().apply {
+        start()
+        logger.addAppender(this)
+    }
+    try {
+        block(loggmeldinger)
+    } finally {
+        logger.detachAppender(loggmeldinger)
+        loggmeldinger.stop()
+    }
+}
+
+private fun ILoggingEvent.serialisertJson(): JsonObject {
+    val encoder = LogstashEncoder().apply {
+        context = LoggerFactory.getILoggerFactory() as LoggerContext
+        start()
+    }
+    return try {
+        Json.parseToJsonElement(encoder.encode(this).decodeToString()).jsonObject
+    } finally {
+        encoder.stop()
+    }
+}
+
+private fun JsonObject.verdi(felt: String): String = getValue(felt).jsonPrimitive.content

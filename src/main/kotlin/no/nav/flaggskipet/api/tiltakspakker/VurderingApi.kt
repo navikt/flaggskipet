@@ -12,10 +12,6 @@ import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.api.error.ApiErrorException
 import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
-import org.slf4j.LoggerFactory
-import java.lang.invoke.MethodHandles
-
-private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
 // Ressursbegrensning for det synkrone endepunktet. Ereg-klienten begrenser i tillegg
 // samtidigheten mot Ereg. Større populasjoner skal behandles som flere batcher eller
@@ -41,11 +37,6 @@ fun Application.configureVurderingApi() {
                         throw ApiErrorException.BadRequest("orgnumre kan ikke være tom")
                     }
                     if (orgnumre.size > MAKS_ANTALL_ORGNUMRE) {
-                        logger.warn(
-                            "Avviser vurderingskall med {} unike orgnumre; maks er {}",
-                            orgnumre.size,
-                            MAKS_ANTALL_ORGNUMRE,
-                        )
                         throw ApiErrorException.BadRequest("Maks $MAKS_ANTALL_ORGNUMRE unike orgnumre per kall")
                     }
                     if (orgnumre.any { !it.matches(ORGNUMMER_FORMAT) }) {
