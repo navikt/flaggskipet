@@ -125,6 +125,39 @@ class StatusPagesTest :
             }
         }
 
+        test("serverfeil beholder trygg årsakstype og kodeplassering uten meldinger") {
+            medApplicationLogg { loggmeldinger ->
+                LoggerFactory.getLogger("Application").logApiError(
+                    apiError = ApiError(
+                        status = HttpStatusCode.InternalServerError.value,
+                        type = ErrorType.TEXAS_INTROSPECTION_FAILED,
+                        message = "Authentication service unavailable",
+                    ),
+                    cause = ApiErrorException.InternalServerError(
+                        errorMessage = "Ytre feil for 12345678901 med incoming-access-token-canary",
+                        cause = sensitivRotårsak(),
+                        type = ErrorType.TEXAS_INTROSPECTION_FAILED,
+                    ),
+                    operation = ApiOperation.VURDER_TILTAKSPAKKER,
+                )
+
+                val serialisert = loggmeldinger.list.single().serialisertJson()
+                val stackTrace = serialisert.verdi("stack_trace")
+
+                serialisert.verdi("exception_type") shouldBe "ApiErrorException"
+                stackTrace shouldContain "RuntimeException: ApiErrorException"
+                stackTrace shouldContain "Caused by: java.lang.RuntimeException: IllegalArgumentException"
+                stackTrace shouldContain "sensitivRotårsak"
+                with(serialisert.toString()) {
+                    shouldNotContain("12345678901")
+                    shouldNotContain("incoming-access-token-canary")
+                    shouldNotContain("https://texas.example.test/token")
+                    shouldNotContain("Sensitiv rotårsak")
+                    shouldNotContain("Ytre feil")
+                }
+            }
+        }
+
         test("intern timeout forblir én strukturert 500-feil") {
             medApplicationLogg { loggmeldinger ->
                 testApplication {
@@ -202,3 +235,7 @@ private fun ILoggingEvent.serialisertJson(): JsonObject {
 }
 
 private fun JsonObject.verdi(felt: String): String = getValue(felt).jsonPrimitive.content
+
+private fun sensitivRotårsak() = IllegalArgumentException(
+    "Sensitiv rotårsak 12345678901 fra https://texas.example.test/token med incoming-access-token-canary",
+)

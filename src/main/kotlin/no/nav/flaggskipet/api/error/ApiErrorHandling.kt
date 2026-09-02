@@ -66,7 +66,11 @@ private fun Throwable.safeExceptionType(): String = when (this) {
     else -> "UnknownException"
 }
 
-private fun Throwable.withoutDynamicContent(): Throwable = RuntimeException(safeExceptionType()).also { safeThrowable ->
+private fun Throwable.withoutDynamicContent(): Throwable = sanitizedCopy(safeExceptionType())
+
+private fun Throwable.sanitizedCopy(
+    exceptionType: String = this::class.simpleName ?: "UnknownException",
+): Throwable = RuntimeException(exceptionType, cause?.sanitizedCopy()).also { safeThrowable ->
     safeThrowable.stackTrace = stackTrace
 }
 
