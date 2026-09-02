@@ -11,9 +11,7 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.api.error.determineApiError
 import no.nav.flaggskipet.api.error.logApiError
@@ -43,11 +41,8 @@ fun Application.installPlugins() {
         exception<TimeoutCancellationException> { call, cause ->
             call.respondApiError(cause)
         }
-        exception<CancellationException> { call, _ ->
-            // Ktor logger ellers exception-meldingen som rå ERROR før fallback-500.
-            withContext(NonCancellable) {
-                call.respond(HttpStatusCode(499, "Client Closed Request"))
-            }
+        exception<CancellationException> { _, cause ->
+            throw cause
         }
         exception<Throwable> { call, cause ->
             call.respondApiError(cause)

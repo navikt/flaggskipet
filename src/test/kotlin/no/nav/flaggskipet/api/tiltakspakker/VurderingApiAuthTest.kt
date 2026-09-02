@@ -31,11 +31,6 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -205,41 +200,6 @@ class VurderingApiAuthTest :
             }.exceptionOrNull()
 
             thrown shouldBe cancellation
-        }
-
-        test("kansellert auth-request avsluttes uten api-feillogg") {
-            medApplicationLogg { loggmeldinger ->
-                val observedCancellation = CompletableDeferred<CancellationException>()
-                val cancellation = CancellationException("cancellation-canary")
-                val texasClient = mockk<TexasClient>()
-                coEvery { texasClient.introspectToken(any(), any()) } coAnswers {
-                    currentCoroutineContext().cancel(cancellation)
-                    try {
-                        currentCoroutineContext().ensureActive()
-                        error("request-context was not cancelled")
-                    } catch (cause: CancellationException) {
-                        observedCancellation.complete(cause)
-                        throw cause
-                    }
-                }
-
-                testApplication {
-                    setupApi(texasClient)
-
-                    val response = withTimeout(1_000) {
-                        runCatching {
-                            postVurdering(token = "incoming-access-token-canary")
-                        }
-                    }
-                    observedCancellation.await() shouldBe cancellation
-                    response.getOrThrow().let {
-                        it.status shouldBe HttpStatusCode(499, "Client Closed Request")
-                        it.bodyAsText() shouldBe ""
-                    }
-                }
-
-                loggmeldinger.list.none { it.level.isGreaterOrEqual(Level.WARN) } shouldBe true
-            }
         }
 
         test("flere enn 100 unike orgnumre gir 400") {
