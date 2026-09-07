@@ -11,6 +11,7 @@ import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.authorization
 import kotlinx.coroutines.CancellationException
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.api.error.ApiRejectionReason
 import no.nav.flaggskipet.api.error.ErrorType
 import no.nav.flaggskipet.infrastructure.clients.texas.IDENTITY_PROVIDER_TOKENX
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
@@ -40,16 +41,25 @@ class TexasTokenXAuthProvider(
 
     override suspend fun onAuthenticate(context: AuthenticationContext) {
         val bearerToken = context.call.request.bearerToken()
-            ?: throw ApiErrorException.Unauthorized("Missing bearer token")
+            ?: throw ApiErrorException.Unauthorized(
+                "Missing bearer token",
+                rejectionReason = ApiRejectionReason.MISSING_BEARER_TOKEN,
+            )
 
         val introspection = introspectTokenForAuthentication(texasClient, bearerToken)
 
         if (!introspection.active) {
-            throw ApiErrorException.Unauthorized("Token is not active")
+            throw ApiErrorException.Unauthorized(
+                "Token is not active",
+                rejectionReason = ApiRejectionReason.INACTIVE_TOKEN,
+            )
         }
 
         if (introspection.acr !in godkjenteAcrVerdier) {
-            throw ApiErrorException.Forbidden("Token does not meet the required security level")
+            throw ApiErrorException.Forbidden(
+                "Token does not meet the required security level",
+                rejectionReason = ApiRejectionReason.INSUFFICIENT_SECURITY_LEVEL,
+            )
         }
 
         context.principal(

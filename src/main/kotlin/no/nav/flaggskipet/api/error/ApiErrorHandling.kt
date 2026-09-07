@@ -41,10 +41,11 @@ internal fun Logger.logApiError(
 ) {
     if (apiError.status in 400..499) {
         warn(
-            "Avviser API-kall: {} {} {}",
+            "Avviser API-kall: {} {} {} {}",
             kv("event_type", API_REQUEST_REJECTED_EVENT),
             kv("error_code", apiError.type.name),
             kv("operation", operation.logValue),
+            kv("rejection_reason", (cause as? ApiErrorException)?.rejectionReason?.name ?: "UNSPECIFIED"),
         )
         return
     }

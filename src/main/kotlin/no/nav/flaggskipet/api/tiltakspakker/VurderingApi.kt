@@ -10,6 +10,7 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.api.error.ApiRejectionReason
 import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
 
@@ -34,13 +35,22 @@ fun Application.configureVurderingApi() {
                     val request = call.receive<VurderingRequest>()
                     val orgnumre = request.orgnumre.distinct()
                     if (orgnumre.isEmpty()) {
-                        throw ApiErrorException.BadRequest("orgnumre kan ikke være tom")
+                        throw ApiErrorException.BadRequest(
+                            "orgnumre kan ikke være tom",
+                            rejectionReason = ApiRejectionReason.EMPTY_ORGNUMRE,
+                        )
                     }
                     if (orgnumre.size > MAKS_ANTALL_ORGNUMRE) {
-                        throw ApiErrorException.BadRequest("Maks $MAKS_ANTALL_ORGNUMRE unike orgnumre per kall")
+                        throw ApiErrorException.BadRequest(
+                            "Maks $MAKS_ANTALL_ORGNUMRE unike orgnumre per kall",
+                            rejectionReason = ApiRejectionReason.TOO_MANY_ORGNUMRE,
+                        )
                     }
                     if (orgnumre.any { !it.matches(ORGNUMMER_FORMAT) }) {
-                        throw ApiErrorException.BadRequest("Ugyldig orgnummer: hvert orgnummer må være nøyaktig 9 sifre")
+                        throw ApiErrorException.BadRequest(
+                            "Ugyldig orgnummer: hvert orgnummer må være nøyaktig 9 sifre",
+                            rejectionReason = ApiRejectionReason.INVALID_ORGNUMMER_FORMAT,
+                        )
                     }
                     call.respond(vurderUseCase.execute(orgnumre).toResponse())
                 }

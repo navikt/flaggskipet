@@ -58,6 +58,54 @@ private const val VURDERING_PATH = "/api/v1/tiltakspakker/vurdering"
 
 class VurderingApiAuthTest :
     FunSpec({
+        listOf(
+            emptyList<String>() to "EMPTY_ORGNUMRE",
+            unikeOrgnumre(101) to "TOO_MANY_ORGNUMRE",
+            listOf("ugyldig-orgnummer-canary") to "INVALID_ORGNUMMER_FORMAT",
+        ).forEach { (orgnumre, reason) ->
+            test("avvisningslogg skiller $reason uten å endre API-respons") {
+                medApplicationLogg { loggmeldinger ->
+                    testApplication {
+                        setupApi(aktivtToken(acr = "Level4"))
+                        val response = postVurderingMedOrgnumre(orgnumre)
+                        response.status shouldBe HttpStatusCode.BadRequest
+                        response.bodyAsText() shouldContain "\"type\":\"BAD_REQUEST\""
+                    }
+
+                    val logs = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                    logs.size shouldBe 1
+                    logs.single().level shouldBe Level.WARN
+                    val json = logs.single().serialisertJson()
+                    json.verdi("rejection_reason") shouldBe reason
+                    json.toString() shouldNotContain "ugyldig-orgnummer-canary"
+                    json.toString() shouldNotContain "gyldig-token"
+                }
+            }
+        }
+
+        listOf(
+            Triple(null, aktivtToken("Level4"), "MISSING_BEARER_TOKEN"),
+            Triple("token-canary", TexasIntrospectionResponse(active = false), "INACTIVE_TOKEN"),
+            Triple("token-canary", aktivtToken("idporten-loa-substantial"), "INSUFFICIENT_SECURITY_LEVEL"),
+        ).forEach { (token, introspection, reason) ->
+            test("avvisningslogg skiller $reason uten tokendetaljer") {
+                medApplicationLogg { loggmeldinger ->
+                    testApplication {
+                        setupApi(introspection)
+                        val expectedStatus = if (reason == "INSUFFICIENT_SECURITY_LEVEL") HttpStatusCode.Forbidden else HttpStatusCode.Unauthorized
+                        postVurdering(token).status shouldBe expectedStatus
+                    }
+
+                    val logs = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                    logs.size shouldBe 1
+                    logs.single().level shouldBe Level.WARN
+                    val json = logs.single().serialisertJson()
+                    json.verdi("rejection_reason") shouldBe reason
+                    json.toString() shouldNotContain "token-canary"
+                }
+            }
+        }
+
         test("gyldig token gir 200") {
             testApplication {
                 setupApi(aktivtToken(acr = "Level4"))
