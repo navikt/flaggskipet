@@ -9,10 +9,12 @@ import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.authorization
+import kotlinx.coroutines.CancellationException
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.api.error.ApiRejectionReason
+import no.nav.flaggskipet.api.error.ErrorType
 import no.nav.flaggskipet.infrastructure.clients.texas.IDENTITY_PROVIDER_TOKENX
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
-import org.slf4j.LoggerFactory
 
 const val TOKENX_AUTHENTICATION = "tokenx"
 
@@ -27,8 +29,6 @@ data class TokenXPrincipal(
 // i dev bærer den nye verdien. Begge representerer samme nivå og godtas.
 private val godkjenteAcrVerdier = setOf("Level4", "idporten-loa-high")
 
-private val logger = LoggerFactory.getLogger(TexasTokenXAuthProvider::class.java)
-
 class TexasTokenXAuthProvider(
     config: Config,
 ) : AuthenticationProvider(config) {
@@ -41,27 +41,25 @@ class TexasTokenXAuthProvider(
 
     override suspend fun onAuthenticate(context: AuthenticationContext) {
         val bearerToken = context.call.request.bearerToken()
-            ?: throw ApiErrorException.Unauthorized("Missing bearer token")
+            ?: throw ApiErrorException.Unauthorized(
+                "Missing bearer token",
+                rejectionReason = ApiRejectionReason.MISSING_BEARER_TOKEN,
+            )
 
-        val introspection = try {
-            texasClient.introspectToken(IDENTITY_PROVIDER_TOKENX, bearerToken)
-        } catch (exception: Exception) {
-            logger.error("Token introspection mot Texas feilet", exception)
-            throw ApiErrorException.Unauthorized("Token introspection failed", exception)
-        }
+        val introspection = introspectTokenForAuthentication(texasClient, bearerToken)
 
         if (!introspection.active) {
-            logger.warn("Avviste request med inaktivt token: {}", introspection.error ?: "ukjent årsak")
-            throw ApiErrorException.Unauthorized("Token is not active")
+            throw ApiErrorException.Unauthorized(
+                "Token is not active",
+                rejectionReason = ApiRejectionReason.INACTIVE_TOKEN,
+            )
         }
 
         if (introspection.acr !in godkjenteAcrVerdier) {
-            logger.warn(
-                "Avviste request med for lavt sikkerhetsnivå: acr={}, client_id={}",
-                introspection.acr,
-                introspection.clientId,
+            throw ApiErrorException.Forbidden(
+                "Token does not meet the required security level",
+                rejectionReason = ApiRejectionReason.INSUFFICIENT_SECURITY_LEVEL,
             )
-            throw ApiErrorException.Forbidden("Token does not meet the required security level")
         }
 
         context.principal(
@@ -71,6 +69,21 @@ class TexasTokenXAuthProvider(
             ),
         )
     }
+}
+
+internal suspend fun introspectTokenForAuthentication(
+    texasClient: TexasClient,
+    bearerToken: String,
+) = try {
+    texasClient.introspectToken(IDENTITY_PROVIDER_TOKENX, bearerToken)
+} catch (cancellation: CancellationException) {
+    throw cancellation
+} catch (exception: Exception) {
+    throw ApiErrorException.InternalServerError(
+        errorMessage = "Authentication service unavailable",
+        cause = exception,
+        type = ErrorType.TEXAS_INTROSPECTION_FAILED,
+    )
 }
 
 internal fun ApplicationRequest.bearerToken(): String? = authorization()

@@ -12,6 +12,7 @@ enum class ErrorType {
     ILLEGAL_ARGUMENT,
     BAD_REQUEST,
     CONFLICT,
+    TEXAS_INTROSPECTION_FAILED,
 }
 
 @Serializable

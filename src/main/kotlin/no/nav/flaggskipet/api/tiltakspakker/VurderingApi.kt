@@ -10,12 +10,9 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.api.error.ApiErrorException
+import no.nav.flaggskipet.api.error.ApiRejectionReason
 import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
 import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
-import org.slf4j.LoggerFactory
-import java.lang.invoke.MethodHandles
-
-private val logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
 // Ressursbegrensning for det synkrone endepunktet. Ereg-klienten begrenser i tillegg
 // samtidigheten mot Ereg. Større populasjoner skal behandles som flere batcher eller
@@ -38,18 +35,22 @@ fun Application.configureVurderingApi() {
                     val request = call.receive<VurderingRequest>()
                     val orgnumre = request.orgnumre.distinct()
                     if (orgnumre.isEmpty()) {
-                        throw ApiErrorException.BadRequest("orgnumre kan ikke være tom")
+                        throw ApiErrorException.BadRequest(
+                            "orgnumre kan ikke være tom",
+                            rejectionReason = ApiRejectionReason.EMPTY_ORGNUMRE,
+                        )
                     }
                     if (orgnumre.size > MAKS_ANTALL_ORGNUMRE) {
-                        logger.warn(
-                            "Avviser vurderingskall med {} unike orgnumre; maks er {}",
-                            orgnumre.size,
-                            MAKS_ANTALL_ORGNUMRE,
+                        throw ApiErrorException.BadRequest(
+                            "Maks $MAKS_ANTALL_ORGNUMRE unike orgnumre per kall",
+                            rejectionReason = ApiRejectionReason.TOO_MANY_ORGNUMRE,
                         )
-                        throw ApiErrorException.BadRequest("Maks $MAKS_ANTALL_ORGNUMRE unike orgnumre per kall")
                     }
                     if (orgnumre.any { !it.matches(ORGNUMMER_FORMAT) }) {
-                        throw ApiErrorException.BadRequest("Ugyldig orgnummer: hvert orgnummer må være nøyaktig 9 sifre")
+                        throw ApiErrorException.BadRequest(
+                            "Ugyldig orgnummer: hvert orgnummer må være nøyaktig 9 sifre",
+                            rejectionReason = ApiRejectionReason.INVALID_ORGNUMMER_FORMAT,
+                        )
                     }
                     call.respond(vurderUseCase.execute(orgnumre).toResponse())
                 }

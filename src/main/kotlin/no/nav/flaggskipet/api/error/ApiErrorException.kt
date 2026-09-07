@@ -2,10 +2,20 @@ package no.nav.flaggskipet.api.error
 
 import io.ktor.http.HttpStatusCode
 
+enum class ApiRejectionReason {
+    EMPTY_ORGNUMRE,
+    TOO_MANY_ORGNUMRE,
+    INVALID_ORGNUMMER_FORMAT,
+    MISSING_BEARER_TOKEN,
+    INACTIVE_TOKEN,
+    INSUFFICIENT_SECURITY_LEVEL,
+}
+
 sealed class ApiErrorException(
     message: String,
     val type: ErrorType,
     cause: Throwable? = null,
+    val rejectionReason: ApiRejectionReason? = null,
 ) : RuntimeException(message, cause) {
     abstract fun toApiError(path: String): ApiError
 
@@ -13,7 +23,8 @@ sealed class ApiErrorException(
         val errorMessage: String = "Bad request",
         cause: Throwable? = null,
         type: ErrorType = ErrorType.BAD_REQUEST,
-    ) : ApiErrorException(errorMessage, type, cause) {
+        rejectionReason: ApiRejectionReason? = null,
+    ) : ApiErrorException(errorMessage, type, cause, rejectionReason) {
         override fun toApiError(path: String) = ApiError(
             status = HttpStatusCode.BadRequest.value,
             type = type,
@@ -26,7 +37,8 @@ sealed class ApiErrorException(
         val errorMessage: String = "Unauthorized",
         cause: Throwable? = null,
         type: ErrorType = ErrorType.AUTHENTICATION_ERROR,
-    ) : ApiErrorException(errorMessage, type, cause) {
+        rejectionReason: ApiRejectionReason? = null,
+    ) : ApiErrorException(errorMessage, type, cause, rejectionReason) {
         override fun toApiError(path: String) = ApiError(
             status = HttpStatusCode.Unauthorized.value,
             type = type,
@@ -39,7 +51,8 @@ sealed class ApiErrorException(
         val errorMessage: String = "Forbidden",
         cause: Throwable? = null,
         type: ErrorType = ErrorType.AUTHORIZATION_ERROR,
-    ) : ApiErrorException(errorMessage, type, cause) {
+        rejectionReason: ApiRejectionReason? = null,
+    ) : ApiErrorException(errorMessage, type, cause, rejectionReason) {
         override fun toApiError(path: String) = ApiError(
             status = HttpStatusCode.Forbidden.value,
             type = type,
