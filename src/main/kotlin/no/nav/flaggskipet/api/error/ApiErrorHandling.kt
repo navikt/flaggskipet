@@ -39,7 +39,12 @@ internal fun Logger.logApiError(
     cause: Throwable,
     operation: ApiOperation,
 ) {
-    if (apiError.status in 400..499) {
+    val explicitRejection = when (cause) {
+        is ApiErrorException -> cause.cause == null
+        is BadRequestException, is NotFoundException -> true
+        else -> false
+    }
+    if (apiError.status in 400..499 && explicitRejection) {
         warn(
             "Avviser API-kall: {} {} {} {}",
             kv("event_type", API_REQUEST_REJECTED_EVENT),
@@ -64,6 +69,7 @@ private fun Throwable.safeExceptionType(): String = when (this) {
     is ApiErrorException -> "ApiErrorException"
     is TimeoutCancellationException -> "TimeoutCancellationException"
     is IllegalStateException -> "IllegalStateException"
+    is IllegalArgumentException -> "IllegalArgumentException"
     else -> "UnknownException"
 }
 

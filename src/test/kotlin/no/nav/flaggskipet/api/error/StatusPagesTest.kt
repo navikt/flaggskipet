@@ -31,6 +31,25 @@ import org.slf4j.MDC
 
 class StatusPagesTest :
     FunSpec({
+        listOf("/illegal-argument", "/wrapped-technical-error").forEach { path ->
+            test("teknisk feil på $path forblir ERROR selv med en 400-respons") {
+                medApplicationLogg { loggmeldinger ->
+                    testApplication {
+                        application { installPluginTestRoutes() }
+                        client.get(path).status shouldBe HttpStatusCode.BadRequest
+                    }
+
+                    val logger = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                    logger.size shouldBe 1
+                    logger.single().level shouldBe Level.ERROR
+                    val serialisert = logger.single().serialisertJson()
+                    serialisert.verdi("event_type") shouldBe "api_request_failed"
+                    serialisert.toString() shouldNotContain "12345678901"
+                    serialisert.toString() shouldNotContain "technical-token-canary"
+                }
+            }
+        }
+
         test("status pages svarer med api error for not found exception") {
             testApplication {
                 application {
@@ -184,6 +203,15 @@ private fun Application.installPluginTestRoutes() {
     installPlugins()
 
     routing {
+        get("/illegal-argument") {
+            throw IllegalArgumentException("Uventet intern verdi 12345678901 technical-token-canary")
+        }
+        get("/wrapped-technical-error") {
+            throw ApiErrorException.BadRequest(
+                "Ugyldig verdi",
+                cause = IllegalStateException("Teknisk feil 12345678901 technical-token-canary"),
+            )
+        }
         get("/not-found") {
             throw NotFoundException("missing resource")
         }
