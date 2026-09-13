@@ -32,6 +32,14 @@ kotlin {
 }
 
 dependencies {
+    constraints {
+        lockConstraintToVersion(dependencyVersion = libs.versions.ktor.get(), lockToVersion = "3.5.2") {
+            implementation("io.netty:netty-handler:4.2.18.Final") {
+                because("CVE in lower versions")
+            }
+        }
+    }
+
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.datetime)
     implementation(libs.ktor.client.core)
@@ -102,5 +110,21 @@ tasks {
         archiveFileName.set("app.jar")
         archiveClassifier.set("")
         archiveVersion.set("")
+    }
+}
+
+fun DependencyConstraintHandlerScope.lockConstraintToVersion(
+    dependencyVersion: String,
+    lockToVersion: String,
+    block: DependencyConstraintHandlerScope.() -> Unit,
+) {
+    if (dependencyVersion == lockToVersion) {
+        block()
+    } else {
+        throw GradleException(
+            "Dependency locked to: $lockToVersion. " +
+                "Current version: $dependencyVersion. " +
+                "Remove override or bump locked version.",
+        )
     }
 }
