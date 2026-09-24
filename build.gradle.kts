@@ -32,13 +32,11 @@ kotlin {
 }
 
 dependencies {
-    constraints {
-        lockConstraintToVersion(dependencyVersion = libs.versions.ktor.get(), lockToVersion = "3.5.2") {
-            implementation("io.netty:netty-handler:4.2.18.Final") {
-                because("CVE in lower versions")
-            }
-        }
-    }
+    // Security floor for all Netty modules; remove when Ktor ships Netty 4.2.18.Final or newer.
+    implementationPlatformWithKtorVersionCheck(
+        bomNotation = "io.netty:netty-bom:4.2.18.Final",
+        expectedKtorVersion = "3.6.0",
+    )
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.datetime)
@@ -113,18 +111,13 @@ tasks {
     }
 }
 
-fun DependencyConstraintHandlerScope.lockConstraintToVersion(
-    dependencyVersion: String,
-    lockToVersion: String,
-    block: DependencyConstraintHandlerScope.() -> Unit,
+fun DependencyHandler.implementationPlatformWithKtorVersionCheck(
+    bomNotation: String,
+    expectedKtorVersion: String,
 ) {
-    if (dependencyVersion == lockToVersion) {
-        block()
-    } else {
-        throw GradleException(
-            "Dependency locked to: $lockToVersion. " +
-                "Current version: $dependencyVersion. " +
-                "Remove override or bump locked version.",
-        )
+    val currentKtorVersion = libs.versions.ktor.get()
+    check(currentKtorVersion == expectedKtorVersion) {
+        "Review the $bomNotation platform before changing Ktor from $expectedKtorVersion to $currentKtorVersion"
     }
+    add("implementation", platform(bomNotation))
 }
