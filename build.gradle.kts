@@ -34,7 +34,7 @@ kotlin {
 dependencies {
     // Security floor for all Netty modules; remove when Ktor ships Netty 4.2.18.Final or newer.
     implementationPlatformWithKtorVersionCheck(
-        bomNotation = "io.netty:netty-bom:4.2.18.Final",
+        bomNotation = "io.netty:netty-bom:4.2.19.Final",
         expectedKtorVersion = "3.6.0",
     )
 
