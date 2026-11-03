@@ -2,17 +2,17 @@ package no.nav.flaggskipet.infrastructure.database
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import no.nav.flaggskipet.domain.vurdering.Deltakelse
-import no.nav.flaggskipet.domain.vurdering.Vurderingsgrunn
+import no.nav.flaggskipet.domain.assessment.AssessmentReason
+import no.nav.flaggskipet.domain.assessment.Participation
 import java.sql.DriverManager
 
-class VurderingsgrunnlagMigrationTest :
+class AssessmentReasonMigrationTest :
     FunSpec({
         val fixture = PostgresTestFixture()
 
         afterSpec { fixture.close() }
 
-        test("V8 merker gamle vurderinger, V9 frigjør verdilisten og V10 nullstiller") {
+        test("V8 marks old assessments, V9 frees the value list and V10 resets") {
             fixture.migrate(target = "7")
             DriverManager.getConnection(fixture.jdbcUrl, fixture.username, fixture.password).use { connection ->
                 connection.prepareStatement(
@@ -23,7 +23,7 @@ class VurderingsgrunnlagMigrationTest :
                 ).use { statement ->
                     statement.setString(1, "OPPFOLGINGSPLAN_TILTAKSPAKKE_1")
                     statement.setString(2, "123456789")
-                    statement.setString(3, Deltakelse.TILTAKSGRUPPE.name)
+                    statement.setString(3, Participation.TILTAKSGRUPPE.name)
                     statement.executeUpdate()
                 }
             }
@@ -43,7 +43,7 @@ class VurderingsgrunnlagMigrationTest :
                     statement.executeQuery().use { result ->
                         result.next() shouldBe true
                         result.getString("fylkeskode") shouldBe null
-                        result.getString("vurderingsgrunn") shouldBe Vurderingsgrunn.IKKE_REGISTRERT.name
+                        result.getString("vurderingsgrunn") shouldBe AssessmentReason.IKKE_REGISTRERT.name
                     }
                 }
 
@@ -131,7 +131,7 @@ class VurderingsgrunnlagMigrationTest :
             }
         }
 
-        test("vurderingsgrunn lagres som fri tekst uten pakke 1-spesifikk verdiliste") {
+        test("assessmentReason is stored as free text without a Tiltakspakke 1 value list") {
             fixture.migrate()
 
             DriverManager.getConnection(fixture.jdbcUrl, fixture.username, fixture.password).use { connection ->
@@ -144,7 +144,7 @@ class VurderingsgrunnlagMigrationTest :
                 ).use { statement ->
                     statement.setString(1, "FREMTIDIG_TILTAKSPAKKE")
                     statement.setString(2, "987654321")
-                    statement.setString(3, Deltakelse.UTENFOR_SCOPE.name)
+                    statement.setString(3, Participation.UTENFOR_SCOPE.name)
                     statement.setString(4, "FREMTIDIG_VURDERINGSGRUNN")
                     statement.executeUpdate() shouldBe 1
                 }

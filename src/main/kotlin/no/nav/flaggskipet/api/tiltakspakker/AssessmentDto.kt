@@ -3,12 +3,12 @@ package no.nav.flaggskipet.api.tiltakspakker
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class VurderingRequest(
+data class AssessmentRequest(
     val orgnumre: List<String>,
 )
 
 @Serializable
-data class VurderingResponse(
+data class AssessmentResponse(
     val tiltakspakkeId: String,
     val virksomheter: List<VirksomhetResponse>,
 )

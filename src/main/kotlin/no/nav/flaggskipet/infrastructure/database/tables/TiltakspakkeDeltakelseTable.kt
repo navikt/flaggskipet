@@ -1,7 +1,7 @@
 package no.nav.flaggskipet.infrastructure.database.tables
 
-import no.nav.flaggskipet.domain.vurdering.Deltakelse
-import no.nav.flaggskipet.domain.vurdering.Vurderingsgrunn
+import no.nav.flaggskipet.domain.assessment.AssessmentReason
+import no.nav.flaggskipet.domain.assessment.Participation
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -15,11 +15,11 @@ object TiltakspakkeDeltakelseTable : Table("tiltakspakke_deltakelse") {
     val id = javaUUID("id").databaseGenerated()
     val tiltakspakkeId = text("tiltakspakke_id")
     val orgnummer = text("orgnummer")
-    val deltakelse = enumerationByName<Deltakelse>("deltakelse", 32)
+    val participation = enumerationByName<Participation>("deltakelse", 32)
     val fylkeskode = varchar("fylkeskode", 2).nullable()
 
-    val vurderingsgrunn = text("vurderingsgrunn")
-        .transform(Vurderingsgrunn::valueOf, Vurderingsgrunn::name)
+    val assessmentReason = text("vurderingsgrunn")
+        .transform(AssessmentReason::valueOf, AssessmentReason::name)
 
     @Suppress("unused")
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
@@ -28,7 +28,7 @@ object TiltakspakkeDeltakelseTable : Table("tiltakspakke_deltakelse") {
     override val primaryKey = PrimaryKey(id)
 
     init {
-        check("chk_tiltakspakke_deltakelse") { deltakelse inList Deltakelse.entries.toList() }
+        check("chk_tiltakspakke_deltakelse") { participation inList Participation.entries.toList() }
         check("chk_tiltakspakke_fylkeskode") { (fylkeskode eq null) or (fylkeskode regexp "^[0-9]{2}$") }
         index("uq_tiltakspakke_orgnr", true, tiltakspakkeId, orgnummer)
     }

@@ -34,8 +34,8 @@ internal data class TexasIntrospectionRequest(
     val token: String,
 )
 
-// Texas returnerer alle claims i tokenet ved aktivt token. Modellen tar bare med
-// claims appen faktisk bruker — pid holdes bevisst utenfor så den ikke kan lekke til logg.
+// Texas returns all token claims for an active token. Model only the
+// Include only claims used by the application; omit pid so it cannot leak to logs.
 @Serializable
 data class TexasIntrospectionResponse(
     val active: Boolean,

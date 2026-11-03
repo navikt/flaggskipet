@@ -32,25 +32,25 @@ import org.slf4j.MDC
 class StatusPagesTest :
     FunSpec({
         listOf("/illegal-argument", "/wrapped-technical-error").forEach { path ->
-            test("teknisk feil på $path forblir ERROR selv med en 400-respons") {
-                medApplicationLogg { loggmeldinger ->
+            test("technical failure at $path remains ERROR even with a 400 response") {
+                withApplicationLog { logEvents ->
                     testApplication {
                         application { installPluginTestRoutes() }
                         client.get(path).status shouldBe HttpStatusCode.BadRequest
                     }
 
-                    val logger = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                    val logger = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
                     logger.size shouldBe 1
                     logger.single().level shouldBe Level.ERROR
-                    val serialisert = logger.single().serialisertJson()
-                    serialisert.verdi("event_type") shouldBe "api_request_failed"
-                    serialisert.toString() shouldNotContain "12345678901"
-                    serialisert.toString() shouldNotContain "technical-token-canary"
+                    val serialized = logger.single().serializedJson()
+                    serialized.value("event_type") shouldBe "api_request_failed"
+                    serialized.toString() shouldNotContain "12345678901"
+                    serialized.toString() shouldNotContain "technical-token-canary"
                 }
             }
         }
 
-        test("status pages svarer med api error for not found exception") {
+        test("status pages respond with api error for not found exception") {
             testApplication {
                 application {
                     installPluginTestRoutes()
@@ -70,8 +70,8 @@ class StatusPagesTest :
             }
         }
 
-        test("forventet klientavvisning logger én trygg warn og ingen error") {
-            medApplicationLogg { loggmeldinger ->
+        test("expected client rejection logs one safe warning and no error") {
+            withApplicationLog { logEvents ->
                 testApplication {
                     application {
                         installPluginTestRoutes()
@@ -80,24 +80,24 @@ class StatusPagesTest :
                     client.get("/api/v1/tiltakspakker/vurdering").status shouldBe HttpStatusCode.BadRequest
                 }
 
-                val warnOgError = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
-                warnOgError.size shouldBe 1
-                warnOgError.single().level shouldBe Level.WARN
+                val warningsAndErrors = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                warningsAndErrors.size shouldBe 1
+                warningsAndErrors.single().level shouldBe Level.WARN
 
-                val serialisert = warnOgError.single().serialisertJson()
-                serialisert.verdi("event_type") shouldBe "api_request_rejected"
-                serialisert.verdi("error_code") shouldBe "BAD_REQUEST"
-                serialisert.verdi("operation") shouldBe "vurder_tiltakspakker"
-                serialisert.verdi("message") shouldContain "Avviser API-kall"
+                val serialized = warningsAndErrors.single().serializedJson()
+                serialized.value("event_type") shouldBe "api_request_rejected"
+                serialized.value("error_code") shouldBe "BAD_REQUEST"
+                serialized.value("operation") shouldBe "vurder_tiltakspakker"
+                serialized.value("message") shouldContain "Rejecting API request"
 
-                serialisert.toString() shouldNotContain "12345678901"
-                serialisert.toString() shouldNotContain "https://example.test/person/123"
-                serialisert.containsKey("stack_trace") shouldBe false
+                serialized.toString() shouldNotContain "12345678901"
+                serialized.toString() shouldNotContain "https://example.test/person/123"
+                serialized.containsKey("stack_trace") shouldBe false
             }
         }
 
-        test("produksjonsenkoderen serialiserer en gyldig trace id") {
-            medApplicationLogg { loggmeldinger ->
+        test("production encoder serializes a valid trace id") {
+            withApplicationLog { logEvents ->
                 val traceId = "0123456789abcdef0123456789abcdef"
                 MDC.put("trace_id", traceId)
                 try {
@@ -107,22 +107,22 @@ class StatusPagesTest :
                             type = ErrorType.BAD_REQUEST,
                             message = "Bad request",
                         ),
-                        cause = ApiErrorException.BadRequest("Sensitiv årsak 12345678901"),
-                        operation = ApiOperation.VURDER_TILTAKSPAKKER,
+                        cause = ApiErrorException.BadRequest("Sensitive cause 12345678901"),
+                        operation = ApiOperation.ASSESS_TILTAKSPAKKER,
                     )
 
-                    val serialisert = loggmeldinger.list.single().serialisertJson()
-                    serialisert.verdi("trace_id") shouldBe traceId
-                    serialisert.verdi("trace_id").matches(Regex("^[0-9a-f]{32}$")) shouldBe true
-                    serialisert.toString() shouldNotContain "12345678901"
+                    val serialized = logEvents.list.single().serializedJson()
+                    serialized.value("trace_id") shouldBe traceId
+                    serialized.value("trace_id").matches(Regex("^[0-9a-f]{32}$")) shouldBe true
+                    serialized.toString() shouldNotContain "12345678901"
                 } finally {
                     MDC.remove("trace_id")
                 }
             }
         }
 
-        test("uventet serverfeil logger én strukturert error") {
-            medApplicationLogg { loggmeldinger ->
+        test("unexpected server failure logs one structured error") {
+            withApplicationLog { logEvents ->
                 testApplication {
                     application {
                         installPluginTestRoutes()
@@ -131,21 +131,21 @@ class StatusPagesTest :
                     client.get("/internal-error").status shouldBe HttpStatusCode.InternalServerError
                 }
 
-                val errorlogger = loggmeldinger.list.filter { it.level == Level.ERROR }
-                errorlogger.size shouldBe 1
+                val errorLogs = logEvents.list.filter { it.level == Level.ERROR }
+                errorLogs.size shouldBe 1
 
-                val serialisert = errorlogger.single().serialisertJson()
-                serialisert.verdi("event_type") shouldBe "api_request_failed"
-                serialisert.verdi("error_code") shouldBe "INTERNAL_SERVER_ERROR"
-                serialisert.verdi("operation") shouldBe "behandle_api_kall"
-                serialisert.verdi("exception_type") shouldBe "IllegalStateException"
-                serialisert.toString() shouldNotContain "12345678901"
-                serialisert.toString() shouldNotContain "https://example.test/person/123"
+                val serialized = errorLogs.single().serializedJson()
+                serialized.value("event_type") shouldBe "api_request_failed"
+                serialized.value("error_code") shouldBe "INTERNAL_SERVER_ERROR"
+                serialized.value("operation") shouldBe "behandle_api_kall"
+                serialized.value("exception_type") shouldBe "IllegalStateException"
+                serialized.toString() shouldNotContain "12345678901"
+                serialized.toString() shouldNotContain "https://example.test/person/123"
             }
         }
 
-        test("serverfeil beholder trygg årsakstype og kodeplassering uten meldinger") {
-            medApplicationLogg { loggmeldinger ->
+        test("server failure retains safe cause type and code location without messages") {
+            withApplicationLog { logEvents ->
                 LoggerFactory.getLogger("Application").logApiError(
                     apiError = ApiError(
                         status = HttpStatusCode.InternalServerError.value,
@@ -153,32 +153,32 @@ class StatusPagesTest :
                         message = "Authentication service unavailable",
                     ),
                     cause = ApiErrorException.InternalServerError(
-                        errorMessage = "Ytre feil for 12345678901 med incoming-access-token-canary",
-                        cause = sensitivRotårsak(),
+                        errorMessage = "External failure for 12345678901 with incoming-access-token-canary",
+                        cause = sensitiveRootCause(),
                         type = ErrorType.TEXAS_INTROSPECTION_FAILED,
                     ),
-                    operation = ApiOperation.VURDER_TILTAKSPAKKER,
+                    operation = ApiOperation.ASSESS_TILTAKSPAKKER,
                 )
 
-                val serialisert = loggmeldinger.list.single().serialisertJson()
-                val stackTrace = serialisert.verdi("stack_trace")
+                val serialized = logEvents.list.single().serializedJson()
+                val stackTrace = serialized.value("stack_trace")
 
-                serialisert.verdi("exception_type") shouldBe "ApiErrorException"
+                serialized.value("exception_type") shouldBe "ApiErrorException"
                 stackTrace shouldContain "RuntimeException: ApiErrorException"
                 stackTrace shouldContain "Caused by: java.lang.RuntimeException: IllegalArgumentException"
-                stackTrace shouldContain "sensitivRotårsak"
-                with(serialisert.toString()) {
+                stackTrace shouldContain "sensitiveRootCause"
+                with(serialized.toString()) {
                     shouldNotContain("12345678901")
                     shouldNotContain("incoming-access-token-canary")
                     shouldNotContain("https://texas.example.test/token")
-                    shouldNotContain("Sensitiv rotårsak")
-                    shouldNotContain("Ytre feil")
+                    shouldNotContain("Sensitive root cause")
+                    shouldNotContain("External failure")
                 }
             }
         }
 
-        test("intern timeout forblir én strukturert 500-feil") {
-            medApplicationLogg { loggmeldinger ->
+        test("internal timeout remains one structured 500 error") {
+            withApplicationLog { logEvents ->
                 testApplication {
                     application {
                         installPluginTestRoutes()
@@ -187,14 +187,14 @@ class StatusPagesTest :
                     client.get("/internal-timeout").status shouldBe HttpStatusCode.InternalServerError
                 }
 
-                val errorlogger = loggmeldinger.list.filter { it.level == Level.ERROR }
-                errorlogger.size shouldBe 1
+                val errorLogs = logEvents.list.filter { it.level == Level.ERROR }
+                errorLogs.size shouldBe 1
 
-                val serialisert = errorlogger.single().serialisertJson()
-                serialisert.verdi("event_type") shouldBe "api_request_failed"
-                serialisert.verdi("error_code") shouldBe "INTERNAL_SERVER_ERROR"
-                serialisert.verdi("operation") shouldBe "behandle_api_kall"
-                serialisert.verdi("exception_type") shouldBe "TimeoutCancellationException"
+                val serialized = errorLogs.single().serializedJson()
+                serialized.value("event_type") shouldBe "api_request_failed"
+                serialized.value("error_code") shouldBe "INTERNAL_SERVER_ERROR"
+                serialized.value("operation") shouldBe "behandle_api_kall"
+                serialized.value("exception_type") shouldBe "TimeoutCancellationException"
             }
         }
     })
@@ -204,12 +204,12 @@ private fun Application.installPluginTestRoutes() {
 
     routing {
         get("/illegal-argument") {
-            throw IllegalArgumentException("Uventet intern verdi 12345678901 technical-token-canary")
+            throw IllegalArgumentException("Unexpected internal value 12345678901 technical-token-canary")
         }
         get("/wrapped-technical-error") {
             throw ApiErrorException.BadRequest(
-                "Ugyldig verdi",
-                cause = IllegalStateException("Teknisk feil 12345678901 technical-token-canary"),
+                "Invalid value",
+                cause = IllegalStateException("Technical failure 12345678901 technical-token-canary"),
             )
         }
         get("/not-found") {
@@ -217,7 +217,7 @@ private fun Application.installPluginTestRoutes() {
         }
         get("/api/v1/tiltakspakker/vurdering") {
             throw ApiErrorException.BadRequest(
-                "Ugyldig verdi 12345678901 fra https://example.test/person/123",
+                "Invalid value 12345678901 from https://example.test/person/123",
             )
         }
         get("/internal-error") {
@@ -236,21 +236,21 @@ private fun Application.installPluginTestRoutes() {
     }
 }
 
-private suspend fun medApplicationLogg(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
+private suspend fun withApplicationLog(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
     val logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
-    val loggmeldinger = ListAppender<ILoggingEvent>().apply {
+    val logEvents = ListAppender<ILoggingEvent>().apply {
         start()
         logger.addAppender(this)
     }
     try {
-        block(loggmeldinger)
+        block(logEvents)
     } finally {
-        logger.detachAppender(loggmeldinger)
-        loggmeldinger.stop()
+        logger.detachAppender(logEvents)
+        logEvents.stop()
     }
 }
 
-private fun ILoggingEvent.serialisertJson(): JsonObject {
+private fun ILoggingEvent.serializedJson(): JsonObject {
     val encoder = LogstashEncoder().apply {
         context = LoggerFactory.getILoggerFactory() as LoggerContext
         start()
@@ -262,8 +262,8 @@ private fun ILoggingEvent.serialisertJson(): JsonObject {
     }
 }
 
-private fun JsonObject.verdi(felt: String): String = getValue(felt).jsonPrimitive.content
+private fun JsonObject.value(field: String): String = getValue(field).jsonPrimitive.content
 
-private fun sensitivRotårsak() = IllegalArgumentException(
-    "Sensitiv rotårsak 12345678901 fra https://texas.example.test/token med incoming-access-token-canary",
+private fun sensitiveRootCause() = IllegalArgumentException(
+    "Sensitive root cause 12345678901 from https://texas.example.test/token with incoming-access-token-canary",
 )

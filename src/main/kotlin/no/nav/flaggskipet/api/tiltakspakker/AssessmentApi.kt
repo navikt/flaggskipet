@@ -11,61 +11,61 @@ import io.ktor.server.routing.routing
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.api.error.ApiErrorException
 import no.nav.flaggskipet.api.error.ApiRejectionReason
-import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
-import no.nav.flaggskipet.domain.vurdering.TiltakspakkeVurdering
+import no.nav.flaggskipet.application.AssessTiltakspakkerUseCase
+import no.nav.flaggskipet.domain.assessment.TiltakspakkeAssessment
 
-// Ressursbegrensning for det synkrone endepunktet. Ereg-klienten begrenser i tillegg
-// samtidigheten mot Ereg. Større populasjoner skal behandles som flere batcher eller
-// en egen asynkron jobb. Autorisasjon av bruker-orgnummer-tilknytning er bevisst
-// konsumentens ansvar, se README.
-private const val MAKS_ANTALL_ORGNUMRE = 100
+// Limit resources for the synchronous endpoint. The Ereg client also limits
+// concurrency against Ereg. Larger populations need separate batches or an
+// asynchronous job. Consumers are responsible for authorizing user-orgnummer
+// relationships; see README.
+private const val MAX_ORGNUMRE = 100
 
-// Formatkrav, ikke gyldighetskontroll: Ereg er fasit på om orgnummeret finnes,
-// så mod11-sjekk er bevisst utelatt. Kravet hindrer at vilkårlige strenger går
-// videre inn i Ereg-URL-en og databasen. Frontend stoler på denne valideringen.
+// Format only, not validity: Ereg determines whether an orgnummer exists.
+// Mod11 is deliberately omitted. This prevents arbitrary strings from reaching
+// the Ereg URL and database. The frontend relies on this validation.
 private val ORGNUMMER_FORMAT = Regex("""\d{9}""")
 
-fun Application.configureVurderingApi() {
-    val vurderUseCase: VurderTiltakspakkerUseCase by dependencies
+fun Application.configureAssessmentApi() {
+    val assessUseCase: AssessTiltakspakkerUseCase by dependencies
 
     routing {
         authenticate(TOKENX_AUTHENTICATION) {
             route("/api/v1/tiltakspakker/vurdering") {
                 post {
-                    val request = call.receive<VurderingRequest>()
+                    val request = call.receive<AssessmentRequest>()
                     val orgnumre = request.orgnumre.distinct()
                     if (orgnumre.isEmpty()) {
                         throw ApiErrorException.BadRequest(
-                            "orgnumre kan ikke være tom",
+                            "orgnumre cannot be empty",
                             rejectionReason = ApiRejectionReason.EMPTY_ORGNUMRE,
                         )
                     }
-                    if (orgnumre.size > MAKS_ANTALL_ORGNUMRE) {
+                    if (orgnumre.size > MAX_ORGNUMRE) {
                         throw ApiErrorException.BadRequest(
-                            "Maks $MAKS_ANTALL_ORGNUMRE unike orgnumre per kall",
+                            "Maximum $MAX_ORGNUMRE unique orgnumre per request",
                             rejectionReason = ApiRejectionReason.TOO_MANY_ORGNUMRE,
                         )
                     }
                     if (orgnumre.any { !it.matches(ORGNUMMER_FORMAT) }) {
                         throw ApiErrorException.BadRequest(
-                            "Ugyldig orgnummer: hvert orgnummer må være nøyaktig 9 sifre",
+                            "Invalid orgnummer: each orgnummer must be exactly 9 digits",
                             rejectionReason = ApiRejectionReason.INVALID_ORGNUMMER_FORMAT,
                         )
                     }
-                    call.respond(vurderUseCase.execute(orgnumre).toResponse())
+                    call.respond(assessUseCase.execute(orgnumre).toResponse())
                 }
             }
         }
     }
 }
 
-private fun List<TiltakspakkeVurdering>.toResponse(): List<VurderingResponse> = map { tiltakspakke ->
-    VurderingResponse(
+private fun List<TiltakspakkeAssessment>.toResponse(): List<AssessmentResponse> = map { tiltakspakke ->
+    AssessmentResponse(
         tiltakspakkeId = tiltakspakke.id,
         virksomheter = tiltakspakke.virksomheter.map { virksomhet ->
             VirksomhetResponse(
                 orgnummer = virksomhet.orgnummer,
-                deltakelse = virksomhet.deltakelse.name,
+                deltakelse = virksomhet.participation.name,
             )
         },
     )

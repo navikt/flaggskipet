@@ -6,7 +6,7 @@ import io.ktor.server.plugins.di.dependencies
 import no.nav.flaggskipet.api.auth.installAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
-import no.nav.flaggskipet.api.tiltakspakker.configureVurderingApi
+import no.nav.flaggskipet.api.tiltakspakker.configureAssessmentApi
 import no.nav.flaggskipet.bootstrap.installDependencyInjection
 import no.nav.flaggskipet.infrastructure.database.config.migrate
 import org.slf4j.LoggerFactory
@@ -33,6 +33,6 @@ fun Application.module() {
     installAuthentication()
     val dataSource: DataSource by dependencies
     dataSource.migrate()
-    configureVurderingApi()
+    configureAssessmentApi()
     configureInternalApi()
 }

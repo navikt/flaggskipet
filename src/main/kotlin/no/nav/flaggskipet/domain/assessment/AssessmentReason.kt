@@ -1,6 +1,6 @@
-package no.nav.flaggskipet.domain.vurdering
+package no.nav.flaggskipet.domain.assessment
 
-enum class Vurderingsgrunn {
+enum class AssessmentReason {
     FYLKE_I_SCOPE,
     FYLKE_UTENFOR_SCOPE,
     MANGLER_ADRESSE,

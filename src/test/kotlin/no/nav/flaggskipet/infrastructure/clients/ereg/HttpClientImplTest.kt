@@ -24,13 +24,13 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
-import no.nav.flaggskipet.domain.vurdering.Adresse
+import no.nav.flaggskipet.domain.assessment.Adresse
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicInteger
 
 class HttpClientImplTest :
     FunSpec({
-        test("hentNoekkelinfo mapper 200 til EregNoekkelinfo med adresse og sender gyldigDato for i dag") {
+        test("getNoekkelinfo maps 200 to EregNoekkelinfo with Adresse and sends gyldigDato for today") {
             val mockEngine = MockEngine { request ->
                 request.method shouldBe HttpMethod.Get
                 request.url.protocol shouldBe URLProtocol.HTTPS
@@ -58,9 +58,9 @@ class HttpClientImplTest :
                 httpClient = createHttpClient(mockEngine),
             )
 
-            client.hentNoekkelinfo(listOf("313644480")) shouldBe listOf(
+            client.getNoekkelinfo(listOf("313644480")) shouldBe listOf(
                 EregNoekkelinfo(
-                    organisasjonsnummer = "313644480",
+                    orgnummer = "313644480",
                     adresse = Adresse(
                         type = "Forretningsadresse",
                         postnummer = "9012",
@@ -70,7 +70,7 @@ class HttpClientImplTest :
             )
         }
 
-        test("hentNoekkelinfo mapper 404 til EregNoekkelinfo med null adresse") {
+        test("getNoekkelinfo maps 404 to EregNoekkelinfo with null Adresse") {
             val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
@@ -83,12 +83,12 @@ class HttpClientImplTest :
                 ),
             )
 
-            client.hentNoekkelinfo(listOf("999999999")) shouldBe listOf(
-                EregNoekkelinfo(organisasjonsnummer = "999999999", adresse = null),
+            client.getNoekkelinfo(listOf("999999999")) shouldBe listOf(
+                EregNoekkelinfo(orgnummer = "999999999", adresse = null),
             )
         }
 
-        test("hentNoekkelinfo kaster feil, når ereg feiler") {
+        test("getNoekkelinfo throws when Ereg fails") {
             val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
@@ -101,10 +101,10 @@ class HttpClientImplTest :
                 ),
             )
 
-            assertThrows<RuntimeException> { client.hentNoekkelinfo(listOf("111111111")) }
+            assertThrows<RuntimeException> { client.getNoekkelinfo(listOf("111111111")) }
         }
 
-        test("avbryter hele batchen når totalfristen overskrides") {
+        test("cancels the entire batch when the deadline expires") {
             val client = HttpClientImpl(
                 httpClient = createHttpClient(
                     MockEngine {
@@ -112,47 +112,47 @@ class HttpClientImplTest :
                         respondJson("""{"adresse":{}}""")
                     },
                 ),
-                maksParallelleKall = 1,
-                maksBatchVarighetMillis = 100,
+                maxParallelCalls = 1,
+                maxBatchDurationMillis = 100,
             )
 
             assertThrows<TimeoutCancellationException> {
-                client.hentNoekkelinfo(unikeOrgnumre(2, start = 0))
+                client.getNoekkelinfo(uniqueOrgnumre(2, start = 0))
             }
         }
 
-        test("begrenser parallelle ereg-kall på tvers av samtidige batcher") {
-            val aktiveKall = AtomicInteger(0)
-            val maksAktiveKall = AtomicInteger(0)
-            val treKallStartet = CompletableDeferred<Unit>()
+        test("limits parallel Ereg calls across concurrent batches") {
+            val activeCalls = AtomicInteger(0)
+            val maxActiveCalls = AtomicInteger(0)
+            val threeCallsStarted = CompletableDeferred<Unit>()
             val mockEngine = MockEngine {
-                val aktive = aktiveKall.incrementAndGet()
-                maksAktiveKall.updateAndGet { tidligereMaks -> maxOf(tidligereMaks, aktive) }
-                if (aktive == 3) treKallStartet.complete(Unit)
+                val active = activeCalls.incrementAndGet()
+                maxActiveCalls.updateAndGet { previousMax -> maxOf(previousMax, active) }
+                if (active == 3) threeCallsStarted.complete(Unit)
                 try {
-                    treKallStartet.await()
+                    threeCallsStarted.await()
                     respondJson("""{"adresse":{}}""")
                 } finally {
-                    aktiveKall.decrementAndGet()
+                    activeCalls.decrementAndGet()
                 }
             }
             val client = HttpClientImpl(
                 httpClient = createHttpClient(mockEngine),
-                maksParallelleKall = 3,
+                maxParallelCalls = 3,
             )
 
             coroutineScope {
                 listOf(
-                    async { client.hentNoekkelinfo(unikeOrgnumre(10, start = 0)) },
-                    async { client.hentNoekkelinfo(unikeOrgnumre(10, start = 10)) },
+                    async { client.getNoekkelinfo(uniqueOrgnumre(10, start = 0)) },
+                    async { client.getNoekkelinfo(uniqueOrgnumre(10, start = 10)) },
                 ).awaitAll()
             }
 
-            maksAktiveKall.get() shouldBe 3
+            maxActiveCalls.get() shouldBe 3
         }
     })
 
-private fun unikeOrgnumre(antall: Int, start: Int): List<String> = List(antall) { indeks -> "31364%04d".format(start + indeks) }
+private fun uniqueOrgnumre(count: Int, start: Int): List<String> = List(count) { index -> "31364%04d".format(start + index) }
 
 private fun createHttpClient(mockEngine: MockEngine): HttpClient = HttpClient(mockEngine) {
     expectSuccess = false

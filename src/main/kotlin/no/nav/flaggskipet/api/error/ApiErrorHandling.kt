@@ -10,7 +10,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import net.logstash.logback.argument.StructuredArguments.kv
 import org.slf4j.Logger
 
-private const val VURDER_TILTAKSPAKKER_PATH = "/api/v1/tiltakspakker/vurdering"
+private const val ASSESS_TILTAKSPAKKER_PATH = "/api/v1/tiltakspakker/vurdering"
 
 private const val API_REQUEST_REJECTED_EVENT = "api_request_rejected"
 private const val API_REQUEST_FAILED_EVENT = "api_request_failed"
@@ -18,8 +18,8 @@ private const val API_REQUEST_FAILED_EVENT = "api_request_failed"
 internal enum class ApiOperation(
     val logValue: String,
 ) {
-    VURDER_TILTAKSPAKKER("vurder_tiltakspakker"),
-    BEHANDLE_API_KALL("behandle_api_kall"),
+    ASSESS_TILTAKSPAKKER("vurder_tiltakspakker"),
+    HANDLE_API_CALL("behandle_api_kall"),
 }
 
 internal fun ApplicationCall.logApiError(
@@ -27,8 +27,8 @@ internal fun ApplicationCall.logApiError(
     cause: Throwable,
 ) {
     val operation = when (request.path()) {
-        VURDER_TILTAKSPAKKER_PATH -> ApiOperation.VURDER_TILTAKSPAKKER
-        else -> ApiOperation.BEHANDLE_API_KALL
+        ASSESS_TILTAKSPAKKER_PATH -> ApiOperation.ASSESS_TILTAKSPAKKER
+        else -> ApiOperation.HANDLE_API_CALL
     }
 
     application.log.logApiError(apiError, cause, operation)
@@ -46,7 +46,7 @@ internal fun Logger.logApiError(
     }
     if (apiError.status in 400..499 && explicitRejection) {
         warn(
-            "Avviser API-kall: {} {} {} {}",
+            "Rejecting API request: {} {} {} {}",
             kv("event_type", API_REQUEST_REJECTED_EVENT),
             kv("error_code", apiError.type.name),
             kv("operation", operation.logValue),
@@ -56,7 +56,7 @@ internal fun Logger.logApiError(
     }
 
     error(
-        "Uventet API-feil: {} {} {} {}",
+        "Unexpected API error: {} {} {} {}",
         kv("event_type", API_REQUEST_FAILED_EVENT),
         kv("error_code", apiError.type.name),
         kv("operation", operation.logValue),

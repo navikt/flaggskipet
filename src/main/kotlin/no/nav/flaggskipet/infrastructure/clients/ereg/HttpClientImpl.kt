@@ -16,43 +16,43 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import no.nav.flaggskipet.application.port.EregClient
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
-import no.nav.flaggskipet.domain.dagensDato
-import no.nav.flaggskipet.domain.vurdering.Adresse
+import no.nav.flaggskipet.domain.assessment.Adresse
+import no.nav.flaggskipet.domain.today
 
 internal class HttpClientImpl(
     private val httpClient: HttpClient,
-    maksParallelleKall: Int = MAKS_PARALLELLE_EREG_KALL,
-    maksBatchVarighetMillis: Long = MAKS_BATCH_VARIGHET_MILLIS,
+    maxParallelCalls: Int = MAX_PARALLEL_EREG_CALLS,
+    maxBatchDurationMillis: Long = MAX_BATCH_DURATION_MILLIS,
 ) : EregClient {
-    private val samtidighetsbegrenser = Semaphore(
-        maksParallelleKall.also { require(it > 0) { "maksParallelleKall must be positive" } },
+    private val concurrencyLimiter = Semaphore(
+        maxParallelCalls.also { require(it > 0) { "maxParallelCalls must be positive" } },
     )
-    private val maksBatchVarighetMillis = maksBatchVarighetMillis.also {
-        require(it > 0) { "maksBatchVarighetMillis must be positive" }
+    private val maxBatchDurationMillis = maxBatchDurationMillis.also {
+        require(it > 0) { "maxBatchDurationMillis must be positive" }
     }
 
-    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = withTimeout(maksBatchVarighetMillis) {
-        organisasjonsnummer.map { orgnummer ->
+    override suspend fun getNoekkelinfo(orgnummer: List<String>): List<EregNoekkelinfo> = withTimeout(maxBatchDurationMillis) {
+        orgnummer.map { orgnummer ->
             async {
-                samtidighetsbegrenser.withPermit {
-                    hentNoekkelinfoFor(orgnummer)
+                concurrencyLimiter.withPermit {
+                    getNoekkelinfoFor(orgnummer)
                 }
             }
         }.awaitAll()
     }
 
-    private suspend fun hentNoekkelinfoFor(
-        organisasjonsnummer: String,
+    private suspend fun getNoekkelinfoFor(
+        orgnummer: String,
     ): EregNoekkelinfo {
-        val response = httpClient.get("/v2/organisasjon/$organisasjonsnummer/noekkelinfo") {
-            parameter("gyldigDato", dagensDato())
+        val response = httpClient.get("/v2/organisasjon/$orgnummer/noekkelinfo") {
+            parameter("gyldigDato", today())
             accept(ContentType.Application.Json)
         }
         return when (response.status) {
             HttpStatusCode.OK -> {
                 val body = response.body<EregNoekkelinfoResponse>()
                 EregNoekkelinfo(
-                    organisasjonsnummer = organisasjonsnummer,
+                    orgnummer = orgnummer,
                     adresse = Adresse(
                         type = body.adresse.type,
                         postnummer = body.adresse.postnummer,
@@ -62,7 +62,7 @@ internal class HttpClientImpl(
             }
 
             HttpStatusCode.NotFound ->
-                EregNoekkelinfo(organisasjonsnummer = organisasjonsnummer, adresse = null)
+                EregNoekkelinfo(orgnummer = orgnummer, adresse = null)
 
             else -> throw IllegalStateException(
                 "Ereg responded with ${response.status.value}: ${response.bodyAsText()}",
@@ -71,8 +71,8 @@ internal class HttpClientImpl(
     }
 }
 
-private const val MAKS_PARALLELLE_EREG_KALL = 10
-private const val MAKS_BATCH_VARIGHET_MILLIS = 30_000L
+private const val MAX_PARALLEL_EREG_CALLS = 10
+private const val MAX_BATCH_DURATION_MILLIS = 30_000L
 
 @Serializable
 private data class EregNoekkelinfoResponse(
