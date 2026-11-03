@@ -34,24 +34,19 @@ fun Application.configureAssessmentApi() {
                 post {
                     val request = call.receive<AssessmentRequest>()
                     val orgnumre = request.orgnumre.distinct()
+
                     if (orgnumre.isEmpty()) {
-                        throw ApiErrorException.BadRequest(
-                            "orgnumre cannot be empty",
-                            rejectionReason = ApiRejectionReason.EMPTY_ORGNUMRE,
-                        )
+                        throw ApiErrorException.BadRequest(rejectionReason = ApiRejectionReason.EMPTY_ORGNUMRE)
                     }
+
                     if (orgnumre.size > MAX_ORGNUMRE) {
-                        throw ApiErrorException.BadRequest(
-                            "Maximum $MAX_ORGNUMRE unique orgnumre per request",
-                            rejectionReason = ApiRejectionReason.TOO_MANY_ORGNUMRE,
-                        )
+                        throw ApiErrorException.BadRequest(rejectionReason = ApiRejectionReason.TOO_MANY_ORGNUMRE)
                     }
+
                     if (orgnumre.any { !it.matches(ORGNUMMER_FORMAT) }) {
-                        throw ApiErrorException.BadRequest(
-                            "Invalid orgnummer: each orgnummer must be exactly 9 digits",
-                            rejectionReason = ApiRejectionReason.INVALID_ORGNUMMER_FORMAT,
-                        )
+                        throw ApiErrorException.BadRequest(rejectionReason = ApiRejectionReason.INVALID_ORGNUMMER_FORMAT)
                     }
+
                     call.respond(assessUseCase.execute(orgnumre).toResponse())
                 }
             }

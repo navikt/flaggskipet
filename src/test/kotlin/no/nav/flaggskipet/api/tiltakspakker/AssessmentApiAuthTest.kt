@@ -257,10 +257,6 @@ class AssessmentApiAuthTest :
                 val response = postAssessmentWithOrgnumre(uniqueOrgnumre(101))
 
                 response.status shouldBe HttpStatusCode.BadRequest
-                with(response.bodyAsText()) {
-                    shouldContain(""""type":"BAD_REQUEST"""")
-                    shouldContain("Maximum 100 unique orgnumre per request")
-                }
             }
         }
 
@@ -287,7 +283,6 @@ class AssessmentApiAuthTest :
                 val response = postAssessmentWithOrgnumre(emptyList())
 
                 response.status shouldBe HttpStatusCode.BadRequest
-                response.bodyAsText() shouldContain "orgnumre cannot be empty"
             }
         }
 
@@ -299,7 +294,6 @@ class AssessmentApiAuthTest :
                     val response = postAssessmentWithOrgnumre(listOf("313644480", invalid))
 
                     response.status shouldBe HttpStatusCode.BadRequest
-                    response.bodyAsText() shouldContain "each orgnummer must be exactly 9 digits"
                 }
             }
         }
