@@ -9,7 +9,7 @@ import io.ktor.server.config.MapApplicationConfig
 
 class ConfigTest :
     FunSpec({
-        test("toDatabaseConfig leser database properties") {
+        test("toDatabaseConfig reads database properties") {
             with(
                 config().toDatabaseConfig(),
             ) {
@@ -18,7 +18,7 @@ class ConfigTest :
             }
         }
 
-        test("toDatabaseConfig converterer konfigurert database url til jdbc url") {
+        test("toDatabaseConfig converts configured database URL to JDBC URL") {
             with(
                 config(url = "postgresql://order:supersecret@dbhost:5432/order?sslmode=verify-ca").toDatabaseConfig(),
             ) {
@@ -26,7 +26,7 @@ class ConfigTest :
             }
         }
 
-        test("toDatabaseConfig overskriver sslkey med pk8 nøkkelsti") {
+        test("toDatabaseConfig overrides sslkey with pk8 key path") {
             with(
                 config(
                     url = "postgresql://order:supersecret@dbhost:5432/order" +
@@ -39,7 +39,7 @@ class ConfigTest :
             }
         }
 
-        test("toDatabaseConfig rapporterer alle manglende nødvendige databaseegenskaper") {
+        test("toDatabaseConfig reports all missing required database properties") {
             with(
                 shouldThrow<IllegalStateException> {
                     config(
@@ -55,7 +55,7 @@ class ConfigTest :
             }
         }
 
-        test("toDatabaseConfig validerer database port") {
+        test("toDatabaseConfig validates database port") {
             with(
                 shouldThrow<IllegalStateException> {
                     config(port = "not-a-number").toDatabaseConfig()
@@ -65,7 +65,7 @@ class ConfigTest :
             }
         }
 
-        test("toString markerer passord som sensitive") {
+        test("toString marks password as sensitive") {
             with(
                 DatabaseConfig(
                     username = "order",

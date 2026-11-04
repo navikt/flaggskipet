@@ -18,15 +18,15 @@ import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
 
 const val TOKENX_AUTHENTICATION = "tokenx"
 
-// pid holdes bevisst utenfor, se TexasIntrospectionResponse.
+// Omit pid deliberately; see TexasIntrospectionResponse.
 data class TokenXPrincipal(
     val clientId: String?,
     val acr: String?,
 )
 
-// ID-porten bruker både legacy-navnet Level4 og det nye idporten-loa-high om høyeste
-// sikkerhetsnivå. Konsumentene logger inn med Level4, mens token fra token-generatoren
-// i dev bærer den nye verdien. Begge representerer samme nivå og godtas.
+// ID-porten uses both the legacy Level4 and the newer idporten-loa-high for its
+// highest assurance level. Consumers sign in using Level4, while tokens from the
+// development token generator use the new value. Both are accepted.
 private val godkjenteAcrVerdier = setOf("Level4", "idporten-loa-high")
 
 class TexasTokenXAuthProvider(

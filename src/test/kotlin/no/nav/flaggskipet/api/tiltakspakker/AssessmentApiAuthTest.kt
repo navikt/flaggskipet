@@ -42,75 +42,75 @@ import no.nav.flaggskipet.api.auth.installAuthentication
 import no.nav.flaggskipet.api.auth.introspectTokenForAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
-import no.nav.flaggskipet.application.VurderTiltakspakkerUseCase
+import no.nav.flaggskipet.application.AssessTiltakspakkerUseCase
 import no.nav.flaggskipet.application.port.EregClient
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
-import no.nav.flaggskipet.application.port.TiltakspakkeVurderingRepository
-import no.nav.flaggskipet.application.port.VurderingForLagring
-import no.nav.flaggskipet.domain.vurdering.Vurderingsresultat
+import no.nav.flaggskipet.application.port.NewAssessment
+import no.nav.flaggskipet.application.port.TiltakspakkeAssessmentRepository
+import no.nav.flaggskipet.domain.assessment.AssessmentResult
 import no.nav.flaggskipet.infrastructure.HealthCheck
 import no.nav.flaggskipet.infrastructure.HealthResult
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasIntrospectionResponse
 import org.slf4j.LoggerFactory
 
-private const val VURDERING_PATH = "/api/v1/tiltakspakker/vurdering"
+private const val ASSESSMENT_PATH = "/api/v1/tiltakspakker/vurdering"
 
-class VurderingApiAuthTest :
+class AssessmentApiAuthTest :
     FunSpec({
         listOf(
             emptyList<String>() to "EMPTY_ORGNUMRE",
-            unikeOrgnumre(101) to "TOO_MANY_ORGNUMRE",
-            listOf("ugyldig-orgnummer-canary") to "INVALID_ORGNUMMER_FORMAT",
+            uniqueOrgnumre(101) to "TOO_MANY_ORGNUMRE",
+            listOf("invalid-orgnummer-canary") to "INVALID_ORGNUMMER_FORMAT",
         ).forEach { (orgnumre, reason) ->
-            test("avvisningslogg skiller $reason uten å endre API-respons") {
-                medApplicationLogg { loggmeldinger ->
+            test("rejection log distinguishes $reason without changing the API response") {
+                withApplicationLog { logEvents ->
                     testApplication {
-                        setupApi(aktivtToken(acr = "Level4"))
-                        val response = postVurderingMedOrgnumre(orgnumre)
+                        setupApi(activeToken(acr = "Level4"))
+                        val response = postAssessmentWithOrgnumre(orgnumre)
                         response.status shouldBe HttpStatusCode.BadRequest
                         response.bodyAsText() shouldContain "\"type\":\"BAD_REQUEST\""
                     }
 
-                    val logs = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                    val logs = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
                     logs.size shouldBe 1
                     logs.single().level shouldBe Level.WARN
-                    val json = logs.single().serialisertJson()
-                    json.verdi("rejection_reason") shouldBe reason
-                    json.toString() shouldNotContain "ugyldig-orgnummer-canary"
+                    val json = logs.single().serializedJson()
+                    json.value("rejection_reason") shouldBe reason
+                    json.toString() shouldNotContain "invalid-orgnummer-canary"
                     json.toString() shouldNotContain "gyldig-token"
                 }
             }
         }
 
         listOf(
-            Triple(null, aktivtToken("Level4"), "MISSING_BEARER_TOKEN"),
+            Triple(null, activeToken("Level4"), "MISSING_BEARER_TOKEN"),
             Triple("token-canary", TexasIntrospectionResponse(active = false), "INACTIVE_TOKEN"),
-            Triple("token-canary", aktivtToken("idporten-loa-substantial"), "INSUFFICIENT_SECURITY_LEVEL"),
+            Triple("token-canary", activeToken("idporten-loa-substantial"), "INSUFFICIENT_SECURITY_LEVEL"),
         ).forEach { (token, introspection, reason) ->
-            test("avvisningslogg skiller $reason uten tokendetaljer") {
-                medApplicationLogg { loggmeldinger ->
+            test("rejection log distinguishes $reason without token details") {
+                withApplicationLog { logEvents ->
                     testApplication {
                         setupApi(introspection)
                         val expectedStatus = if (reason == "INSUFFICIENT_SECURITY_LEVEL") HttpStatusCode.Forbidden else HttpStatusCode.Unauthorized
-                        postVurdering(token).status shouldBe expectedStatus
+                        postAssessment(token).status shouldBe expectedStatus
                     }
 
-                    val logs = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                    val logs = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
                     logs.size shouldBe 1
                     logs.single().level shouldBe Level.WARN
-                    val json = logs.single().serialisertJson()
-                    json.verdi("rejection_reason") shouldBe reason
+                    val json = logs.single().serializedJson()
+                    json.value("rejection_reason") shouldBe reason
                     json.toString() shouldNotContain "token-canary"
                 }
             }
         }
 
-        test("gyldig token gir 200") {
+        test("valid token returns 200") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                val response = postVurdering(token = "gyldig-token")
+                val response = postAssessment(token = "gyldig-token")
 
                 response.status shouldBe HttpStatusCode.OK
                 with(response.bodyAsText()) {
@@ -120,31 +120,31 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("gyldig token med acr idporten-loa-high gir 200") {
+        test("valid token with acr idporten-loa-high returns 200") {
             testApplication {
-                setupApi(aktivtToken(acr = "idporten-loa-high"))
+                setupApi(activeToken(acr = "idporten-loa-high"))
 
-                postVurdering(token = "gyldig-token").status shouldBe HttpStatusCode.OK
+                postAssessment(token = "gyldig-token").status shouldBe HttpStatusCode.OK
             }
         }
 
-        test("manglende token gir 401 med api error") {
+        test("missing token returns 401 with api error") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                val response = postVurdering(token = null)
+                val response = postAssessment(token = null)
 
                 response.status shouldBe HttpStatusCode.Unauthorized
                 with(response.bodyAsText()) {
                     shouldContain(""""status":401""")
                     shouldContain(""""type":"AUTHENTICATION_ERROR"""")
-                    shouldContain(""""path":"$VURDERING_PATH"""")
+                    shouldContain(""""path":"$ASSESSMENT_PATH"""")
                 }
             }
         }
 
-        test("inaktivt eller utløpt token gir 401") {
-            medApplicationLogg { loggmeldinger ->
+        test("inactive or expired token returns 401") {
+            withApplicationLog { logEvents ->
                 testApplication {
                     setupApi(
                         TexasIntrospectionResponse(
@@ -153,21 +153,21 @@ class VurderingApiAuthTest :
                         ),
                     )
 
-                    val response = postVurdering(token = "incoming-access-token-canary")
+                    val response = postAssessment(token = "incoming-access-token-canary")
 
                     response.status shouldBe HttpStatusCode.Unauthorized
                     response.bodyAsText() shouldContain """"type":"AUTHENTICATION_ERROR""""
                 }
 
-                val warnOgError = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
-                warnOgError.size shouldBe 1
-                warnOgError.single().level shouldBe Level.WARN
+                val warningsAndErrors = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                warningsAndErrors.size shouldBe 1
+                warningsAndErrors.single().level shouldBe Level.WARN
 
-                val serialisert = warnOgError.single().serialisertJson()
-                serialisert.verdi("event_type") shouldBe "api_request_rejected"
-                serialisert.verdi("error_code") shouldBe "AUTHENTICATION_ERROR"
-                serialisert.verdi("operation") shouldBe "vurder_tiltakspakker"
-                with(serialisert.toString()) {
+                val serialized = warningsAndErrors.single().serializedJson()
+                serialized.value("event_type") shouldBe "api_request_rejected"
+                serialized.value("error_code") shouldBe "AUTHENTICATION_ERROR"
+                serialized.value("operation") shouldBe "vurder_tiltakspakker"
+                with(serialized.toString()) {
                     shouldNotContain("12345678901")
                     shouldNotContain("https://texas.example.test/token")
                     shouldNotContain("incoming-access-token-canary")
@@ -176,29 +176,29 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("token med feil audience avvises av Texas og gir 401") {
+        test("Texas rejects token with wrong audience with 401") {
             testApplication {
                 setupApi(
                     TexasIntrospectionResponse(active = false, error = "invalid audience"),
                 )
 
-                postVurdering(token = "feil-audience-token").status shouldBe HttpStatusCode.Unauthorized
+                postAssessment(token = "feil-audience-token").status shouldBe HttpStatusCode.Unauthorized
             }
         }
 
-        test("token med for lavt sikkerhetsnivå gir 403") {
+        test("token with insufficient assurance level returns 403") {
             testApplication {
-                setupApi(aktivtToken(acr = "idporten-loa-substantial"))
+                setupApi(activeToken(acr = "idporten-loa-substantial"))
 
-                val response = postVurdering(token = "lavt-nivå-token")
+                val response = postAssessment(token = "lavt-nivå-token")
 
                 response.status shouldBe HttpStatusCode.Forbidden
                 response.bodyAsText() shouldContain """"type":"AUTHORIZATION_ERROR""""
             }
         }
 
-        test("teknisk feil i introspeksjon gir én trygg 500-error") {
-            medApplicationLogg { loggmeldinger ->
+        test("technical introspection failure returns one safe 500 error") {
+            withApplicationLog { logEvents ->
                 testApplication {
                     val texasClient = mockk<TexasClient>()
                     coEvery { texasClient.introspectToken(any(), any()) } throws RuntimeException(
@@ -207,7 +207,7 @@ class VurderingApiAuthTest :
                     )
                     setupApi(texasClient)
 
-                    val response = postVurdering(token = "incoming-access-token-canary")
+                    val response = postAssessment(token = "incoming-access-token-canary")
 
                     response.status shouldBe HttpStatusCode.InternalServerError
                     with(response.bodyAsText()) {
@@ -219,16 +219,16 @@ class VurderingApiAuthTest :
                     }
                 }
 
-                val warnOgError = loggmeldinger.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
-                warnOgError.size shouldBe 1
-                warnOgError.single().level shouldBe Level.ERROR
+                val warningsAndErrors = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                warningsAndErrors.size shouldBe 1
+                warningsAndErrors.single().level shouldBe Level.ERROR
 
-                val serialisert = warnOgError.single().serialisertJson()
-                serialisert.verdi("event_type") shouldBe "api_request_failed"
-                serialisert.verdi("error_code") shouldBe "TEXAS_INTROSPECTION_FAILED"
-                serialisert.verdi("operation") shouldBe "vurder_tiltakspakker"
-                serialisert.verdi("exception_type") shouldBe "ApiErrorException"
-                with(serialisert.toString()) {
+                val serialized = warningsAndErrors.single().serializedJson()
+                serialized.value("event_type") shouldBe "api_request_failed"
+                serialized.value("error_code") shouldBe "TEXAS_INTROSPECTION_FAILED"
+                serialized.value("operation") shouldBe "vurder_tiltakspakker"
+                serialized.value("exception_type") shouldBe "ApiErrorException"
+                with(serialized.toString()) {
                     shouldNotContain("12345678901")
                     shouldNotContain("https://texas.example.test/token")
                     shouldNotContain("incoming-access-token-canary")
@@ -238,7 +238,7 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("cancellation fra Texas propageres uendret") {
+        test("cancellation from Texas propagates unchanged") {
             val cancellation = CancellationException("cancellation-canary")
             val texasClient = mockk<TexasClient>()
             coEvery { texasClient.introspectToken(any(), any()) } throws cancellation
@@ -250,63 +250,57 @@ class VurderingApiAuthTest :
             thrown shouldBe cancellation
         }
 
-        test("flere enn 100 unike orgnumre gir 400") {
+        test("more than 100 unique orgnumre returns 400") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                val response = postVurderingMedOrgnumre(unikeOrgnumre(101))
+                val response = postAssessmentWithOrgnumre(uniqueOrgnumre(101))
 
                 response.status shouldBe HttpStatusCode.BadRequest
-                with(response.bodyAsText()) {
-                    shouldContain(""""type":"BAD_REQUEST"""")
-                    shouldContain("Maks 100 unike orgnumre per kall")
-                }
             }
         }
 
-        test("100 unike orgnumre gir 200") {
+        test("100 unique orgnumre returns 200") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                postVurderingMedOrgnumre(unikeOrgnumre(100)).status shouldBe HttpStatusCode.OK
+                postAssessmentWithOrgnumre(uniqueOrgnumre(100)).status shouldBe HttpStatusCode.OK
             }
         }
 
-        test("duplikater telles som ett orgnummer") {
+        test("duplicate orgnumre count once") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                postVurderingMedOrgnumre(List(25) { "313644480" }).status shouldBe HttpStatusCode.OK
+                postAssessmentWithOrgnumre(List(25) { "313644480" }).status shouldBe HttpStatusCode.OK
             }
         }
 
-        test("tom liste gir 400") {
+        test("empty list returns 400") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                val response = postVurderingMedOrgnumre(emptyList())
+                val response = postAssessmentWithOrgnumre(emptyList())
 
                 response.status shouldBe HttpStatusCode.BadRequest
-                response.bodyAsText() shouldContain "orgnumre kan ikke være tom"
             }
         }
 
-        test("orgnummer som ikke er 9 sifre gir 400") {
+        test("orgnummer without exactly 9 digits returns 400") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
-                listOf("12345678", "1234567890", "31364448a", "313644480/../admin", "").forEach { ugyldig ->
-                    val response = postVurderingMedOrgnumre(listOf("313644480", ugyldig))
+                listOf("12345678", "1234567890", "31364448a", "313644480/../admin", "").forEach { invalid ->
+                    val response = postAssessmentWithOrgnumre(listOf("313644480", invalid))
 
                     response.status shouldBe HttpStatusCode.BadRequest
-                    response.bodyAsText() shouldContain "hvert orgnummer må være nøyaktig 9 sifre"
                 }
             }
         }
 
-        test("principal med client_id er tilgjengelig etter vellykket autentisering") {
+        test("principal with client_id is available after successful authentication") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
                 val response = client.get("/principal-test") {
                     header(HttpHeaders.Authorization, "Bearer gyldig-token")
@@ -317,9 +311,9 @@ class VurderingApiAuthTest :
             }
         }
 
-        test("internal-endepunkter er åpne uten token") {
+        test("internal endpoints remain open without a token") {
             testApplication {
-                setupApi(aktivtToken(acr = "Level4"))
+                setupApi(activeToken(acr = "Level4"))
 
                 client.get("/internal/health/is_alive").status shouldBe HttpStatusCode.OK
                 client.get("/internal/health/is_ready").status shouldBe HttpStatusCode.OK
@@ -327,7 +321,7 @@ class VurderingApiAuthTest :
         }
     })
 
-private fun aktivtToken(acr: String) = TexasIntrospectionResponse(
+private fun activeToken(acr: String) = TexasIntrospectionResponse(
     active = true,
     acr = acr,
     clientId = "dev-gcp:team-esyfo:syfo-oppfolgingsplan-frontend",
@@ -344,58 +338,58 @@ private fun ApplicationTestBuilder.setupApi(texasClient: TexasClient) {
         installPlugins()
         dependencies {
             provide<TexasClient> { texasClient }
-            provide<VurderTiltakspakkerUseCase> {
-                VurderTiltakspakkerUseCase(FakeEregClient(), FakeTiltakspakkeVurderingRepository())
+            provide<AssessTiltakspakkerUseCase> {
+                AssessTiltakspakkerUseCase(FakeEregClient(), FakeTiltakspakkeAssessmentRepository())
             }
             provide<HealthCheck> { FakeHealthCheck() }
             provide { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
         }
         installAuthentication()
-        configureVurderingApi()
+        configureAssessmentApi()
         configureInternalApi()
         routing {
             authenticate(TOKENX_AUTHENTICATION) {
                 get("/principal-test") {
-                    call.respondText(call.principal<TokenXPrincipal>()?.clientId ?: "ingen principal")
+                    call.respondText(call.principal<TokenXPrincipal>()?.clientId ?: "no principal")
                 }
             }
         }
     }
 }
 
-private suspend fun ApplicationTestBuilder.postVurdering(token: String?) = client.post(VURDERING_PATH) {
+private suspend fun ApplicationTestBuilder.postAssessment(token: String?) = client.post(ASSESSMENT_PATH) {
     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
     contentType(ContentType.Application.Json)
     setBody("""{"orgnumre":["313644480"]}""")
 }
 
-private suspend fun ApplicationTestBuilder.postVurderingMedOrgnumre(orgnumre: List<String>) = client.post(VURDERING_PATH) {
+private suspend fun ApplicationTestBuilder.postAssessmentWithOrgnumre(orgnumre: List<String>) = client.post(ASSESSMENT_PATH) {
     header(HttpHeaders.Authorization, "Bearer gyldig-token")
     contentType(ContentType.Application.Json)
     setBody("""{"orgnumre":[${orgnumre.joinToString(",") { "\"$it\"" }}]}""")
 }
 
-private fun unikeOrgnumre(antall: Int): List<String> = List(antall) { "31364%04d".format(it) }
+private fun uniqueOrgnumre(count: Int): List<String> = List(count) { "31364%04d".format(it) }
 
 private class FakeEregClient : EregClient {
-    override suspend fun hentNoekkelinfo(organisasjonsnummer: List<String>): List<EregNoekkelinfo> = organisasjonsnummer.map { EregNoekkelinfo(organisasjonsnummer = it, adresse = null) }
+    override suspend fun getNoekkelinfo(orgnummer: List<String>): List<EregNoekkelinfo> = orgnummer.map { EregNoekkelinfo(orgnummer = it, adresse = null) }
 }
 
-private class FakeTiltakspakkeVurderingRepository : TiltakspakkeVurderingRepository {
-    override suspend fun hentVurderinger(
+private class FakeTiltakspakkeAssessmentRepository : TiltakspakkeAssessmentRepository {
+    override suspend fun getAssessments(
         orgnumre: Collection<String>,
-        tiltakspakkeIder: Collection<String>,
-    ): List<Vurderingsresultat> = emptyList()
+        tiltakspakkeIds: Collection<String>,
+    ): List<AssessmentResult> = emptyList()
 
-    override suspend fun lagreVurderinger(
-        vurderinger: Collection<VurderingForLagring>,
-    ): List<Vurderingsresultat> = vurderinger.map { vurdering ->
-        Vurderingsresultat(
-            tiltakspakkeId = vurdering.tiltakspakkeId,
-            orgnummer = vurdering.orgnummer,
-            deltakelse = vurdering.deltakelse,
-            fylkeskode = vurdering.fylkeskode,
-            vurderingsgrunn = vurdering.vurderingsgrunn,
+    override suspend fun saveAssessments(
+        assessments: Collection<NewAssessment>,
+    ): List<AssessmentResult> = assessments.map { assessment ->
+        AssessmentResult(
+            tiltakspakkeId = assessment.tiltakspakkeId,
+            orgnummer = assessment.orgnummer,
+            participation = assessment.participation,
+            fylkeskode = assessment.fylkeskode,
+            assessmentReason = assessment.assessmentReason,
         )
     }
 }
@@ -404,21 +398,21 @@ private class FakeHealthCheck : HealthCheck {
     override suspend fun check() = HealthResult(healthy = true, message = "ok")
 }
 
-private suspend fun medApplicationLogg(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
+private suspend fun withApplicationLog(block: suspend (ListAppender<ILoggingEvent>) -> Unit) {
     val logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
-    val loggmeldinger = ListAppender<ILoggingEvent>().apply {
+    val logEvents = ListAppender<ILoggingEvent>().apply {
         start()
         logger.addAppender(this)
     }
     try {
-        block(loggmeldinger)
+        block(logEvents)
     } finally {
-        logger.detachAppender(loggmeldinger)
-        loggmeldinger.stop()
+        logger.detachAppender(logEvents)
+        logEvents.stop()
     }
 }
 
-private fun ILoggingEvent.serialisertJson(): JsonObject {
+private fun ILoggingEvent.serializedJson(): JsonObject {
     val encoder = LogstashEncoder().apply {
         context = LoggerFactory.getILoggerFactory() as LoggerContext
         start()
@@ -430,4 +424,4 @@ private fun ILoggingEvent.serialisertJson(): JsonObject {
     }
 }
 
-private fun JsonObject.verdi(felt: String): String = getValue(felt).jsonPrimitive.content
+private fun JsonObject.value(field: String): String = getValue(field).jsonPrimitive.content

@@ -8,13 +8,13 @@ import java.net.URI
 
 class ConfigTest :
     FunSpec({
-        test("toEregConfig leser gyldig base url") {
+        test("toEregConfig reads a valid base URL") {
             config().toEregConfig() shouldBe EregConfig(
                 baseUrl = URI("https://ereg-services.dev.intern.nav.no"),
             )
         }
 
-        test("toEregConfig avviser manglende eller tom base url") {
+        test("toEregConfig rejects missing or empty base URL") {
             shouldThrow<IllegalStateException> {
                 config(baseUrl = "").toEregConfig()
             }.message shouldBe "Invalid ereg configuration: ereg.baseUrl must be set"

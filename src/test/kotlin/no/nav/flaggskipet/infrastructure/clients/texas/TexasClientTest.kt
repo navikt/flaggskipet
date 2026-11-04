@@ -23,7 +23,7 @@ class TexasClientTest :
     FunSpec({
         val config = TexasConfig(introspectionEndpoint = URI("http://localhost:3000/api/v1/introspect"))
 
-        test("introspectToken poster identity_provider og token som json og mapper aktivt svar") {
+        test("introspectToken posts identity_provider and token as JSON and maps active response") {
             val mockEngine = MockEngine { request ->
                 request.method shouldBe HttpMethod.Post
                 request.url.toString() shouldBe "http://localhost:3000/api/v1/introspect"
@@ -57,7 +57,7 @@ class TexasClientTest :
             )
         }
 
-        test("introspectToken mapper inaktivt svar med feilmelding") {
+        test("introspectToken maps inactive response with error message") {
             val client = TexasClient(
                 httpClient = createTestHttpClient(
                     MockEngine {

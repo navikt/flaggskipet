@@ -70,7 +70,7 @@ rader etter at V10 er kjørt. Nye vurderinger fra oppdatert kode har alltid et
 konkret grunnlag. Hele EREG-adressen lagres ikke.
 
 Databasen lagrer vurderingsgrunn som fri `TEXT` uten en global verdiliste.
-Applikasjonen mapper teksten til den typesikre Kotlin-enumen `Vurderingsgrunn`.
+Applikasjonen mapper teksten til den typesikre Kotlin-enumen `AssessmentReason`.
 Dermed krever en ny grunn en eksplisitt kodeendring og tester, men ikke en
 skjemamigrering som også binder alle andre tiltakspakker til grunnene for pakke
 1. En ukjent databaseverdi avvises ved lesing i stedet for å bli tolket som en
