@@ -1,4 +1,3 @@
-
 package no.nav.flaggskipet.domain.assessment
 
 import kotlinx.datetime.LocalDate
@@ -24,6 +23,8 @@ data class Tiltakspakke(
     val id: String,
     val endDate: LocalDate? = null,
     val rule: Rule,
+    val inheritsFrom: String? = null,
+    val visible: Boolean = true,
 ) {
     fun isActive(now: LocalDate = today()) = endDate?.let { it >= now } ?: true
     fun assess(virksomhet: VirksomhetUnderAssessment): Participation = rule.assess(virksomhet)

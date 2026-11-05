@@ -54,6 +54,8 @@ spec:
       external:
         - host: ereg-services-q2.dev-fss-pub.nais.io
   env:
+    - name: TILTAKSPAKKE_2_VISIBLE
+      value: "true"
     - name: EREG_API_URL
       value: "https://ereg-services-q2.dev-fss-pub.nais.io"
   gcp:
