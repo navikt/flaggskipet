@@ -11,53 +11,64 @@ import no.nav.flaggskipet.domain.assessment.Participation
 import no.nav.flaggskipet.domain.assessment.Tiltakspakke
 import no.nav.flaggskipet.domain.assessment.TiltakspakkeAssessment
 import no.nav.flaggskipet.domain.assessment.VirksomhetUnderAssessment
-import no.nav.flaggskipet.domain.assessment.activeTiltakspakker
 import no.nav.flaggskipet.domain.assessment.groupByTiltakspakke
-import kotlin.collections.plus
 
 class AssessTiltakspakkerUseCase(
     private val eregClient: EregClient,
     private val tiltakspakkeAssessmentRepository: TiltakspakkeAssessmentRepository,
+    private val tiltakspakker: List<Tiltakspakke>,
 ) {
-    suspend fun execute(orgnumre: List<Orgnummer>, tiltakspakker: List<Tiltakspakke> = activeTiltakspakker): List<TiltakspakkeAssessment> {
+    suspend fun execute(orgnumre: List<Orgnummer>): List<TiltakspakkeAssessment> {
         if (tiltakspakker.isEmpty()) return emptyList()
 
-        val existing = getExisting(tiltakspakker, orgnumre)
-        val new = assessAndSave(tiltakspakker, orgnumre, existing)
+        val assessments = getExisting(orgnumre)
+            .associateBy { it.tiltakspakkeId to it.orgnummer }
+            .toMutableMap()
+        val noekkelinfo = mutableMapOf<Orgnummer, EregNoekkelinfo>()
 
-        return (existing + new).groupByTiltakspakke()
+        // Tiltakspakker are assessed in order, so a tiltakspakke can inherit from one saved earlier in this call.
+        for (tiltakspakke in tiltakspakker) {
+            val missing = orgnumre.distinct().filter { (tiltakspakke.id to it) !in assessments }
+            val inheritedFrom = missing.associateWith { assessments[tiltakspakke.inheritsFrom to it] }
+
+            val needsEreg = missing.filter { inheritedFrom[it] == null && it !in noekkelinfo }
+            if (needsEreg.isNotEmpty()) {
+                noekkelinfo += eregClient.getNoekkelinfo(needsEreg).associateBy { it.orgnummer }
+            }
+
+            val newAssessments = missing.mapNotNull { orgnummer ->
+                inheritedFrom[orgnummer]?.let { inherit(tiltakspakke, it) }
+                    ?: noekkelinfo[orgnummer]?.let { assess(tiltakspakke, it) }
+            }
+            if (newAssessments.isNotEmpty()) {
+                // Saved rows are authoritative, also when a concurrent request saved first.
+                tiltakspakkeAssessmentRepository.saveAssessments(newAssessments)
+                    .forEach { assessments[it.tiltakspakkeId to it.orgnummer] = it }
+            }
+        }
+
+        val visibleIds = tiltakspakker.filter { it.visible }.map { it.id }.toSet()
+        return assessments.values
+            .filter { it.tiltakspakkeId in visibleIds }
+            .groupByTiltakspakke()
     }
 
-    private suspend fun getExisting(
-        tiltakspakker: List<Tiltakspakke>,
-        orgnumre: List<Orgnummer>,
-    ) = tiltakspakkeAssessmentRepository.getAssessments(
+    private suspend fun getExisting(orgnumre: List<Orgnummer>) = tiltakspakkeAssessmentRepository.getAssessments(
         orgnumre = orgnumre,
-        tiltakspakkeIds = tiltakspakker.map { it.id },
+        tiltakspakkeIds = (tiltakspakker.map { it.id } + tiltakspakker.mapNotNull { it.inheritsFrom }).distinct(),
     )
-
-    private suspend fun assessAndSave(
-        tiltakspakker: List<Tiltakspakke>,
-        orgnumre: List<Orgnummer>,
-        existing: List<AssessmentResult>,
-    ): List<AssessmentResult> {
-        val newOrgnumre = orgnumre - existing.map(AssessmentResult::orgnummer).toSet()
-        if (newOrgnumre.isEmpty()) return emptyList()
-
-        val assessments = assess(
-            tiltakspakker = tiltakspakker,
-            noekkelinfo = eregClient.getNoekkelinfo(newOrgnumre),
-        )
-        return tiltakspakkeAssessmentRepository.saveAssessments(assessments)
-    }
 }
 
-private fun assess(
-    tiltakspakker: List<Tiltakspakke>,
-    noekkelinfo: List<EregNoekkelinfo>,
-): List<NewAssessment> = noekkelinfo.flatMap { info ->
-    tiltakspakker.map { tiltakspakke -> assess(tiltakspakke, info) }
-}
+private fun inherit(
+    tiltakspakke: Tiltakspakke,
+    source: AssessmentResult,
+) = NewAssessment(
+    tiltakspakkeId = tiltakspakke.id,
+    orgnummer = source.orgnummer,
+    participation = source.participation,
+    fylkeskode = source.fylkeskode,
+    assessmentReason = source.assessmentReason,
+)
 
 private fun assess(
     tiltakspakke: Tiltakspakke,

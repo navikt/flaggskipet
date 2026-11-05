@@ -4,10 +4,12 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.plugins.di.DependencyRegistry
 import no.nav.flaggskipet.infrastructure.clients.ereg.toEregConfig
 import no.nav.flaggskipet.infrastructure.clients.texas.toTexasConfig
+import no.nav.flaggskipet.infrastructure.config.toTiltakspakkeConfig
 import no.nav.flaggskipet.infrastructure.database.config.toDatabaseConfig
 
 internal fun DependencyRegistry.configModule(config: ApplicationConfig) {
     provide { config.toDatabaseConfig() }
     provide { config.toEregConfig() }
     provide { config.toTexasConfig() }
+    provide { config.toTiltakspakkeConfig() }
 }
