@@ -1,6 +1,7 @@
 package no.nav.flaggskipet.domain.assessment
 
 private const val TILTAKSPAKKE_1_ID = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1"
+private const val TILTAKSPAKKE_2_ID = "DIALOGMOTE_TILTAKSPAKKE_2"
 private const val TROMS_FYLKESKODE = "55"
 private const val FINNMARK_FYLKESKODE = "56"
 
@@ -21,7 +22,7 @@ data class GeoTiltakspakkeRule(
     }
 }
 
-val activeTiltakspakker = listOf(
+fun activeTiltakspakker(tiltakspakke2Visible: Boolean) = listOf(
     Tiltakspakke(
         id = TILTAKSPAKKE_1_ID,
         endDate = null,
@@ -29,6 +30,17 @@ val activeTiltakspakker = listOf(
             fylkerInScope = setOf(TROMS_FYLKESKODE, FINNMARK_FYLKESKODE),
             tiltaksgruppeShare = 0.5,
             tiltakspakkeId = TILTAKSPAKKE_1_ID,
+        ),
+    ),
+    Tiltakspakke(
+        id = TILTAKSPAKKE_2_ID,
+        endDate = null,
+        inheritsFrom = TILTAKSPAKKE_1_ID,
+        visible = tiltakspakke2Visible,
+        rule = GeoTiltakspakkeRule(
+            fylkerInScope = setOf(TROMS_FYLKESKODE, FINNMARK_FYLKESKODE),
+            tiltaksgruppeShare = 0.5,
+            tiltakspakkeId = TILTAKSPAKKE_2_ID,
         ),
     ),
 ).filter { it.isActive() }

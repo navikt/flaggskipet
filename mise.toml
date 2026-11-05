@@ -2,6 +2,7 @@
 java = "25"
 
 [env]
+TILTAKSPAKKE_2_VISIBLE = "true"
 FLAGGSKIPET_DB_HOST = "localhost"
 FLAGGSKIPET_DB_PORT = "5432"
 FLAGGSKIPET_DB_DATABASE = "flaggskipet"
