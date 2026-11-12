@@ -48,6 +48,7 @@ import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.application.port.NewAssessment
 import no.nav.flaggskipet.application.port.TiltakspakkeAssessmentRepository
 import no.nav.flaggskipet.domain.assessment.AssessmentResult
+import no.nav.flaggskipet.domain.assessment.activeTiltakspakker
 import no.nav.flaggskipet.infrastructure.HealthCheck
 import no.nav.flaggskipet.infrastructure.HealthResult
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
@@ -339,7 +340,11 @@ private fun ApplicationTestBuilder.setupApi(texasClient: TexasClient) {
         dependencies {
             provide<TexasClient> { texasClient }
             provide<AssessTiltakspakkerUseCase> {
-                AssessTiltakspakkerUseCase(FakeEregClient(), FakeTiltakspakkeAssessmentRepository())
+                AssessTiltakspakkerUseCase(
+                    FakeEregClient(),
+                    FakeTiltakspakkeAssessmentRepository(),
+                    activeTiltakspakker(tiltakspakke2Visible = false),
+                )
             }
             provide<HealthCheck> { FakeHealthCheck() }
             provide { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
