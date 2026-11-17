@@ -1,5 +1,8 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
@@ -43,10 +46,11 @@ import no.nav.flaggskipet.api.auth.introspectTokenForAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.application.AssessTiltakspakkerUseCase
+import no.nav.flaggskipet.application.port.AssessmentRepository
 import no.nav.flaggskipet.application.port.EregClient
+import no.nav.flaggskipet.application.port.EregError
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.application.port.NewAssessment
-import no.nav.flaggskipet.application.port.TiltakspakkeAssessmentRepository
 import no.nav.flaggskipet.domain.assessment.AssessmentResult
 import no.nav.flaggskipet.domain.assessment.activeTiltakspakker
 import no.nav.flaggskipet.infrastructure.HealthCheck
@@ -228,7 +232,7 @@ class AssessmentApiAuthTest :
                 serialized.value("event_type") shouldBe "api_request_failed"
                 serialized.value("error_code") shouldBe "TEXAS_INTROSPECTION_FAILED"
                 serialized.value("operation") shouldBe "vurder_tiltakspakker"
-                serialized.value("exception_type") shouldBe "ApiErrorException"
+                serialized.value("exception_type") shouldBe "AuthException"
                 with(serialized.toString()) {
                     shouldNotContain("12345678901")
                     shouldNotContain("https://texas.example.test/token")
@@ -292,10 +296,29 @@ class AssessmentApiAuthTest :
                 setupApi(activeToken(acr = "Level4"))
 
                 listOf("12345678", "1234567890", "31364448a", "313644480/../admin", "").forEach { invalid ->
-                    val response = postAssessmentWithOrgnumre(listOf("313644480", invalid))
-
-                    response.status shouldBe HttpStatusCode.BadRequest
+                    postAssessmentWithOrgnumre(listOf("313644480", invalid)).status shouldBe HttpStatusCode.BadRequest
+                    postAssessmentWithOrgnumre(listOf(invalid)).status shouldBe HttpStatusCode.BadRequest
                 }
+            }
+        }
+
+        test("Ereg failure returns one safe 500 error") {
+            withApplicationLog { logEvents ->
+                testApplication {
+                    setupApi(activeToken(acr = "Level4"), FailingEregClient(EregError.UnexpectedStatus(503)))
+
+                    val response = postAssessment(token = "gyldig-token")
+
+                    response.status shouldBe HttpStatusCode.InternalServerError
+                    response.bodyAsText() shouldContain "\"type\":\"INTERNAL_SERVER_ERROR\""
+                }
+
+                val logs = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                logs.size shouldBe 1
+                logs.single().level shouldBe Level.ERROR
+                val json = logs.single().serializedJson()
+                json.value("event_type") shouldBe "api_request_failed"
+                json.value("failure_reason") shouldBe "EREG_UNEXPECTED_STATUS"
             }
         }
 
@@ -328,21 +351,27 @@ private fun activeToken(acr: String) = TexasIntrospectionResponse(
     clientId = "dev-gcp:team-esyfo:syfo-oppfolgingsplan-frontend",
 )
 
-private fun ApplicationTestBuilder.setupApi(introspectionResponse: TexasIntrospectionResponse) {
+private fun ApplicationTestBuilder.setupApi(
+    introspectionResponse: TexasIntrospectionResponse,
+    eregClient: EregClient = FakeEregClient(),
+) {
     val texasClient = mockk<TexasClient>()
     coEvery { texasClient.introspectToken(any(), any()) } returns introspectionResponse
-    setupApi(texasClient)
+    setupApi(texasClient, eregClient)
 }
 
-private fun ApplicationTestBuilder.setupApi(texasClient: TexasClient) {
+private fun ApplicationTestBuilder.setupApi(
+    texasClient: TexasClient,
+    eregClient: EregClient = FakeEregClient(),
+) {
     application {
         installPlugins()
         dependencies {
             provide<TexasClient> { texasClient }
             provide<AssessTiltakspakkerUseCase> {
                 AssessTiltakspakkerUseCase(
-                    FakeEregClient(),
-                    FakeTiltakspakkeAssessmentRepository(),
+                    eregClient,
+                    FakeAssessmentRepository(),
                     activeTiltakspakker(tiltakspakke2Visible = false),
                 )
             }
@@ -377,10 +406,16 @@ private suspend fun ApplicationTestBuilder.postAssessmentWithOrgnumre(orgnumre: 
 private fun uniqueOrgnumre(count: Int): List<String> = List(count) { "31364%04d".format(it) }
 
 private class FakeEregClient : EregClient {
-    override suspend fun getNoekkelinfo(orgnummer: List<String>): List<EregNoekkelinfo> = orgnummer.map { EregNoekkelinfo(orgnummer = it, adresse = null) }
+    override suspend fun getNoekkelinfo(orgnummer: List<String>): Either<EregError, List<EregNoekkelinfo>> = orgnummer.map { EregNoekkelinfo(orgnummer = it, adresse = null) }.right()
 }
 
-private class FakeTiltakspakkeAssessmentRepository : TiltakspakkeAssessmentRepository {
+private class FailingEregClient(
+    private val error: EregError,
+) : EregClient {
+    override suspend fun getNoekkelinfo(orgnummer: List<String>): Either<EregError, List<EregNoekkelinfo>> = error.left()
+}
+
+private class FakeAssessmentRepository : AssessmentRepository {
     override suspend fun getAssessments(
         orgnumre: Collection<String>,
         tiltakspakkeIds: Collection<String>,

@@ -1,9 +1,11 @@
 package no.nav.flaggskipet.application
 
+import arrow.core.Either
+import arrow.core.raise.either
+import no.nav.flaggskipet.application.port.AssessmentRepository
 import no.nav.flaggskipet.application.port.EregClient
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.application.port.NewAssessment
-import no.nav.flaggskipet.application.port.TiltakspakkeAssessmentRepository
 import no.nav.flaggskipet.domain.assessment.AssessmentReason
 import no.nav.flaggskipet.domain.assessment.AssessmentResult
 import no.nav.flaggskipet.domain.assessment.Orgnummer
@@ -15,11 +17,11 @@ import no.nav.flaggskipet.domain.assessment.groupByTiltakspakke
 
 class AssessTiltakspakkerUseCase(
     private val eregClient: EregClient,
-    private val tiltakspakkeAssessmentRepository: TiltakspakkeAssessmentRepository,
+    private val assessmentRepository: AssessmentRepository,
     private val tiltakspakker: List<Tiltakspakke>,
 ) {
-    suspend fun execute(orgnumre: List<Orgnummer>): List<TiltakspakkeAssessment> {
-        if (tiltakspakker.isEmpty()) return emptyList()
+    suspend fun execute(orgnumre: List<Orgnummer>): Either<AssessmentError, List<TiltakspakkeAssessment>> = either {
+        if (tiltakspakker.isEmpty()) return Either.Right(emptyList())
 
         val assessments = getExisting(orgnumre)
             .associateBy { it.tiltakspakkeId to it.orgnummer }
@@ -33,7 +35,7 @@ class AssessTiltakspakkerUseCase(
 
             val needsEreg = missing.filter { inheritedFrom[it] == null && it !in noekkelinfo }
             if (needsEreg.isNotEmpty()) {
-                noekkelinfo += eregClient.getNoekkelinfo(needsEreg).associateBy { it.orgnummer }
+                noekkelinfo += eregClient.getNoekkelinfo(needsEreg).mapLeft(AssessmentError::EregUnavailable).bind().associateBy { it.orgnummer }
             }
 
             val newAssessments = missing.mapNotNull { orgnummer ->
@@ -42,18 +44,21 @@ class AssessTiltakspakkerUseCase(
             }
             if (newAssessments.isNotEmpty()) {
                 // Saved rows are authoritative, also when a concurrent request saved first.
-                tiltakspakkeAssessmentRepository.saveAssessments(newAssessments)
+                assessmentRepository.saveAssessments(newAssessments)
                     .forEach { assessments[it.tiltakspakkeId to it.orgnummer] = it }
             }
         }
 
         val visibleIds = tiltakspakker.filter { it.visible }.map { it.id }.toSet()
-        return assessments.values
-            .filter { it.tiltakspakkeId in visibleIds }
-            .groupByTiltakspakke()
+
+        return Either.Right(
+            assessments.values
+                .filter { it.tiltakspakkeId in visibleIds }
+                .groupByTiltakspakke(),
+        )
     }
 
-    private suspend fun getExisting(orgnumre: List<Orgnummer>) = tiltakspakkeAssessmentRepository.getAssessments(
+    private suspend fun getExisting(orgnumre: List<Orgnummer>) = assessmentRepository.getAssessments(
         orgnumre = orgnumre,
         tiltakspakkeIds = (tiltakspakker.map { it.id } + tiltakspakker.mapNotNull { it.inheritsFrom }).distinct(),
     )

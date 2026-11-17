@@ -1,5 +1,7 @@
 package no.nav.flaggskipet.infrastructure.clients.ereg
 
+import io.kotest.assertions.arrow.core.shouldBeLeft
+import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
@@ -17,15 +19,14 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
+import no.nav.flaggskipet.application.port.EregError
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.domain.assessment.Adresse
-import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicInteger
 
 class HttpClientImplTest :
@@ -54,11 +55,11 @@ class HttpClientImplTest :
                     """.trimIndent(),
                 )
             }
-            val client = HttpClientImpl(
+            val client = EregHttpClient(
                 httpClient = createHttpClient(mockEngine),
             )
 
-            client.getNoekkelinfo(listOf("313644480")) shouldBe listOf(
+            client.getNoekkelinfo(listOf("313644480")) shouldBeRight listOf(
                 EregNoekkelinfo(
                     orgnummer = "313644480",
                     adresse = Adresse(
@@ -71,7 +72,7 @@ class HttpClientImplTest :
         }
 
         test("getNoekkelinfo maps 404 to EregNoekkelinfo with null Adresse") {
-            val client = HttpClientImpl(
+            val client = EregHttpClient(
                 httpClient = createHttpClient(
                     MockEngine {
                         respond(
@@ -83,13 +84,13 @@ class HttpClientImplTest :
                 ),
             )
 
-            client.getNoekkelinfo(listOf("999999999")) shouldBe listOf(
+            client.getNoekkelinfo(listOf("999999999")) shouldBeRight listOf(
                 EregNoekkelinfo(orgnummer = "999999999", adresse = null),
             )
         }
 
-        test("getNoekkelinfo throws when Ereg fails") {
-            val client = HttpClientImpl(
+        test("getNoekkelinfo returns UnexpectedStatus when Ereg fails") {
+            val client = EregHttpClient(
                 httpClient = createHttpClient(
                     MockEngine {
                         respond(
@@ -101,11 +102,11 @@ class HttpClientImplTest :
                 ),
             )
 
-            assertThrows<RuntimeException> { client.getNoekkelinfo(listOf("111111111")) }
+            client.getNoekkelinfo(listOf("111111111")) shouldBeLeft EregError.UnexpectedStatus(500)
         }
 
-        test("cancels the entire batch when the deadline expires") {
-            val client = HttpClientImpl(
+        test("returns Timeout for the entire batch when the deadline expires") {
+            val client = EregHttpClient(
                 httpClient = createHttpClient(
                     MockEngine {
                         delay(5_000)
@@ -116,9 +117,7 @@ class HttpClientImplTest :
                 maxBatchDurationMillis = 100,
             )
 
-            assertThrows<TimeoutCancellationException> {
-                client.getNoekkelinfo(uniqueOrgnumre(2, start = 0))
-            }
+            client.getNoekkelinfo(uniqueOrgnumre(2, start = 0)) shouldBeLeft EregError.Timeout
         }
 
         test("limits parallel Ereg calls across concurrent batches") {
@@ -136,7 +135,7 @@ class HttpClientImplTest :
                     activeCalls.decrementAndGet()
                 }
             }
-            val client = HttpClientImpl(
+            val client = EregHttpClient(
                 httpClient = createHttpClient(mockEngine),
                 maxParallelCalls = 3,
             )

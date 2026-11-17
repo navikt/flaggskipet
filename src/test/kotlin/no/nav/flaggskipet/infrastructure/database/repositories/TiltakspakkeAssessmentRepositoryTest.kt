@@ -33,7 +33,7 @@ class TiltakspakkeAssessmentRepositoryTest :
 
         test("keeps the first assessment per Tiltakspakke and orgnummer") {
             with(fixture.database) {
-                val repository = TiltakspakkeAssessmentRepositoryImpl(this)
+                val repository = AssessmentExposedRepository(this)
                 repository.saveAssessments(
                     listOf(
                         NewAssessment(
@@ -98,7 +98,7 @@ class TiltakspakkeAssessmentRepositoryTest :
 
         test("saves and retrieves fylkeskode and assessmentReason") {
             with(fixture.database) {
-                val repository = TiltakspakkeAssessmentRepositoryImpl(this)
+                val repository = AssessmentExposedRepository(this)
                 repository.saveAssessments(
                     listOf(
                         NewAssessment(
@@ -127,7 +127,7 @@ class TiltakspakkeAssessmentRepositoryTest :
         }
 
         test("saves a batch of 100 assessments") {
-            val repository = TiltakspakkeAssessmentRepositoryImpl(fixture.database)
+            val repository = AssessmentExposedRepository(fixture.database)
             val assessments = (1..100).map { index ->
                 NewAssessment(
                     tiltakspakkeId = "PAKKE_A",
@@ -143,7 +143,7 @@ class TiltakspakkeAssessmentRepositoryTest :
         }
 
         test("handles concurrent overlapping batches with opposite input order") {
-            val repository = TiltakspakkeAssessmentRepositoryImpl(fixture.database)
+            val repository = AssessmentExposedRepository(fixture.database)
             val ascending = (1..20).map { index ->
                 NewAssessment(
                     tiltakspakkeId = "PAKKE_A",
@@ -175,7 +175,7 @@ class TiltakspakkeAssessmentRepositoryTest :
         }
 
         test("rejects legacy upsert without assessmentReason and preserves the existing row") {
-            val repository = TiltakspakkeAssessmentRepositoryImpl(fixture.database)
+            val repository = AssessmentExposedRepository(fixture.database)
             repository.saveAssessments(
                 listOf(
                     NewAssessment(
@@ -239,7 +239,7 @@ class TiltakspakkeAssessmentRepositoryTest :
             }
 
             shouldThrow<IllegalArgumentException> {
-                TiltakspakkeAssessmentRepositoryImpl(fixture.database).getAssessments(
+                AssessmentExposedRepository(fixture.database).getAssessments(
                     orgnumre = listOf("987654321"),
                     tiltakspakkeIds = listOf("FREMTIDIG_TILTAKSPAKKE"),
                 )

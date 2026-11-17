@@ -13,6 +13,8 @@ import io.ktor.server.response.respond
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.serialization.json.Json
+import no.nav.flaggskipet.api.error.ApiError
+import no.nav.flaggskipet.api.error.ErrorType
 import no.nav.flaggskipet.api.error.determineApiError
 import no.nav.flaggskipet.api.error.logApiError
 import java.util.UUID
@@ -46,6 +48,18 @@ fun Application.installPlugins() {
         }
         exception<Throwable> { call, cause ->
             call.respondApiError(cause)
+        }
+        // Unknown routes produce no exception. Not logged, to avoid noise from scanners.
+        status(HttpStatusCode.NotFound) { call, status ->
+            call.respond(
+                status,
+                ApiError(
+                    status = status.value,
+                    type = ErrorType.NOT_FOUND,
+                    message = "Not found",
+                    path = call.request.path(),
+                ),
+            )
         }
     }
 }

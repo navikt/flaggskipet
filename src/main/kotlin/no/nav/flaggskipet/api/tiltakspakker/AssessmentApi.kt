@@ -1,17 +1,20 @@
 package no.nav.flaggskipet.api.tiltakspakker
 
+import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.receive
-import io.ktor.server.response.respond
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
-import no.nav.flaggskipet.api.error.ApiErrorException
-import no.nav.flaggskipet.api.error.ApiRejectionReason
+import no.nav.flaggskipet.api.error.toResponse
 import no.nav.flaggskipet.application.AssessTiltakspakkerUseCase
+import no.nav.flaggskipet.application.AssessmentError
+import no.nav.flaggskipet.domain.assessment.Orgnummer
 import no.nav.flaggskipet.domain.assessment.TiltakspakkeAssessment
 
 // Limit resources for the synchronous endpoint. The Ereg client also limits
@@ -33,28 +36,26 @@ fun Application.configureAssessmentApi() {
             route("/api/v1/tiltakspakker/vurdering") {
                 post {
                     val request = call.receive<AssessmentRequest>()
-                    val orgnumre = request.orgnumre.distinct()
-
-                    if (orgnumre.isEmpty()) {
-                        throw ApiErrorException.BadRequest(rejectionReason = ApiRejectionReason.EMPTY_ORGNUMRE)
-                    }
-
-                    if (orgnumre.size > MAX_ORGNUMRE) {
-                        throw ApiErrorException.BadRequest(rejectionReason = ApiRejectionReason.TOO_MANY_ORGNUMRE)
-                    }
-
-                    if (orgnumre.any { !it.matches(ORGNUMMER_FORMAT) }) {
-                        throw ApiErrorException.BadRequest(rejectionReason = ApiRejectionReason.INVALID_ORGNUMMER_FORMAT)
-                    }
-
-                    call.respond(assessUseCase.execute(orgnumre).toResponse())
+                    either {
+                        val orgnumre = validate(request.orgnumre).bind()
+                        assessUseCase.execute(orgnumre).bind().toDto()
+                    }.toResponse()
                 }
             }
         }
     }
 }
 
-private fun List<TiltakspakkeAssessment>.toResponse(): List<AssessmentResponse> = map { tiltakspakke ->
+private fun validate(orgnumre: List<String>): Either<AssessmentError, List<Orgnummer>> = either {
+    val distinct = orgnumre.distinct()
+    ensure(distinct.isNotEmpty()) { AssessmentError.EmptyOrgnumre }
+    ensure(distinct.size <= MAX_ORGNUMRE) { AssessmentError.TooManyOrgnumre }
+    ensure(distinct.all { it.matches(ORGNUMMER_FORMAT) }) { AssessmentError.InvalidOrgnummerFormat }
+
+    distinct
+}
+
+private fun List<TiltakspakkeAssessment>.toDto(): List<AssessmentResponse> = map { tiltakspakke ->
     AssessmentResponse(
         tiltakspakkeId = tiltakspakke.id,
         virksomheter = tiltakspakke.virksomheter.map { virksomhet ->

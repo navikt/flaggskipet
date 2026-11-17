@@ -13,7 +13,7 @@ data class NewAssessment(
     val assessmentReason: AssessmentReason,
 )
 
-interface TiltakspakkeAssessmentRepository {
+interface AssessmentRepository {
     suspend fun getAssessments(
         orgnumre: Collection<String>,
         tiltakspakkeIds: Collection<String>,

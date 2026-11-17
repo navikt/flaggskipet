@@ -10,7 +10,7 @@ fun DependencyRegistry.useCaseModule() {
     provide<AssessTiltakspakkerUseCase> {
         AssessTiltakspakkerUseCase(
             eregClient = resolve(),
-            tiltakspakkeAssessmentRepository = resolve(),
+            assessmentRepository = resolve(),
             tiltakspakker = activeTiltakspakker(
                 tiltakspakke2Visible = resolve<TiltakspakkeConfig>().tiltakspakke2Visible,
             ),
