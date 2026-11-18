@@ -41,13 +41,13 @@ fun Application.installPlugins() {
 
     install(StatusPages) {
         exception<TimeoutCancellationException> { call, cause ->
-            call.respondApiError(cause)
+            call.respondUnhandledException(cause)
         }
         exception<CancellationException> { _, cause ->
             throw cause
         }
         exception<Throwable> { call, cause ->
-            call.respondApiError(cause)
+            call.respondUnhandledException(cause)
         }
         // Unknown routes produce no exception. Not logged, to avoid noise from scanners.
         status(HttpStatusCode.NotFound) { call, status ->
@@ -64,7 +64,7 @@ fun Application.installPlugins() {
     }
 }
 
-private suspend fun ApplicationCall.respondApiError(cause: Throwable) {
+private suspend fun ApplicationCall.respondUnhandledException(cause: Throwable) {
     val apiError = determineApiError(cause, request.path())
     logApiError(apiError, cause)
     respond(HttpStatusCode.fromValue(apiError.status), apiError)
