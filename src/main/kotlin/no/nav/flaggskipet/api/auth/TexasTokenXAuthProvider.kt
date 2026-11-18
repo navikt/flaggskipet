@@ -1,5 +1,13 @@
 package no.nav.flaggskipet.api.auth
 
+import arrow.core.Either
+import arrow.core.raise.catch
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
+import io.ktor.http.auth.AuthScheme
+import io.ktor.http.auth.HttpAuthHeader
+import io.ktor.http.auth.parseAuthorizationHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
@@ -9,8 +17,6 @@ import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.authorization
-import kotlinx.coroutines.CancellationException
-import no.nav.flaggskipet.api.error.ApiRejectionReason
 import no.nav.flaggskipet.infrastructure.clients.texas.IDENTITY_PROVIDER_TOKENX
 import no.nav.flaggskipet.infrastructure.clients.texas.TexasClient
 
@@ -25,7 +31,7 @@ data class TokenXPrincipal(
 // ID-porten uses both the legacy Level4 and the newer idporten-loa-high for its
 // highest assurance level. Consumers sign in using Level4, while tokens from the
 // development token generator use the new value. Both are accepted.
-private val godkjenteAcrVerdier = setOf("Level4", "idporten-loa-high")
+private val approvedAcrValues = setOf("Level4", "idporten-loa-high")
 
 class TexasTokenXAuthProvider(
     config: Config,
@@ -39,51 +45,42 @@ class TexasTokenXAuthProvider(
 
     override suspend fun onAuthenticate(context: AuthenticationContext) {
         val bearerToken = context.call.request.bearerToken()
-            ?: throw AuthException.Unauthorized(
-                "Missing bearer token",
-                rejectionReason = ApiRejectionReason.MISSING_BEARER_TOKEN,
-            )
-
-        val introspection = introspectTokenForAuthentication(texasClient, bearerToken)
-
-        if (!introspection.active) {
-            throw AuthException.Unauthorized(
-                "Token is not active",
-                rejectionReason = ApiRejectionReason.INACTIVE_TOKEN,
-            )
-        }
-
-        if (introspection.acr !in godkjenteAcrVerdier) {
-            throw AuthException.Forbidden(
-                "Token does not meet the required security level",
-                rejectionReason = ApiRejectionReason.INSUFFICIENT_SECURITY_LEVEL,
-            )
-        }
-
-        context.principal(
-            TokenXPrincipal(
-                clientId = introspection.clientId,
-                acr = introspection.acr,
-            ),
+        authenticate(texasClient, bearerToken).fold(
+            ifLeft = { throw AuthException(it) },
+            ifRight = { context.principal(it) },
         )
     }
 }
 
-internal suspend fun introspectTokenForAuthentication(
+internal suspend fun authenticate(
     texasClient: TexasClient,
-    bearerToken: String,
-) = try {
-    texasClient.introspectToken(IDENTITY_PROVIDER_TOKENX, bearerToken)
-} catch (cancellation: CancellationException) {
-    throw cancellation
-} catch (exception: Exception) {
-    throw AuthException.IntrospectionFailed(exception)
+    bearerToken: String?,
+): Either<AuthError, TokenXPrincipal> = either {
+    ensureNotNull(bearerToken) { AuthError.MissingBearerToken }
+
+    // Arrow's catch rethrows CancellationException, so cancellation propagates unchanged.
+    val introspection = catch({ texasClient.introspectToken(IDENTITY_PROVIDER_TOKENX, bearerToken) }) {
+        raise(AuthError.IntrospectionFailed(it))
+    }
+
+    ensure(introspection.active) { AuthError.InactiveToken }
+    ensure(introspection.acr in approvedAcrValues) { AuthError.InsufficientSecurityLevel }
+
+    TokenXPrincipal(clientId = introspection.clientId, acr = introspection.acr)
 }
 
-internal fun ApplicationRequest.bearerToken(): String? = authorization()
-    ?.takeIf { it.startsWith("Bearer ", ignoreCase = true) }
-    ?.drop("Bearer ".length)
-    ?.takeIf { it.isNotBlank() }
+internal fun ApplicationRequest.bearerToken(): String? {
+    // The String overload throws ParseException; the ApplicationRequest overload throws BadRequestException (400).
+    val header = try {
+        authorization()?.let { parseAuthorizationHeader(it) }
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
+    return (header as? HttpAuthHeader.Single)
+        ?.takeIf { it.authScheme.equals(AuthScheme.Bearer, ignoreCase = true) }
+        ?.blob
+}
 
 fun AuthenticationConfig.texasTokenX(name: String, texasClient: TexasClient) {
     register(TexasTokenXAuthProvider(TexasTokenXAuthProvider.Config(name, texasClient)))

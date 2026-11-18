@@ -32,6 +32,7 @@ import io.ktor.server.testing.testApplication
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
@@ -41,8 +42,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import net.logstash.logback.encoder.LogstashEncoder
 import no.nav.flaggskipet.api.auth.TOKENX_AUTHENTICATION
 import no.nav.flaggskipet.api.auth.TokenXPrincipal
+import no.nav.flaggskipet.api.auth.authenticate
 import no.nav.flaggskipet.api.auth.installAuthentication
-import no.nav.flaggskipet.api.auth.introspectTokenForAuthentication
 import no.nav.flaggskipet.api.installPlugins
 import no.nav.flaggskipet.api.internal.configureInternalApi
 import no.nav.flaggskipet.application.AssessTiltakspakkerUseCase
@@ -108,6 +109,30 @@ class AssessmentApiAuthTest :
                     json.value("rejection_reason") shouldBe reason
                     json.toString() shouldNotContain "token-canary"
                 }
+            }
+        }
+
+        listOf("Basic dXNlcjpwYXNz", "Bearer   ", "token-without-scheme", "Bearer ugyldig-æøå").forEach { authorization ->
+            test("Authorization '$authorization' returns 401 without calling Texas") {
+                testApplication {
+                    val texasClient = mockk<TexasClient>()
+                    coEvery { texasClient.introspectToken(any(), any()) } returns activeToken("Level4")
+                    setupApi(texasClient)
+
+                    postAssessmentWithAuthorization(authorization).status shouldBe HttpStatusCode.Unauthorized
+                    coVerify(exactly = 0) { texasClient.introspectToken(any(), any()) }
+                }
+            }
+        }
+
+        test("lowercase bearer scheme is accepted and only the token is sent to Texas") {
+            testApplication {
+                val texasClient = mockk<TexasClient>()
+                coEvery { texasClient.introspectToken(any(), any()) } returns activeToken("Level4")
+                setupApi(texasClient)
+
+                postAssessmentWithAuthorization("bearer gyldig-token").status shouldBe HttpStatusCode.OK
+                coVerify { texasClient.introspectToken(any(), "gyldig-token") }
             }
         }
 
@@ -195,7 +220,7 @@ class AssessmentApiAuthTest :
             testApplication {
                 setupApi(activeToken(acr = "idporten-loa-substantial"))
 
-                val response = postAssessment(token = "lavt-nivå-token")
+                val response = postAssessment(token = "lavt-niva-token")
 
                 response.status shouldBe HttpStatusCode.Forbidden
                 response.bodyAsText() shouldContain """"type":"AUTHORIZATION_ERROR""""
@@ -249,7 +274,7 @@ class AssessmentApiAuthTest :
             coEvery { texasClient.introspectToken(any(), any()) } throws cancellation
 
             val thrown = runCatching {
-                introspectTokenForAuthentication(texasClient, "incoming-access-token-canary")
+                authenticate(texasClient, "incoming-access-token-canary")
             }.exceptionOrNull()
 
             thrown shouldBe cancellation
@@ -393,6 +418,12 @@ private fun ApplicationTestBuilder.setupApi(
 
 private suspend fun ApplicationTestBuilder.postAssessment(token: String?) = client.post(ASSESSMENT_PATH) {
     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+    contentType(ContentType.Application.Json)
+    setBody("""{"orgnumre":["313644480"]}""")
+}
+
+private suspend fun ApplicationTestBuilder.postAssessmentWithAuthorization(authorization: String) = client.post(ASSESSMENT_PATH) {
+    header(HttpHeaders.Authorization, authorization)
     contentType(ContentType.Application.Json)
     setBody("""{"orgnumre":["313644480"]}""")
 }

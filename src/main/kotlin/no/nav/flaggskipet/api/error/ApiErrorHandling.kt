@@ -71,7 +71,7 @@ internal fun Logger.logApiError(
     operation: ApiOperation,
 ) {
     val explicitRejection = when (cause) {
-        is AuthException.Unauthorized, is AuthException.Forbidden -> true
+        is AuthException -> true
         is BadRequestException, is NotFoundException -> true
         else -> false
     }
@@ -111,7 +111,7 @@ internal fun determineApiError(cause: Throwable, path: String): ApiError = when 
 
     is NotFoundException -> cause.toApiError(path)
 
-    is AuthException -> cause.toApiError(path)
+    is AuthException -> cause.error.toApiError(path)
 
     is IllegalArgumentException -> ApiError(
         status = HttpStatusCode.BadRequest.value,

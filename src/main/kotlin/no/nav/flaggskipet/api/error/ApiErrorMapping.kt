@@ -6,7 +6,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
-import no.nav.flaggskipet.api.auth.AuthException
+import no.nav.flaggskipet.api.auth.AuthError
 import no.nav.flaggskipet.application.AssessmentError
 import no.nav.flaggskipet.application.port.EregError
 
@@ -32,30 +32,34 @@ internal fun AssessmentError.toApiError(): ApiError = when (this) {
     )
 }
 
-internal fun AuthException.toApiError(path: String): ApiError = when (this) {
-    is AuthException.Unauthorized -> ApiError(
-        status = HttpStatusCode.Unauthorized.value,
-        type = ErrorType.AUTHENTICATION_ERROR,
-        message = message ?: "Unauthorized",
-        path = path,
-        rejectionReason = rejectionReason,
-    )
+internal fun AuthError.toApiError(path: String): ApiError = when (this) {
+    AuthError.MissingBearerToken -> unauthorized("Missing bearer token", ApiRejectionReason.MISSING_BEARER_TOKEN, path)
 
-    is AuthException.Forbidden -> ApiError(
+    AuthError.InactiveToken -> unauthorized("Token is not active", ApiRejectionReason.INACTIVE_TOKEN, path)
+
+    AuthError.InsufficientSecurityLevel -> ApiError(
         status = HttpStatusCode.Forbidden.value,
         type = ErrorType.AUTHORIZATION_ERROR,
-        message = message ?: "Forbidden",
+        message = "Token does not meet the required security level",
         path = path,
-        rejectionReason = rejectionReason,
+        rejectionReason = ApiRejectionReason.INSUFFICIENT_SECURITY_LEVEL,
     )
 
-    is AuthException.IntrospectionFailed -> ApiError(
+    is AuthError.IntrospectionFailed -> ApiError(
         status = HttpStatusCode.InternalServerError.value,
         type = ErrorType.TEXAS_INTROSPECTION_FAILED,
-        message = message ?: "Authentication service unavailable",
+        message = "Authentication service unavailable",
         path = path,
     )
 }
+
+private fun unauthorized(message: String, reason: ApiRejectionReason, path: String) = ApiError(
+    status = HttpStatusCode.Unauthorized.value,
+    type = ErrorType.AUTHENTICATION_ERROR,
+    message = message,
+    path = path,
+    rejectionReason = reason,
+)
 
 private fun badRequest(reason: ApiRejectionReason) = ApiError(
     status = HttpStatusCode.BadRequest.value,

@@ -26,6 +26,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import net.logstash.logback.encoder.LogstashEncoder
+import no.nav.flaggskipet.api.auth.AuthError
 import no.nav.flaggskipet.api.auth.AuthException
 import no.nav.flaggskipet.api.installPlugins
 import org.slf4j.LoggerFactory
@@ -169,7 +170,7 @@ class StatusPagesTest :
                         type = ErrorType.TEXAS_INTROSPECTION_FAILED,
                         message = "Authentication service unavailable",
                     ),
-                    cause = AuthException.IntrospectionFailed(sensitiveRootCause()),
+                    cause = AuthException(AuthError.IntrospectionFailed(sensitiveRootCause())),
                     operation = ApiOperation.ASSESS_TILTAKSPAKKER,
                 )
 
