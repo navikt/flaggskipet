@@ -42,7 +42,7 @@ internal fun ApplicationCall.logApiError(apiError: ApiError) {
         kv("event_type", API_REQUEST_FAILED_EVENT),
         kv("error_code", apiError.type.name),
         kv("operation", operation.logValue),
-        kv("failure_reason", apiError.failureReason ?: "UNSPECIFIED"),
+        kv("failure_reason", apiError.failureReason?.name ?: "UNSPECIFIED"),
     )
 }
 

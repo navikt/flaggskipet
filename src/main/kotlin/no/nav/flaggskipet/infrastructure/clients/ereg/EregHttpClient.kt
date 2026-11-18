@@ -1,6 +1,7 @@
 package no.nav.flaggskipet.infrastructure.clients.ereg
 
 import arrow.core.Either
+import arrow.core.raise.catch
 import arrow.core.raise.either
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -46,32 +47,19 @@ internal class EregHttpClient(
 
     private suspend fun getNoekkelinfoFor(
         orgnummer: String,
-    ): Either<EregError, EregNoekkelinfo> {
-        val response = httpClient.get("/v2/organisasjon/$orgnummer/noekkelinfo") {
-            parameter("gyldigDato", today())
-            accept(ContentType.Application.Json)
-        }
-
-        return when (response.status) {
-            HttpStatusCode.OK -> {
-                val body = response.body<EregNoekkelinfoResponse>()
-                Either.Right(
-                    EregNoekkelinfo(
-                        orgnummer = orgnummer,
-                        adresse = Adresse(
-                            type = body.adresse.type,
-                            postnummer = body.adresse.postnummer,
-                            kommunenummer = body.adresse.kommunenummer,
-                        ),
-                    ),
-                )
+    ): Either<EregError, EregNoekkelinfo> = either {
+        catch({
+            val response = httpClient.get("/v2/organisasjon/$orgnummer/noekkelinfo") {
+                parameter("gyldigDato", today())
+                accept(ContentType.Application.Json)
             }
 
-            HttpStatusCode.NotFound ->
-                Either.Right(EregNoekkelinfo(orgnummer = orgnummer, adresse = null))
-
-            else -> Either.Left(EregError.UnexpectedStatus(response.status.value))
-        }
+            when (response.status) {
+                HttpStatusCode.OK -> response.body<EregNoekkelinfoResponse>().toDomain(orgnummer)
+                HttpStatusCode.NotFound -> EregNoekkelinfo(orgnummer = orgnummer, adresse = null)
+                else -> raise(EregError.UnexpectedStatus(response.status.value))
+            }
+        }) { raise(EregError.RequestFailed) }
     }
 }
 
@@ -89,3 +77,12 @@ private data class EregNoekkelinfoResponse(
         val kommunenummer: String = "",
     )
 }
+
+private fun EregNoekkelinfoResponse.toDomain(orgnummer: String) = EregNoekkelinfo(
+    orgnummer = orgnummer,
+    adresse = Adresse(
+        type = adresse.type,
+        postnummer = adresse.postnummer,
+        kommunenummer = adresse.kommunenummer,
+    ),
+)

@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.application.port.EregError
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
 import no.nav.flaggskipet.domain.assessment.Adresse
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
 class HttpClientImplTest :
@@ -103,6 +104,17 @@ class HttpClientImplTest :
             )
 
             client.getNoekkelinfo(listOf("111111111")) shouldBeLeft EregError.UnexpectedStatus(500)
+        }
+
+        test("getNoekkelinfo returns RequestFailed when the request throws or the body is invalid") {
+            listOf(
+                MockEngine { throw IOException("connection refused") },
+                MockEngine { respondJson("not json") },
+            ).forEach { engine ->
+                val client = EregHttpClient(httpClient = createHttpClient(engine))
+
+                client.getNoekkelinfo(listOf("111111111")) shouldBeLeft EregError.RequestFailed
+            }
         }
 
         test("returns Timeout for the entire batch when the deadline expires") {

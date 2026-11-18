@@ -25,5 +25,5 @@ data class ApiError(
     val timestamp: String = Instant.now().toString(),
     // Log only; never sent to the client.
     @Transient val rejectionReason: ApiRejectionReason? = null,
-    @Transient val failureReason: String? = null,
+    @Transient val failureReason: ApiFailureReason? = null,
 )

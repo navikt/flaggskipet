@@ -46,7 +46,7 @@ class AssessTiltakspakkerUseCaseTest :
             val ereg = mockk<EregClient>(relaxed = true)
             val repo = mockk<AssessmentRepository>(relaxed = true)
 
-            AssessTiltakspakkerUseCase(ereg, repo, emptyList()).execute(listOf("123")) shouldBeRight emptyList()
+            AssessTiltakspakkerUseCase(ereg, repo, emptyList()).execute(listOf("123456789")) shouldBeRight emptyList()
 
             coVerify(exactly = 0) { ereg.getNoekkelinfo(any()) }
             coVerify(exactly = 0) { repo.getAssessments(any(), any()) }
@@ -57,12 +57,12 @@ class AssessTiltakspakkerUseCaseTest :
             val ereg = mockk<EregClient>(relaxed = true)
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns listOf(
-                    AssessmentResult("PAKKE_A", "123", Participation.TILTAKSGRUPPE),
+                    AssessmentResult("PAKKE_A", "123456789", Participation.TILTAKSGRUPPE),
                 )
             }
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("123")) shouldBeRight listOf(
-                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("123", Participation.TILTAKSGRUPPE))),
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("123456789")) shouldBeRight listOf(
+                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("123456789", Participation.TILTAKSGRUPPE))),
             )
 
             coVerify(exactly = 0) { ereg.getNoekkelinfo(any()) }
@@ -71,20 +71,20 @@ class AssessTiltakspakkerUseCaseTest :
 
         test("assesses new orgnumre and saves assessments") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("123")) } returns listOf(EregNoekkelinfo("123", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("123456789")) } returns listOf(EregNoekkelinfo("123456789", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns emptyList()
             }
             repo.returnsSavedAssessments()
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("123")) shouldBeRight listOf(
-                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("123", Participation.TILTAKSGRUPPE))),
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("123456789")) shouldBeRight listOf(
+                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("123456789", Participation.TILTAKSGRUPPE))),
             )
 
             coVerify {
                 repo.saveAssessments(
-                    listOf(NewAssessment("PAKKE_A", "123", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
+                    listOf(NewAssessment("PAKKE_A", "123456789", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
                 )
             }
         }
@@ -98,39 +98,39 @@ class AssessTiltakspakkerUseCaseTest :
             }
 
             AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA))
-                .execute(listOf("123")) shouldBeLeft AssessmentError.EregUnavailable(EregError.Timeout)
+                .execute(listOf("123456789")) shouldBeLeft AssessmentError.EregUnavailable(EregError.Timeout)
 
             coVerify(exactly = 0) { repo.saveAssessments(any()) }
         }
 
         listOf(
-            Triple("no Adresse", null, NewAssessment("PAKKE_A", "123", Participation.UTENFOR_SCOPE, null, AssessmentReason.MANGLER_ADRESSE)),
+            Triple("no Adresse", null, NewAssessment("PAKKE_A", "123456789", Participation.UTENFOR_SCOPE, null, AssessmentReason.MANGLER_ADRESSE)),
             Triple(
                 "an invalid kommunenummer",
                 Adresse("Forretningsadresse", "", ""),
-                NewAssessment("PAKKE_A", "123", Participation.UTENFOR_SCOPE, null, AssessmentReason.UGYLDIG_KOMMUNENUMMER),
+                NewAssessment("PAKKE_A", "123456789", Participation.UTENFOR_SCOPE, null, AssessmentReason.UGYLDIG_KOMMUNENUMMER),
             ),
             Triple(
                 "a fylke outside scope",
                 Adresse("Forretningsadresse", "9008", "5501"),
-                NewAssessment("PAKKE_A", "123", Participation.UTENFOR_SCOPE, "55", AssessmentReason.FYLKE_UTENFOR_SCOPE),
+                NewAssessment("PAKKE_A", "123456789", Participation.UTENFOR_SCOPE, "55", AssessmentReason.FYLKE_UTENFOR_SCOPE),
             ),
             Triple(
                 "the expired fylkeskode 54",
                 Adresse("Forretningsadresse", "9008", "5401"),
-                NewAssessment("PAKKE_A", "123", Participation.UTENFOR_SCOPE, "54", AssessmentReason.UTGATT_FYLKESKODE),
+                NewAssessment("PAKKE_A", "123456789", Participation.UTENFOR_SCOPE, "54", AssessmentReason.UTGATT_FYLKESKODE),
             ),
         ).forEach { (description, adresse, expected) ->
             test("saves UTENFOR_SCOPE with its reason for $description") {
                 val ereg = mockk<EregClient> {
-                    coEvery { getNoekkelinfo(listOf("123")) } returns listOf(EregNoekkelinfo("123", adresse)).right()
+                    coEvery { getNoekkelinfo(listOf("123456789")) } returns listOf(EregNoekkelinfo("123456789", adresse)).right()
                 }
                 val repo = mockk<AssessmentRepository> {
                     coEvery { getAssessments(any(), any()) } returns emptyList()
                 }
                 repo.returnsSavedAssessments()
 
-                AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("123"))
+                AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("123456789"))
 
                 coVerify { repo.saveAssessments(listOf(expected)) }
             }
@@ -138,61 +138,61 @@ class AssessTiltakspakkerUseCaseTest :
 
         test("assesses only orgnumre without an assessment") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("222")) } returns listOf(EregNoekkelinfo("222", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("222222222")) } returns listOf(EregNoekkelinfo("222222222", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns listOf(
-                    AssessmentResult("PAKKE_A", "111", Participation.TILTAKSGRUPPE),
+                    AssessmentResult("PAKKE_A", "111111111", Participation.TILTAKSGRUPPE),
                 )
             }
             repo.returnsSavedAssessments()
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("111", "222"))
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("111111111", "222222222"))
 
-            coVerify(exactly = 1) { ereg.getNoekkelinfo(listOf("222")) }
+            coVerify(exactly = 1) { ereg.getNoekkelinfo(listOf("222222222")) }
         }
 
         test("assesses a tiltakspakke even when the orgnummer is assessed in another tiltakspakke") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("111")) } returns listOf(EregNoekkelinfo("111", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("111111111")) } returns listOf(EregNoekkelinfo("111111111", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns listOf(
-                    AssessmentResult("PAKKE_A", "111", Participation.TILTAKSGRUPPE),
+                    AssessmentResult("PAKKE_A", "111111111", Participation.TILTAKSGRUPPE),
                 )
             }
             repo.returnsSavedAssessments()
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA, tiltakspakkeB)).execute(listOf("111"))
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA, tiltakspakkeB)).execute(listOf("111111111"))
 
             coVerify(exactly = 1) {
                 repo.saveAssessments(
-                    listOf(NewAssessment("PAKKE_B", "111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
+                    listOf(NewAssessment("PAKKE_B", "111111111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
                 )
             }
         }
 
         test("returns the first saved assessment when another request wins the race") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("111")) } returns listOf(EregNoekkelinfo("111", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("111111111")) } returns listOf(EregNoekkelinfo("111111111", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns emptyList()
                 coEvery { saveAssessments(any()) } returns listOf(
-                    AssessmentResult("PAKKE_A", "111", Participation.KONTROLLGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE),
+                    AssessmentResult("PAKKE_A", "111111111", Participation.KONTROLLGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE),
                 )
             }
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("111")) shouldBeRight listOf(
-                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("111", Participation.KONTROLLGRUPPE))),
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA)).execute(listOf("111111111")) shouldBeRight listOf(
+                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("111111111", Participation.KONTROLLGRUPPE))),
             )
         }
 
         test("groups multiple tiltakspakker and orgnumre with one Ereg call") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("111", "222")) } returns listOf(
-                    EregNoekkelinfo("111", adresseI50),
-                    EregNoekkelinfo("222", adresseI50),
+                coEvery { getNoekkelinfo(listOf("111111111", "222222222")) } returns listOf(
+                    EregNoekkelinfo("111111111", adresseI50),
+                    EregNoekkelinfo("222222222", adresseI50),
                 ).right()
             }
             val repo = mockk<AssessmentRepository> {
@@ -201,12 +201,12 @@ class AssessTiltakspakkerUseCaseTest :
             repo.returnsSavedAssessments()
 
             AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA, tiltakspakkeB))
-                .execute(listOf("111", "222")) shouldBeRight listOf("PAKKE_A", "PAKKE_B").map { id ->
+                .execute(listOf("111111111", "222222222")) shouldBeRight listOf("PAKKE_A", "PAKKE_B").map { id ->
                 TiltakspakkeAssessment(
                     id,
                     listOf(
-                        VirksomhetParticipation("111", Participation.TILTAKSGRUPPE),
-                        VirksomhetParticipation("222", Participation.TILTAKSGRUPPE),
+                        VirksomhetParticipation("111111111", Participation.TILTAKSGRUPPE),
+                        VirksomhetParticipation("222222222", Participation.TILTAKSGRUPPE),
                     ),
                 )
             }
@@ -217,19 +217,19 @@ class AssessTiltakspakkerUseCaseTest :
         test("inherits stored assessments including reason and fylkeskode without calling Ereg") {
             val ereg = mockk<EregClient>()
             val repo = mockk<AssessmentRepository> {
-                coEvery { getAssessments(listOf("111", "222"), listOf("PAKKE_ARV", "PAKKE_A")) } returns listOf(
-                    AssessmentResult("PAKKE_A", "111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE),
-                    AssessmentResult("PAKKE_A", "222", Participation.UTENFOR_SCOPE, null, AssessmentReason.MANGLER_ADRESSE),
+                coEvery { getAssessments(listOf("111111111", "222222222"), listOf("PAKKE_ARV", "PAKKE_A")) } returns listOf(
+                    AssessmentResult("PAKKE_A", "111111111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE),
+                    AssessmentResult("PAKKE_A", "222222222", Participation.UTENFOR_SCOPE, null, AssessmentReason.MANGLER_ADRESSE),
                 )
             }
             repo.returnsSavedAssessments()
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(arvendePakke)).execute(listOf("111", "222")) shouldBeRight listOf(
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(arvendePakke)).execute(listOf("111111111", "222222222")) shouldBeRight listOf(
                 TiltakspakkeAssessment(
                     "PAKKE_ARV",
                     listOf(
-                        VirksomhetParticipation("111", Participation.TILTAKSGRUPPE),
-                        VirksomhetParticipation("222", Participation.UTENFOR_SCOPE),
+                        VirksomhetParticipation("111111111", Participation.TILTAKSGRUPPE),
+                        VirksomhetParticipation("222222222", Participation.UTENFOR_SCOPE),
                     ),
                 ),
             )
@@ -237,8 +237,8 @@ class AssessTiltakspakkerUseCaseTest :
             coVerify {
                 repo.saveAssessments(
                     listOf(
-                        NewAssessment("PAKKE_ARV", "111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE),
-                        NewAssessment("PAKKE_ARV", "222", Participation.UTENFOR_SCOPE, null, AssessmentReason.MANGLER_ADRESSE),
+                        NewAssessment("PAKKE_ARV", "111111111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE),
+                        NewAssessment("PAKKE_ARV", "222222222", Participation.UTENFOR_SCOPE, null, AssessmentReason.MANGLER_ADRESSE),
                     ),
                 )
             }
@@ -247,18 +247,18 @@ class AssessTiltakspakkerUseCaseTest :
 
         test("inherits the assessment saved earlier in the same call") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("111")) } returns listOf(EregNoekkelinfo("111", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("111111111")) } returns listOf(EregNoekkelinfo("111111111", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns emptyList()
             }
             repo.returnsSavedAssessments()
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA, arvendePakke)).execute(listOf("111"))
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA, arvendePakke)).execute(listOf("111111111"))
 
             coVerify {
                 repo.saveAssessments(
-                    listOf(NewAssessment("PAKKE_ARV", "111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
+                    listOf(NewAssessment("PAKKE_ARV", "111111111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
                 )
             }
             coVerify(exactly = 1) { ereg.getNoekkelinfo(any()) }
@@ -266,25 +266,25 @@ class AssessTiltakspakkerUseCaseTest :
 
         test("assesses with its own rule when there is nothing to inherit") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("111")) } returns listOf(EregNoekkelinfo("111", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("111111111")) } returns listOf(EregNoekkelinfo("111111111", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns emptyList()
             }
             repo.returnsSavedAssessments()
 
-            AssessTiltakspakkerUseCase(ereg, repo, listOf(arvendePakke)).execute(listOf("111"))
+            AssessTiltakspakkerUseCase(ereg, repo, listOf(arvendePakke)).execute(listOf("111111111"))
 
             coVerify {
                 repo.saveAssessments(
-                    listOf(NewAssessment("PAKKE_ARV", "111", Participation.KONTROLLGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
+                    listOf(NewAssessment("PAKKE_ARV", "111111111", Participation.KONTROLLGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
                 )
             }
         }
 
         test("assesses and saves a hidden tiltakspakke without returning it") {
             val ereg = mockk<EregClient> {
-                coEvery { getNoekkelinfo(listOf("111")) } returns listOf(EregNoekkelinfo("111", adresseI50)).right()
+                coEvery { getNoekkelinfo(listOf("111111111")) } returns listOf(EregNoekkelinfo("111111111", adresseI50)).right()
             }
             val repo = mockk<AssessmentRepository> {
                 coEvery { getAssessments(any(), any()) } returns emptyList()
@@ -292,13 +292,13 @@ class AssessTiltakspakkerUseCaseTest :
             repo.returnsSavedAssessments()
 
             AssessTiltakspakkerUseCase(ereg, repo, listOf(tiltakspakkeA, tiltakspakkeB.copy(visible = false)))
-                .execute(listOf("111")) shouldBeRight listOf(
-                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("111", Participation.TILTAKSGRUPPE))),
+                .execute(listOf("111111111")) shouldBeRight listOf(
+                TiltakspakkeAssessment("PAKKE_A", listOf(VirksomhetParticipation("111111111", Participation.TILTAKSGRUPPE))),
             )
 
             coVerify {
                 repo.saveAssessments(
-                    listOf(NewAssessment("PAKKE_B", "111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
+                    listOf(NewAssessment("PAKKE_B", "111111111", Participation.TILTAKSGRUPPE, "50", AssessmentReason.FYLKE_I_SCOPE)),
                 )
             }
         }

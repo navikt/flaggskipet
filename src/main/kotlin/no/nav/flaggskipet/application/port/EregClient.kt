@@ -11,6 +11,9 @@ data class EregNoekkelinfo(
 sealed interface EregError {
     data class UnexpectedStatus(val status: Int) : EregError
     data object Timeout : EregError
+
+    // No cause: exception messages can contain the request URL.
+    data object RequestFailed : EregError
 }
 
 interface EregClient {

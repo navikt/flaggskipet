@@ -1,7 +1,10 @@
 package no.nav.flaggskipet.application
 
 import arrow.core.Either
+import arrow.core.raise.Raise
 import arrow.core.raise.either
+import arrow.core.raise.ensure
+import arrow.core.raise.withError
 import no.nav.flaggskipet.application.port.AssessmentRepository
 import no.nav.flaggskipet.application.port.EregClient
 import no.nav.flaggskipet.application.port.EregNoekkelinfo
@@ -20,8 +23,9 @@ class AssessTiltakspakkerUseCase(
     private val assessmentRepository: AssessmentRepository,
     private val tiltakspakker: List<Tiltakspakke>,
 ) {
-    suspend fun execute(orgnumre: List<Orgnummer>): Either<AssessmentError, List<TiltakspakkeAssessment>> = either {
-        if (tiltakspakker.isEmpty()) return Either.Right(emptyList())
+    suspend fun execute(requested: List<String>): Either<AssessmentError, List<TiltakspakkeAssessment>> = either {
+        val orgnumre = validate(requested)
+        if (tiltakspakker.isEmpty()) return@either emptyList()
 
         val assessments = getExisting(orgnumre)
             .associateBy { it.tiltakspakkeId to it.orgnummer }
@@ -30,12 +34,15 @@ class AssessTiltakspakkerUseCase(
 
         // Tiltakspakker are assessed in order, so a tiltakspakke can inherit from one saved earlier in this call.
         for (tiltakspakke in tiltakspakker) {
-            val missing = orgnumre.distinct().filter { (tiltakspakke.id to it) !in assessments }
+            val missing = orgnumre.filter { (tiltakspakke.id to it) !in assessments }
             val inheritedFrom = missing.associateWith { assessments[tiltakspakke.inheritsFrom to it] }
 
             val needsEreg = missing.filter { inheritedFrom[it] == null && it !in noekkelinfo }
             if (needsEreg.isNotEmpty()) {
-                noekkelinfo += eregClient.getNoekkelinfo(needsEreg).mapLeft(AssessmentError::EregUnavailable).bind().associateBy { it.orgnummer }
+                val fetched = withError(AssessmentError::EregUnavailable) {
+                    eregClient.getNoekkelinfo(needsEreg).bind()
+                }
+                noekkelinfo += fetched.associateBy { it.orgnummer }
             }
 
             val newAssessments = missing.mapNotNull { orgnummer ->
@@ -51,17 +58,34 @@ class AssessTiltakspakkerUseCase(
 
         val visibleIds = tiltakspakker.filter { it.visible }.map { it.id }.toSet()
 
-        return Either.Right(
-            assessments.values
-                .filter { it.tiltakspakkeId in visibleIds }
-                .groupByTiltakspakke(),
-        )
+        assessments.values
+            .filter { it.tiltakspakkeId in visibleIds }
+            .groupByTiltakspakke()
     }
 
     private suspend fun getExisting(orgnumre: List<Orgnummer>) = assessmentRepository.getAssessments(
         orgnumre = orgnumre,
         tiltakspakkeIds = (tiltakspakker.map { it.id } + tiltakspakker.mapNotNull { it.inheritsFrom }).distinct(),
     )
+}
+
+// Limit resources for the synchronous endpoint. The Ereg client also limits
+// concurrency against Ereg. Larger populations need separate batches or an
+// asynchronous job. Consumers are responsible for authorizing user-orgnummer
+// relationships; see README.
+private const val MAX_ORGNUMRE = 100
+
+// Format only, not validity: Ereg determines whether an orgnummer exists.
+// Mod11 is deliberately omitted. This prevents arbitrary strings from reaching
+// the Ereg URL and database. The frontend relies on this validation.
+private val ORGNUMMER_FORMAT = Regex("""\d{9}""")
+
+private fun Raise<AssessmentError>.validate(requested: List<String>): List<Orgnummer> {
+    val distinct = requested.distinct()
+    ensure(distinct.isNotEmpty()) { AssessmentError.EmptyOrgnumre }
+    ensure(distinct.size <= MAX_ORGNUMRE) { AssessmentError.TooManyOrgnumre }
+    ensure(distinct.all { it.matches(ORGNUMMER_FORMAT) }) { AssessmentError.InvalidOrgnummerFormat }
+    return distinct
 }
 
 private fun inherit(

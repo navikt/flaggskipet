@@ -25,8 +25,9 @@ internal fun AssessmentError.toApiError(): ApiError = when (this) {
 
     is AssessmentError.EregUnavailable -> internalServerError(
         failureReason = when (cause) {
-            is EregError.UnexpectedStatus -> "EREG_UNEXPECTED_STATUS"
-            is EregError.Timeout -> "EREG_TIMEOUT"
+            is EregError.UnexpectedStatus -> ApiFailureReason.EREG_UNEXPECTED_STATUS
+            EregError.Timeout -> ApiFailureReason.EREG_TIMEOUT
+            EregError.RequestFailed -> ApiFailureReason.EREG_REQUEST_FAILED
         },
     )
 }
@@ -63,7 +64,7 @@ private fun badRequest(reason: ApiRejectionReason) = ApiError(
     rejectionReason = reason,
 )
 
-private fun internalServerError(failureReason: String) = ApiError(
+private fun internalServerError(failureReason: ApiFailureReason) = ApiError(
     status = HttpStatusCode.InternalServerError.value,
     type = ErrorType.INTERNAL_SERVER_ERROR,
     message = "Internal server error",
