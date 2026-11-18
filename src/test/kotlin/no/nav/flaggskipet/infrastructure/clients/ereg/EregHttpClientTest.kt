@@ -30,7 +30,7 @@ import no.nav.flaggskipet.domain.assessment.Adresse
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
-class HttpClientImplTest :
+class EregHttpClientTest :
     FunSpec({
         test("getNoekkelinfo maps 200 to EregNoekkelinfo with Adresse and sends gyldigDato for today") {
             val mockEngine = MockEngine { request ->

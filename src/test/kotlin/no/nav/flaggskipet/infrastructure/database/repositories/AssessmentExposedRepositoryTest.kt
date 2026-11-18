@@ -19,7 +19,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import java.sql.DriverManager
 import java.sql.SQLException
 
-class TiltakspakkeAssessmentRepositoryTest :
+class AssessmentExposedRepositoryTest :
     FunSpec({
 
         val fixture = PostgresTestFixture()
