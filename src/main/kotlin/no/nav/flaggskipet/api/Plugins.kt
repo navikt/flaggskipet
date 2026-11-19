@@ -13,10 +13,8 @@ import io.ktor.server.response.respond
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.serialization.json.Json
-import no.nav.flaggskipet.api.error.ApiError
-import no.nav.flaggskipet.api.error.ErrorType
 import no.nav.flaggskipet.api.error.determineApiError
-import no.nav.flaggskipet.api.error.logApiError
+import no.nav.flaggskipet.api.error.logUnhandledException
 import java.util.UUID
 
 const val NAV_CALL_ID_HEADER = "Nav-Call-Id"
@@ -49,23 +47,11 @@ fun Application.installPlugins() {
         exception<Throwable> { call, cause ->
             call.respondUnhandledException(cause)
         }
-        // Unknown routes produce no exception. Not logged, to avoid noise from scanners.
-        status(HttpStatusCode.NotFound) { call, status ->
-            call.respond(
-                status,
-                ApiError(
-                    status = status.value,
-                    type = ErrorType.NOT_FOUND,
-                    message = "Not found",
-                    path = call.request.path(),
-                ),
-            )
-        }
     }
 }
 
 private suspend fun ApplicationCall.respondUnhandledException(cause: Throwable) {
     val apiError = determineApiError(cause, request.path())
-    logApiError(apiError, cause)
+    logUnhandledException(apiError, cause)
     respond(HttpStatusCode.fromValue(apiError.status), apiError)
 }

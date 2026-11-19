@@ -72,22 +72,6 @@ class StatusPagesTest :
             }
         }
 
-        test("unknown route responds 404 with api error body") {
-            testApplication {
-                application { installPluginTestRoutes() }
-
-                val response = client.get("/does-not-exist")
-
-                response.status shouldBe HttpStatusCode.NotFound
-                response.headers["Content-Type"] shouldBe "application/json"
-                with(response.bodyAsText()) {
-                    shouldContain(""""status":404""")
-                    shouldContain(""""type":"NOT_FOUND"""")
-                    shouldContain(""""path":"/does-not-exist"""")
-                }
-            }
-        }
-
         test("expected client rejection logs one safe warning and no error") {
             withApplicationLog { logEvents ->
                 testApplication {
@@ -119,7 +103,7 @@ class StatusPagesTest :
                 val traceId = "0123456789abcdef0123456789abcdef"
                 MDC.put("trace_id", traceId)
                 try {
-                    LoggerFactory.getLogger("Application").logApiError(
+                    LoggerFactory.getLogger("Application").logUnhandledException(
                         apiError = ApiError(
                             status = HttpStatusCode.BadRequest.value,
                             type = ErrorType.BAD_REQUEST,
@@ -164,7 +148,7 @@ class StatusPagesTest :
 
         test("server failure retains safe cause type and code location without messages") {
             withApplicationLog { logEvents ->
-                LoggerFactory.getLogger("Application").logApiError(
+                LoggerFactory.getLogger("Application").logUnhandledException(
                     apiError = ApiError(
                         status = HttpStatusCode.InternalServerError.value,
                         type = ErrorType.TEXAS_INTROSPECTION_FAILED,

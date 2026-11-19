@@ -23,14 +23,14 @@ internal enum class ApiOperation(
     HANDLE_API_CALL("behandle_api_kall"),
 }
 
-internal fun ApplicationCall.logApiError(
+internal fun ApplicationCall.logUnhandledException(
     apiError: ApiError,
     cause: Throwable,
 ) {
-    application.log.logApiError(apiError, cause, apiOperation())
+    application.log.logUnhandledException(apiError, cause, apiOperation())
 }
 
-internal fun ApplicationCall.logApiError(apiError: ApiError) {
+internal fun ApplicationCall.logEitherError(apiError: ApiError) {
     val operation = apiOperation()
     if (apiError.rejectionReason != null) {
         application.log.logRejection(apiError, apiError.rejectionReason.name, operation)
@@ -65,14 +65,13 @@ private fun Logger.logRejection(
     )
 }
 
-internal fun Logger.logApiError(
+internal fun Logger.logUnhandledException(
     apiError: ApiError,
     cause: Throwable,
     operation: ApiOperation,
 ) {
     val explicitRejection = when (cause) {
-        is AuthException -> true
-        is BadRequestException, is NotFoundException -> true
+        is BadRequestException, is NotFoundException, is AuthException -> true
         else -> false
     }
     if (apiError.status in 400..499 && explicitRejection) {

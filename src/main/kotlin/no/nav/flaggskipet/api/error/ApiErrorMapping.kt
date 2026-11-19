@@ -77,6 +77,6 @@ private fun internalServerError(failureReason: ApiFailureReason) = ApiError(
 
 internal suspend fun ApplicationCall.respondApiError(apiError: ApiError) {
     val withPath = apiError.copy(path = request.path())
-    logApiError(withPath)
+    logEitherError(withPath)
     respond(HttpStatusCode.fromValue(withPath.status), withPath)
 }
