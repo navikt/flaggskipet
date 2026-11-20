@@ -62,7 +62,9 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.logstash.logback.encoder)
     implementation(libs.micrometer.registry.prometheus)
+    implementation(libs.arrow.core)
 
+    testImplementation(libs.kotest.assertions.arrow)
     testImplementation(libs.kotest.assertions.core)
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.ktor.client.mock)
@@ -120,4 +122,9 @@ fun DependencyHandler.implementationPlatformWithKtorVersionCheck(
         "Review the $bomNotation platform before changing Ktor from $expectedKtorVersion to $currentKtorVersion"
     }
     add("implementation", platform(bomNotation))
+}
+
+ktlint {
+    // 1.7.0+ is required to parse context parameters.
+    version.set(libs.versions.ktlintEngine.get())
 }
