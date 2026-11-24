@@ -51,6 +51,8 @@ Bruk `mise tasks` for tilgjengelige kommandoer.
 Dokumentasjon og beslutningsgrunnlag for tjenesten finnes i [docs](docs) mappen.
 Se [pilotregel og klargjøring for tiltakspakke 1](docs/tiltakspakke1_pilot.md)
 for geografisk scope, lagret vurderingsgrunnlag og opprydding før lansering.
+Se også [foreslått ansvarsdeling for eksperimenter og tiltakspakker](docs/adr/ADR-0001-eksperimenter-og-tiltakspakker.md)
+og [begrepslisten](CONTEXT.md).
 
 ## For Nav-ansatte
 
