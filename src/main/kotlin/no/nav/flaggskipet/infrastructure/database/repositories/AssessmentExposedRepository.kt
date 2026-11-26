@@ -1,7 +1,7 @@
 package no.nav.flaggskipet.infrastructure.database.repositories
 
+import no.nav.flaggskipet.application.port.AssessmentRepository
 import no.nav.flaggskipet.application.port.NewAssessment
-import no.nav.flaggskipet.application.port.TiltakspakkeAssessmentRepository
 import no.nav.flaggskipet.domain.assessment.AssessmentResult
 import no.nav.flaggskipet.infrastructure.database.config.transact
 import no.nav.flaggskipet.infrastructure.database.tables.TiltakspakkeDeltakelseTable
@@ -13,9 +13,9 @@ import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.time.Clock
 
-class TiltakspakkeAssessmentRepositoryImpl(
+class AssessmentExposedRepository(
     private val database: Database,
-) : TiltakspakkeAssessmentRepository {
+) : AssessmentRepository {
     override suspend fun getAssessments(
         orgnumre: Collection<String>,
         tiltakspakkeIds: Collection<String>,

@@ -6,22 +6,19 @@ import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.resolve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.nav.flaggskipet.application.port.TiltakspakkeAssessmentRepository
+import no.nav.flaggskipet.application.port.AssessmentRepository
 import no.nav.flaggskipet.infrastructure.HealthCheck
-import no.nav.flaggskipet.infrastructure.database.repositories.TiltakspakkeAssessmentRepositoryImpl
+import no.nav.flaggskipet.infrastructure.database.repositories.AssessmentExposedRepository
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import javax.sql.DataSource
 
 fun DependencyRegistry.databaseModule() {
-    provide<HikariDataSource> { createDataSource(resolve()) }
-        .cleanup(HikariDataSource::close)
+    provide<HikariDataSource> { createDataSource(resolve()) }.cleanup(HikariDataSource::close)
     provide<Database> { Database.connect(resolve<DataSource>()) }
-    provide<HealthCheck> {
-        dataSourceHealthCheck(resolve())
-    }
-    provide<TiltakspakkeAssessmentRepository> { TiltakspakkeAssessmentRepositoryImpl(resolve()) }
+    provide<HealthCheck> { dataSourceHealthCheck(resolve()) }
+    provide<AssessmentRepository> { AssessmentExposedRepository(resolve()) }
 }
 
 suspend fun <T> Database.transact(block: () -> T): T = withContext(Dispatchers.IO) {

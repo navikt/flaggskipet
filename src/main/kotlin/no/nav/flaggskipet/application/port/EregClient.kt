@@ -1,5 +1,6 @@
 package no.nav.flaggskipet.application.port
 
+import arrow.core.Either
 import no.nav.flaggskipet.domain.assessment.Adresse
 
 data class EregNoekkelinfo(
@@ -7,6 +8,14 @@ data class EregNoekkelinfo(
     val adresse: Adresse?,
 )
 
+sealed interface EregError {
+    data class UnexpectedStatus(val status: Int) : EregError
+    data object Timeout : EregError
+
+    // No cause: exception messages can contain the request URL.
+    data object RequestFailed : EregError
+}
+
 interface EregClient {
-    suspend fun getNoekkelinfo(orgnummer: List<String>): List<EregNoekkelinfo>
+    suspend fun getNoekkelinfo(orgnummer: List<String>): Either<EregError, List<EregNoekkelinfo>>
 }

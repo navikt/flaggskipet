@@ -13,6 +13,7 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.NotFoundException
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
@@ -25,28 +26,29 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import net.logstash.logback.encoder.LogstashEncoder
+import no.nav.flaggskipet.api.auth.AuthError
+import no.nav.flaggskipet.api.auth.AuthException
 import no.nav.flaggskipet.api.installPlugins
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
+import kotlin.time.Duration.Companion.milliseconds
 
 class StatusPagesTest :
     FunSpec({
-        listOf("/illegal-argument", "/wrapped-technical-error").forEach { path ->
-            test("technical failure at $path remains ERROR even with a 400 response") {
-                withApplicationLog { logEvents ->
-                    testApplication {
-                        application { installPluginTestRoutes() }
-                        client.get(path).status shouldBe HttpStatusCode.BadRequest
-                    }
-
-                    val logger = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
-                    logger.size shouldBe 1
-                    logger.single().level shouldBe Level.ERROR
-                    val serialized = logger.single().serializedJson()
-                    serialized.value("event_type") shouldBe "api_request_failed"
-                    serialized.toString() shouldNotContain "12345678901"
-                    serialized.toString() shouldNotContain "technical-token-canary"
+        test("technical failure remains ERROR even with a 400 response") {
+            withApplicationLog { logEvents ->
+                testApplication {
+                    application { installPluginTestRoutes() }
+                    client.get("/illegal-argument").status shouldBe HttpStatusCode.BadRequest
                 }
+
+                val logger = logEvents.list.filter { it.level.isGreaterOrEqual(Level.WARN) }
+                logger.size shouldBe 1
+                logger.single().level shouldBe Level.ERROR
+                val serialized = logger.single().serializedJson()
+                serialized.value("event_type") shouldBe "api_request_failed"
+                serialized.toString() shouldNotContain "12345678901"
+                serialized.toString() shouldNotContain "technical-token-canary"
             }
         }
 
@@ -101,13 +103,13 @@ class StatusPagesTest :
                 val traceId = "0123456789abcdef0123456789abcdef"
                 MDC.put("trace_id", traceId)
                 try {
-                    LoggerFactory.getLogger("Application").logApiError(
+                    LoggerFactory.getLogger("Application").logUnhandledException(
                         apiError = ApiError(
                             status = HttpStatusCode.BadRequest.value,
                             type = ErrorType.BAD_REQUEST,
                             message = "Bad request",
                         ),
-                        cause = ApiErrorException.BadRequest("Sensitive cause 12345678901"),
+                        cause = BadRequestException("Sensitive cause 12345678901"),
                         operation = ApiOperation.ASSESS_TILTAKSPAKKER,
                     )
 
@@ -146,25 +148,21 @@ class StatusPagesTest :
 
         test("server failure retains safe cause type and code location without messages") {
             withApplicationLog { logEvents ->
-                LoggerFactory.getLogger("Application").logApiError(
+                LoggerFactory.getLogger("Application").logUnhandledException(
                     apiError = ApiError(
                         status = HttpStatusCode.InternalServerError.value,
                         type = ErrorType.TEXAS_INTROSPECTION_FAILED,
                         message = "Authentication service unavailable",
                     ),
-                    cause = ApiErrorException.InternalServerError(
-                        errorMessage = "External failure for 12345678901 with incoming-access-token-canary",
-                        cause = sensitiveRootCause(),
-                        type = ErrorType.TEXAS_INTROSPECTION_FAILED,
-                    ),
+                    cause = AuthException(AuthError.IntrospectionFailed(sensitiveRootCause())),
                     operation = ApiOperation.ASSESS_TILTAKSPAKKER,
                 )
 
                 val serialized = logEvents.list.single().serializedJson()
                 val stackTrace = serialized.value("stack_trace")
 
-                serialized.value("exception_type") shouldBe "ApiErrorException"
-                stackTrace shouldContain "RuntimeException: ApiErrorException"
+                serialized.value("exception_type") shouldBe "AuthException"
+                stackTrace shouldContain "RuntimeException: AuthException"
                 stackTrace shouldContain "Caused by: java.lang.RuntimeException: IllegalArgumentException"
                 stackTrace shouldContain "sensitiveRootCause"
                 with(serialized.toString()) {
@@ -206,17 +204,11 @@ private fun Application.installPluginTestRoutes() {
         get("/illegal-argument") {
             throw IllegalArgumentException("Unexpected internal value 12345678901 technical-token-canary")
         }
-        get("/wrapped-technical-error") {
-            throw ApiErrorException.BadRequest(
-                "Invalid value",
-                cause = IllegalStateException("Technical failure 12345678901 technical-token-canary"),
-            )
-        }
         get("/not-found") {
             throw NotFoundException("missing resource")
         }
         get("/api/v1/tiltakspakker/vurdering") {
-            throw ApiErrorException.BadRequest(
+            throw BadRequestException(
                 "Invalid value 12345678901 from https://example.test/person/123",
             )
         }
@@ -226,8 +218,8 @@ private fun Application.installPluginTestRoutes() {
             )
         }
         get("/internal-timeout") {
-            withTimeout(1) {
-                delay(Long.MAX_VALUE)
+            withTimeout(1.milliseconds) {
+                delay(Long.MAX_VALUE.milliseconds)
             }
         }
         get("/ok") {

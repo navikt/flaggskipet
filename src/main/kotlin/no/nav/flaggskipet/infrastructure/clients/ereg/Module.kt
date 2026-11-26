@@ -22,7 +22,7 @@ private const val EREG_SOCKET_TIMEOUT_MILLIS = 10_000L
 fun DependencyRegistry.eregModule() {
     provide<HttpClient>(EREG_HTTP_CLIENT) { createEregHttpClient(resolve()) }
         .cleanup(HttpClient::close)
-    provide<EregClient> { HttpClientImpl(httpClient = resolve(EREG_HTTP_CLIENT)) }
+    provide<EregClient> { EregHttpClient(httpClient = resolve(EREG_HTTP_CLIENT)) }
 }
 
 data class EregConfig(
@@ -39,10 +39,10 @@ fun ApplicationConfig.toEregConfig(): EregConfig {
     return EregConfig(URI(baseUrl))
 }
 
-internal fun createEregHttpClient(config: EregConfig): HttpClient = HttpClient(CIO) {
+internal fun createEregHttpClient(eregConfig: EregConfig): HttpClient = HttpClient(CIO) {
     expectSuccess = false
     defaultRequest {
-        url(config.baseUrl.toString())
+        url(eregConfig.baseUrl.toString())
     }
 
     install(HttpTimeout) {

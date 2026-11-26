@@ -14,7 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.serialization.json.Json
 import no.nav.flaggskipet.api.error.determineApiError
-import no.nav.flaggskipet.api.error.logApiError
+import no.nav.flaggskipet.api.error.logUnhandledException
 import java.util.UUID
 
 const val NAV_CALL_ID_HEADER = "Nav-Call-Id"
@@ -39,19 +39,19 @@ fun Application.installPlugins() {
 
     install(StatusPages) {
         exception<TimeoutCancellationException> { call, cause ->
-            call.respondApiError(cause)
+            call.respondUnhandledException(cause)
         }
         exception<CancellationException> { _, cause ->
             throw cause
         }
         exception<Throwable> { call, cause ->
-            call.respondApiError(cause)
+            call.respondUnhandledException(cause)
         }
     }
 }
 
-private suspend fun ApplicationCall.respondApiError(cause: Throwable) {
+private suspend fun ApplicationCall.respondUnhandledException(cause: Throwable) {
     val apiError = determineApiError(cause, request.path())
-    logApiError(apiError, cause)
+    logUnhandledException(apiError, cause)
     respond(HttpStatusCode.fromValue(apiError.status), apiError)
 }
