@@ -3,22 +3,30 @@ package no.nav.flaggskipet.domain.assessment
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.datetime.LocalDate
 
 class ActiveTiltakspakkerTest :
     FunSpec({
-        val tiltakspakke = activeTiltakspakker(tiltakspakke2Visible = false).single { it.id == "OPPFOLGINGSPLAN_TILTAKSPAKKE_1" }
+        val lastDayOfTiltakspakke1 = LocalDate(2026, 11, 25)
+        val tiltakspakke = activeTiltakspakker(tiltakspakke2Visible = false, now = lastDayOfTiltakspakke1)
+            .single { it.id == "OPPFOLGINGSPLAN_TILTAKSPAKKE_1" }
 
         test("Tiltakspakke 2 inherits from Tiltakspakke 1 and is only visible when toggled on") {
             listOf(false, true).forEach { visible ->
-                val pakker = activeTiltakspakker(tiltakspakke2Visible = visible)
+                val pakker = activeTiltakspakker(tiltakspakke2Visible = visible, now = lastDayOfTiltakspakke1)
                 pakker.map { it.id } shouldBe listOf("OPPFOLGINGSPLAN_TILTAKSPAKKE_1", "DIALOGMOTE_TILTAKSPAKKE_2")
                 pakker.last().inheritsFrom shouldBe tiltakspakke.id
                 pakker.last().visible shouldBe visible
             }
         }
 
+        test("Tiltakspakke 1 is no longer active after 2026-11-25, while Tiltakspakke 2 still inherits from it") {
+            activeTiltakspakker(tiltakspakke2Visible = true, now = LocalDate(2026, 11, 26))
+                .map { it.id to it.inheritsFrom } shouldBe listOf("DIALOGMOTE_TILTAKSPAKKE_2" to tiltakspakke.id)
+        }
+
         test("Tiltakspakke 2 falls back to the geography of Tiltakspakke 1 with its own key") {
-            val pakke2 = activeTiltakspakker(tiltakspakke2Visible = true).last()
+            val pakke2 = activeTiltakspakker(tiltakspakke2Visible = true, now = lastDayOfTiltakspakke1).last()
             pakke2.rule shouldBe GeoTiltakspakkeRule(setOf("55", "56"), 0.5, pakke2.id)
         }
 
