@@ -343,7 +343,7 @@ private fun ApplicationTestBuilder.setupApi(texasClient: TexasClient) {
                 AssessTiltakspakkerUseCase(
                     FakeEregClient(),
                     FakeTiltakspakkeAssessmentRepository(),
-                    activeTiltakspakker(tiltakspakke2Visible = false),
+                    activeTiltakspakker(tiltakspakke2Visible = true),
                 )
             }
             provide<HealthCheck> { FakeHealthCheck() }

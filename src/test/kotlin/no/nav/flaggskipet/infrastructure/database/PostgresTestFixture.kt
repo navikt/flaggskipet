@@ -1,6 +1,7 @@
 package no.nav.flaggskipet.infrastructure.database
 
 import no.nav.flaggskipet.infrastructure.database.tables.TiltakspakkeDeltakelseTable
+import no.nav.flaggskipet.infrastructure.database.tables.TiltakspakkeTable
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -33,6 +34,7 @@ class PostgresTestFixture : AutoCloseable {
     val tables: List<Table> =
         listOf(
             TiltakspakkeDeltakelseTable,
+            TiltakspakkeTable,
         )
 
     val jdbcUrl: String

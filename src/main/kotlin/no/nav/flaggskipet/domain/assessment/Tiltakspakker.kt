@@ -1,5 +1,8 @@
 package no.nav.flaggskipet.domain.assessment
 
+import kotlinx.datetime.LocalDate
+import no.nav.flaggskipet.domain.today
+
 private const val TILTAKSPAKKE_1_ID = "OPPFOLGINGSPLAN_TILTAKSPAKKE_1"
 private const val TILTAKSPAKKE_2_ID = "DIALOGMOTE_TILTAKSPAKKE_2"
 private const val TROMS_FYLKESKODE = "55"
@@ -22,10 +25,13 @@ data class GeoTiltakspakkeRule(
     }
 }
 
-fun activeTiltakspakker(tiltakspakke2Visible: Boolean) = listOf(
+fun activeTiltakspakker(
+    tiltakspakke2Visible: Boolean,
+    now: LocalDate = today(),
+) = listOf(
     Tiltakspakke(
         id = TILTAKSPAKKE_1_ID,
-        endDate = null,
+        endDate = LocalDate(year = 2026, month = 11, day = 25),
         rule = GeoTiltakspakkeRule(
             fylkerInScope = setOf(TROMS_FYLKESKODE, FINNMARK_FYLKESKODE),
             tiltaksgruppeShare = 0.5,
@@ -43,4 +49,4 @@ fun activeTiltakspakker(tiltakspakke2Visible: Boolean) = listOf(
             tiltakspakkeId = TILTAKSPAKKE_2_ID,
         ),
     ),
-).filter { it.isActive() }
+).filter { it.isActive(now) }
